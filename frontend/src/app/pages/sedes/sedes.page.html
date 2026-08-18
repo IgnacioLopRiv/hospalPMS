@@ -1,0 +1,19 @@
+<ion-content [fullscreen]="true" class="sedes-content">
+  <div class="sedes-container">
+    <h1>Selecciona una sede</h1>
+    <p class="subtitle">Elige la sede con la que deseas trabajar</p>
+
+    <ion-list lines="full" class="sedes-list">
+      @for (sede of sedes; track sede.id) {
+        <ion-item button detail="false" (click)="selectSede(sede)">
+          <ion-icon slot="start" name="business-outline"></ion-icon>
+          <ion-label>
+            <h2>{{ sede.nombre }}</h2>
+            <p>{{ sede.ciudad }}</p>
+          </ion-label>
+          <ion-icon slot="end" name="chevron-forward-outline"></ion-icon>
+        </ion-item>
+      }
+    </ion-list>
+  </div>
+</ion-content>

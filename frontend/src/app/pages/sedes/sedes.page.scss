@@ -1,0 +1,40 @@
+.sedes-content {
+  --background: var(--ion-color-light, #f4f5f8);
+}
+
+.sedes-container {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 48px 24px;
+
+  h1 {
+    margin: 0 0 8px;
+    font-size: 28px;
+    font-weight: 700;
+  }
+
+  .subtitle {
+    margin: 0 0 24px;
+    color: var(--ion-color-medium, #92949c);
+  }
+}
+
+.sedes-list {
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--ion-background-color, #fff);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+  ion-item {
+    --padding-start: 16px;
+    --inner-padding-end: 16px;
+
+    h2 {
+      font-weight: 600;
+    }
+
+    p {
+      color: var(--ion-color-medium, #92949c);
+    }
+  }
+}
