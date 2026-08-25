@@ -15,11 +15,17 @@
   >
     Reservas
   </ion-button>
-  <ion-button 
-    expand="block" 
-    fill="clear"
-    routerLink="/reportes"
-    routerLinkActive="active"
-  >Reportes</ion-button>
-
+  @if (canViewReports()) {
+    <ion-button
+      expand="block"
+      fill="clear"
+      routerLink="/reportes"
+      routerLinkActive="active"
+    >
+      Reportes
+    </ion-button>
+  }
+  <ion-button expand="block" fill="clear" (click)="logout()">
+    Salir
+  </ion-button>
 </nav>
