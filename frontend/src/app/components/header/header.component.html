@@ -2,9 +2,16 @@
   <div class="header-content">
     <span class="header-title">{{ sedeLabel() }}</span>
     <div class="header-actions">
-      <ion-button fill="clear">Buscar</ion-button>
-      <ion-button fill="clear">Alertas</ion-button>
+      @if (canEditSede()) {
+        <ion-button fill="clear" [disabled]="!hasSede()" (click)="openEditSede()">
+          Editar sede
+        </ion-button>
+      }
       <ion-button fill="clear">Configuración</ion-button>
     </div>
   </div>
 </ion-toolbar>
+
+@if (canEditSede()) {
+  <app-edit-sede-banner [isOpen]="editSedeOpen()" (closed)="closeEditSede()"></app-edit-sede-banner>
+}

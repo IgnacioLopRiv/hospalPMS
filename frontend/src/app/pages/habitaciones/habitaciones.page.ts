@@ -16,6 +16,7 @@ export class HabitacionesPage {
   private readonly sedeService = inject(SedeService);
 
   readonly sede = this.sedeService.selectedSede;
+  readonly habitaciones = this.sedeService.habitaciones;
 
   constructor() {
     if (!this.sedeService.selectedSede()) {

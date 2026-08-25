@@ -8,7 +8,35 @@
     <main class="page-content">
       <h1>Habitaciones</h1>
       @if (sede(); as currentSede) {
-        <p>Gestión de habitaciones de {{ currentSede.nombre }}.</p>
+        <p>Habitaciones registradas de {{ currentSede.nombre }}.</p>
+      }
+
+      @if (habitaciones().length === 0) {
+        <p class="sin_habitacion">
+          No hay habitaciones registradas. Usa <strong>Editar sede</strong> para agregarlas.
+        </p>
+      } @else {
+        <section class="rooms-grid">
+          @for (habitacion of habitaciones(); track habitacion.id) {
+            <article class="room-summary">
+              <h2>Habitación {{ habitacion.numero }}</h2>
+              <dl>
+                <div>
+                  <dt>Tipo</dt>
+                  <dd>{{ habitacion.tipo }}</dd>
+                </div>
+                <div>
+                  <dt>Tamaño</dt>
+                  <dd>{{ habitacion.tamanoM2 }} m²</dd>
+                </div>
+                <div class="full">
+                  <dt>Disposición de muebles</dt>
+                  <dd>{{ habitacion.disposicionMuebles }}</dd>
+                </div>
+              </dl>
+            </article>
+          }
+        </section>
       }
     </main>
   </div>
