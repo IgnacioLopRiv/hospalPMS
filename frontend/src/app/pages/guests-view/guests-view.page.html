@@ -1,0 +1,230 @@
+<ion-content [fullscreen]="true">
+  <div class="layout-container">
+    <!-- Barra Lateral (Sidebar) -->
+    <aside class="sidebar">
+      <div class="brand">
+        <ion-icon name="business-outline" class="brand-icon"></ion-icon>
+        <div>
+          <h2>HosPal</h2>
+          <span>GESTIÓN DE HOSTALES</span>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <a class="nav-item active" routerLink="/guests-view">
+          <ion-icon name="people-outline"></ion-icon>
+          <span>Huéspedes</span>
+        </a>
+        <a class="nav-item" routerLink="/habitaciones">
+          <ion-icon name="bed-outline"></ion-icon>
+          <span>Habitaciones</span>
+        </a>
+        <a class="nav-item" routerLink="/reservas">
+          <ion-icon name="calendar-outline"></ion-icon>
+          <span>Reservas</span>
+        </a>
+        <a class="nav-item" routerLink="/main">
+          <ion-icon name="swap-horizontal-outline"></ion-icon>
+          <span>Check-in / out</span>
+        </a>
+        <a class="nav-item" routerLink="/reportes">
+          <ion-icon name="time-outline"></ion-icon>
+          <span>Actividad</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-user">
+        <div class="avatar">CA</div>
+        <div class="user-info">
+          <strong>Carlos Admin</strong>
+          <small>Administrador</small>
+        </div>
+        <ion-icon name="chevron-down-outline"></ion-icon>
+      </div>
+    </aside>
+
+    <!-- Contenido Principal -->
+    <main class="main-content">
+      <!-- Encabezado superior -->
+      <header class="top-bar">
+        <div>
+          <h1 class="page-title">Vista General de Huéspedes</h1>
+          <p class="current-date">Lunes, 16 de junio de 2026</p>
+        </div>
+        <div class="top-actions">
+          <button class="icon-btn" aria-label="Notificaciones">
+            <ion-icon name="notifications-outline"></ion-icon>
+          </button>
+          <button class="btn-primary">
+            <ion-icon name="enter-outline"></ion-icon>
+            <span>Nuevo Check-in</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Tarjetas de Métricas KPI -->
+      <section class="kpi-grid">
+        <div class="kpi-card card-blue">
+          <div class="kpi-icon">
+            <ion-icon name="people-outline"></ion-icon>
+          </div>
+          <div class="kpi-data">
+            <span>TOTAL EN HOSTAL</span>
+            <h3>{{ getCount() }}</h3>
+          </div>
+        </div>
+        <div class="kpi-card card-purple">
+          <div class="kpi-icon">
+            <ion-icon name="bed-outline"></ion-icon>
+          </div>
+          <div class="kpi-data">
+            <span>HOSPEDADOS AHORA</span>
+            <h3>{{ getCount('hospedado') }}</h3>
+          </div>
+        </div>
+        <div class="kpi-card card-green">
+          <div class="kpi-icon">
+            <ion-icon name="log-in-outline"></ion-icon>
+          </div>
+          <div class="kpi-data">
+            <span>CHECK-IN HOY</span>
+            <h3>{{ getCount('checkin_hoy') }}</h3>
+          </div>
+        </div>
+        <div class="kpi-card card-orange">
+          <div class="kpi-icon">
+            <ion-icon name="log-out-outline"></ion-icon>
+          </div>
+          <div class="kpi-data">
+            <span>CHECK-OUT HOY</span>
+            <h3>{{ getCount('checkout_hoy') }}</h3>
+          </div>
+        </div>
+      </section>
+
+      <!-- Pestañas de Filtro y Buscador -->
+      <section class="toolbar">
+        <div class="tabs">
+          <button 
+            type="button"
+            class="tab-btn" 
+            [class.active]="selectedFilter === 'todos'" 
+            (click)="setFilter('todos')">
+            <ion-icon name="people-outline"></ion-icon> Todos 
+            <span class="badge">{{ getCount() }}</span>
+          </button>
+          <button 
+            type="button"
+            class="tab-btn" 
+            [class.active]="selectedFilter === 'hospedados'" 
+            (click)="setFilter('hospedados')">
+            <ion-icon name="bed-outline"></ion-icon> Hospedados 
+            <span class="badge">{{ getCount('hospedado') }}</span>
+          </button>
+          <button 
+            type="button"
+            class="tab-btn" 
+            [class.active]="selectedFilter === 'checkin'" 
+            (click)="setFilter('checkin')">
+            <ion-icon name="enter-outline"></ion-icon> Check-in hoy 
+            <span class="badge">{{ getCount('checkin_hoy') }}</span>
+          </button>
+          <button 
+            type="button"
+            class="tab-btn" 
+            [class.active]="selectedFilter === 'checkout'" 
+            (click)="setFilter('checkout')">
+            <ion-icon name="exit-outline"></ion-icon> Check-out hoy 
+            <span class="badge">{{ getCount('checkout_hoy') }}</span>
+          </button>
+        </div>
+
+        <div class="filters">
+          <div class="search-input">
+            <ion-icon name="search-outline"></ion-icon>
+            <input 
+              type="text" 
+              placeholder="Buscar huésped, hab..." 
+              [(ngModel)]="searchTerm" 
+              (input)="applyFilters()" 
+            />
+          </div>
+          <button type="button" class="filter-btn">
+            <ion-icon name="funnel-outline"></ion-icon>
+            <span>Filtrar</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Grilla de Tarjetas de Huéspedes -->
+      <section class="cards-grid">
+        <div class="guest-card" *ngFor="let guest of filteredGuests">
+          <!-- Cabecera de la Tarjeta -->
+          <div class="card-header">
+            <div class="avatar-tag" [ngClass]="'color-' + guest.cardColor">
+              {{ guest.initials }}
+            </div>
+            <div class="header-details">
+              <div class="title-line">
+                <h4>{{ guest.guestName }}</h4>
+                <ion-icon name="star" *ngIf="guest.isVip" class="star-icon"></ion-icon>
+              </div>
+              <p>{{ guest.country }} · Hab. {{ guest.roomNumber }}</p>
+            </div>
+
+            <span class="status-pill" [ngClass]="guest.status">
+              <span class="dot"></span>
+              {{ guest.statusBadge }}
+            </span>
+
+            <ion-icon name="ellipsis-vertical-outline" class="menu-icon"></ion-icon>
+          </div>
+
+          <!-- Tipo de Habitación y Fechas -->
+          <div class="room-info">
+            <span>
+              <ion-icon name="bed-outline"></ion-icon> 
+              {{ guest.roomType }}
+            </span>
+            <span>
+              <ion-icon name="calendar-outline"></ion-icon> 
+              {{ guest.dateRange }}
+            </span>
+          </div>
+
+          <!-- Cuadro de Estado / Fechas Clave -->
+          <div class="status-box" [ngClass]="guest.status">
+            <div class="box-header">
+              <ion-icon [name]="guest.status === 'hospedado' ? 'bed-outline' : guest.status === 'checkin_hoy' ? 'enter-outline' : 'exit-outline'"></ion-icon>
+              <span>{{ guest.status === 'hospedado' ? 'ESTANCIA ACTUAL' : guest.status === 'checkin_hoy' ? 'INGRESA HOY' : 'SALE HOY' }}</span>
+            </div>
+            <div class="box-metrics">
+              <div>
+                <small>{{ guest.metric1Label }}</small>
+                <strong>{{ guest.metric1Value }}</strong>
+              </div>
+              <div>
+                <small>{{ guest.metric2Label }}</small>
+                <strong>{{ guest.metric2Value }}</strong>
+              </div>
+            </div>
+            <div class="recurrent-tag" *ngIf="guest.recurrentNote">
+              <ion-icon name="star"></ion-icon> 
+              {{ guest.recurrentNote }}
+            </div>
+          </div>
+
+          <!-- Botones de Acción -->
+          <div class="card-actions">
+            <button type="button">
+              <ion-icon name="mail-outline"></ion-icon> Email
+            </button>
+            <button type="button">
+              <ion-icon name="call-outline"></ion-icon> Llamar
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</ion-content>

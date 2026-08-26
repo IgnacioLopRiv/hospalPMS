@@ -13,6 +13,13 @@
       "email": "stafftest@gmail.com",
       "password": "staff123",
       "role": "staff"
+    },
+    {
+      "id": 3,
+      "name": "Benjamin Guest",
+      "email": "hospal.admin.test@gmail.com",
+      "password": "Admin123!",
+      "role": "admin"
     }
   ]
 }
