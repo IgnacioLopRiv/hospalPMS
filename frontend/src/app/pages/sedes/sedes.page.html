@@ -4,7 +4,7 @@
     <p class="subtitle">Elige la sede con la que deseas trabajar</p>
 
     <ion-list lines="full" class="sedes-list">
-      @for (sede of sedes; track sede.id) {
+      @for (sede of sedes(); track sede.id) {
         <ion-item button detail="false" (click)="selectSede(sede)">
           <ion-icon slot="start" name="business-outline"></ion-icon>
           <ion-label>

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonContent, IonIcon, IonItem, IonLabel, IonList } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
@@ -12,16 +12,12 @@ import { Sede, SedeService } from '../../services/sede.service';
   imports: [IonContent, IonList, IonItem, IonLabel, IonIcon],
 })
 export class SedesPage {
-  readonly sedes: Sede[] = [
-    { id: 1, nombre: 'Hotel Centro', ciudad: 'Santiago' },
-    { id: 2, nombre: 'Hotel Playa', ciudad: 'Viña del Mar' },
-    { id: 3, nombre: 'Hotel Montaña', ciudad: 'Pucón' },
-  ];
+  private readonly router = inject(Router);
+  private readonly sedeService = inject(SedeService);
 
-  constructor(
-    private readonly router: Router,
-    private readonly sedeService: SedeService,
-  ) {
+  readonly sedes = this.sedeService.sedes;
+
+  constructor() {
     addIcons({ businessOutline, chevronForwardOutline });
   }
 

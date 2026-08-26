@@ -1,24 +1,16 @@
 <ion-content [fullscreen]="true" class="home-content">
   <div class="home-container">
     <h1>Hospal PMS</h1>
-    <p class="subtitle">Sistema de gestión hotelera</p>
+    <h2>Bienvenido al sistema de gestión hospitalaria</h2>
+    <p class="subtitle">Por favor, ingresa tu correo y contraseña para continuar</p>
 
-    <ion-segment [(ngModel)]="authMode">
+    <ion-segment value="login">
       <ion-segment-button value="login">
         <ion-label>Ingresar</ion-label>
-      </ion-segment-button>
-      <ion-segment-button value="register">
-        <ion-label>Registrarse</ion-label>
       </ion-segment-button>
     </ion-segment>
 
     <div class="auth-form">
-      @if (authMode === 'register') {
-        <ion-item lines="none">
-          <ion-input label="Nombre" labelPlacement="stacked" placeholder="Tu nombre"></ion-input>
-        </ion-item>
-      }
-
       <ion-item lines="none">
         <ion-input
           label="Correo electrónico"
@@ -39,9 +31,25 @@
         ></ion-input>
       </ion-item>
 
-      <ion-button expand="block" (click)="continue()">
-        {{ authMode === 'login' ? 'Ingresar' : 'Crear cuenta' }}
+      @if (errorMessage) {
+        <p class="error">{{ errorMessage }}</p>
+      }
+
+      <ion-button expand="block" [disabled]="submitting" (click)="continue()">
+        Ingresar
       </ion-button>
+
+      @if (showRecover) {
+        <ion-button expand="block" fill="outline" (click)="goRecover()">
+          Recuperar contraseña
+        </ion-button>
+      }
     </div>
+
+    <p class="test-accounts">
+      Cuentas de prueba:<br />
+      admin: hospal.admin.test@gmail.com / Admin123!<br />
+      staff: hospal.staff.test@gmail.com / Staff123!
+    </p>
   </div>
 </ion-content>
