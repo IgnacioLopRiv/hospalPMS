@@ -1,15 +1,10 @@
-<ion-header>
-  <app-header></app-header>
-</ion-header>
+<div class="reservas-page-container">
+  <main class="page-content">
+    <h1>Reservas</h1>
+    @if (sede(); as currentSede) {
+      <p class="sede-description">Gestión de reservas de {{ currentSede.nombre }}.</p>
+    }
 
-<ion-content [fullscreen]="true">
-  <div class="layout">
-    <app-sidebar></app-sidebar>
-    <main class="page-content">
-      <h1>Reservas</h1>
-      @if (sede(); as currentSede) {
-        <p>Gestión de reservas de {{ currentSede.nombre }}.</p>
-      }
-    </main>
-  </div>
-</ion-content>
+    <!-- Aquí irá tu tabla o listado de reservas -->
+  </main>
+</div>

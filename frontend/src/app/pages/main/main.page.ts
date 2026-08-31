@@ -1,15 +1,13 @@
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonContent, IonHeader } from '@ionic/angular/standalone';
-import { HeaderComponent } from '../../components/header/header.component';
-import { SidebarComponent } from '../../components/sidebar/sidebar.component';
 import { SedeService } from '../../services/sede.service';
 
 @Component({
   selector: 'app-main',
   templateUrl: './main.page.html',
   styleUrls: ['./main.page.scss'],
-  imports: [IonHeader, IonContent, HeaderComponent, SidebarComponent],
+  imports: [IonContent],
 })
 export class MainPage {
   private readonly router = inject(Router);
