@@ -1,5 +1,14 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { IonButton, IonToolbar } from '@ionic/angular/standalone';
+import { CommonModule } from '@angular/common';
+import { IonIcon, IonToolbar } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import {
+  settingsOutline,
+  businessOutline,
+  notificationsOutline,
+  personCircleOutline
+} from 'ionicons/icons';
+
 import { AuthService } from '../../services/auth.service';
 import { SedeService } from '../../services/sede.service';
 import { EditSedeBannerComponent } from '../edit-sede-banner/edit-sede-banner.component';
@@ -8,7 +17,8 @@ import { EditSedeBannerComponent } from '../edit-sede-banner/edit-sede-banner.co
   selector: 'app-header',
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.scss'],
-  imports: [IonToolbar, IonButton, EditSedeBannerComponent],
+  standalone: true,
+  imports: [IonToolbar, CommonModule, IonIcon, EditSedeBannerComponent],
 })
 export class HeaderComponent {
   private readonly sedeService = inject(SedeService);
@@ -23,11 +33,19 @@ export class HeaderComponent {
     return sede ? `${sede.nombre} · ${sede.ciudad}` : 'Hospal PMS';
   });
 
+  constructor() {
+    addIcons({
+      settingsOutline,
+      businessOutline,
+      notificationsOutline,
+      personCircleOutline
+    });
+  }
+
   openEditSede(): void {
     if (!this.hasSede() || !this.canEditSede()) {
       return;
     }
-
     this.editSedeOpen.set(true);
   }
 

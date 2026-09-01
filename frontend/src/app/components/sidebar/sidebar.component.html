@@ -1,31 +1,44 @@
-<nav class="sidebar">
-  <ion-button
-    expand="block"
-    fill="clear"
-    routerLink="/habitaciones"
-    routerLinkActive="active"
-  >
-    Habitaciones
-  </ion-button>
-  <ion-button
-    expand="block"
-    fill="clear"
-    routerLink="/reservas"
-    routerLinkActive="active"
-  >
-    Reservas
-  </ion-button>
-  @if (canViewReports()) {
-    <ion-button
-      expand="block"
-      fill="clear"
-      routerLink="/reportes"
-      routerLinkActive="active"
-    >
-      Reportes
-    </ion-button>
-  }
-  <ion-button expand="block" fill="clear" (click)="logout()">
-    Salir
-  </ion-button>
-</nav>
+<aside class="sidebar-container">
+  <nav class="nav-menu">
+    <a class="nav-item" routerLink="/guests-view" routerLinkActive="active">
+      <ion-icon name="people-outline"></ion-icon>
+      <span>Huéspedes</span>
+    </a>
+
+    <a class="nav-item" routerLink="/habitaciones" routerLinkActive="active">
+      <ion-icon name="bed-outline"></ion-icon>
+      <span>Habitaciones</span>
+    </a>
+
+    <a class="nav-item" routerLink="/reservas" routerLinkActive="active">
+      <ion-icon name="calendar-outline"></ion-icon>
+      <span>Reservas</span>
+    </a>
+
+    <a class="nav-item" routerLink="/main" routerLinkActive="active">
+      <ion-icon name="swap-horizontal-outline"></ion-icon>
+      <span>Check-in / out</span>
+    </a>
+
+    @if (canViewReports()) {
+      <a class="nav-item" routerLink="/reportes" routerLinkActive="active">
+        <ion-icon name="bar-chart-outline"></ion-icon>
+        <span>Reportes</span>
+      </a>
+    }
+
+    <a class="nav-item logout-btn" (click)="logout()">
+      <ion-icon name="log-out-outline"></ion-icon>
+      <span>Salir</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-user">
+    <div class="avatar">CA</div>
+    <div class="user-info">
+      <strong>Carlos Admin</strong>
+      <small>Administrador</small>
+    </div>
+    <ion-icon name="chevron-down-outline"></ion-icon>
+  </div>
+</aside>

@@ -1,15 +1,89 @@
-.sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 16px 8px;
-  width: 200px;
-  min-height: 100%;
-  border-right: 1px solid var(--ion-color-step-150, #d7d8da);
-  background: var(--ion-background-color, #fff);
+$blue-primary: #1e50d8;
+
+:host {
+  display: block;
+  height: 100%;
 }
 
-ion-button.active {
-  font-weight: 600;
-  --background: var(--ion-color-step-50, #f2f2f2);
+.sidebar-container {
+  width: 220px;
+  min-width: 220px;
+  height: 100%;
+  background: $blue-primary;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 0.8rem;
+  box-sizing: border-box;
+
+  .nav-menu {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      color: rgba(255, 255, 255, 0.85);
+      text-decoration: none;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      ion-icon {
+        font-size: 1.2rem;
+      }
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.12);
+        color: #ffffff;
+      }
+
+      &.active {
+        background: rgba(255, 255, 255, 0.2);
+        color: #ffffff;
+        font-weight: 600;
+      }
+
+      &.logout-btn {
+        margin-top: auto;
+        &:hover {
+          background: rgba(239, 68, 68, 0.25);
+          color: #fca5a5;
+        }
+      }
+    }
+  }
+
+  .sidebar-user {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+
+    .avatar {
+      width: 34px;
+      height: 34px;
+      background: rgba(255, 255, 255, 0.25);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+
+    .user-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      strong { font-size: 0.8rem; }
+      small { font-size: 0.65rem; opacity: 0.7; }
+    }
+  }
 }

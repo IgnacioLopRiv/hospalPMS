@@ -1,61 +1,95 @@
-.layout {
-  display: flex;
+$border-color: #e5e9f2;
+$text-dark: #1f2937;
+$text-muted: #64748b;
+$blue-primary: #1e50d8;
+
+:host {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.habitaciones-page-container {
+  padding: 2rem 2.5rem;
+  width: 100%;
   min-height: 100%;
-}
+  box-sizing: border-box;
+  color: $text-dark;
 
-.page-content {
-  flex: 1;
-  padding: 24px;
+  .page-content {
+    h1 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: $text-dark;
+    }
 
-  h1 {
-    margin: 0 0 8px;
-    font-size: 24px;
-    font-weight: 600;
+    .sede-description {
+      margin: 0 0 1.5rem 0;
+      color: $text-muted;
+      font-size: 0.95rem;
+    }
+
+    .sin_habitacion {
+      margin: 1rem 0;
+      color: $text-muted;
+      font-size: 0.95rem;
+
+      strong {
+        color: $blue-primary;
+      }
+    }
   }
 
-  p {
-    margin: 0 0 20px;
-    color: var(--ion-color-medium, #92949c);
-  }
-}
-
-.empty-state {
-  max-width: 520px;
-}
-
-.rooms-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 16px;
-}
-
-.room-summary {
-  padding: 16px;
-  border: 1px solid var(--ion-color-step-150, #d7d8da);
-  border-radius: 12px;
-  background: var(--ion-background-color, #fff);
-
-  h2 {
-    margin: 0 0 12px;
-    font-size: 18px;
-    font-weight: 600;
-  }
-
-  dl {
+  .rooms-grid {
     display: grid;
-    gap: 10px;
-    margin: 0;
-  }
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.25rem;
+    margin-top: 1.5rem;
 
-  dt {
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    color: var(--ion-color-medium, #92949c);
-  }
+    .room-summary {
+      background: #ffffff;
+      border: 1px solid $border-color;
+      border-radius: 12px;
+      padding: 1.25rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 
-  dd {
-    margin: 2px 0 0;
-    font-size: 15px;
+      h2 {
+        margin: 0 0 1rem 0;
+        font-size: 1.15rem;
+        font-weight: 600;
+        color: $text-dark;
+      }
+
+      dl {
+        margin: 0;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+
+        div {
+          display: flex;
+          flex-direction: column;
+
+          &.full {
+            grid-column: 1 / -1;
+          }
+
+          dt {
+            font-size: 0.75rem;
+            color: $text-muted;
+            font-weight: 600;
+            margin-bottom: 0.15rem;
+          }
+
+          dd {
+            margin: 0;
+            font-size: 0.9rem;
+            color: $text-dark;
+            font-weight: 500;
+          }
+        }
+      }
+    }
   }
 }

@@ -1,92 +1,18 @@
 $blue-primary: #1e50d8;
-$bg-light: #f4f6fc;
 $border-color: #e5e9f2;
 $text-dark: #1f2937;
 $text-muted: #64748b;
 
-.layout-container {
-  display: flex;
-  min-height: 100vh;
-  background-color: $bg-light;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+:host {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-/* Sidebar */
-.sidebar {
-  width: 220px;
-  background: $blue-primary;
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  padding: 1.5rem 1rem;
-
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
-    margin-bottom: 2rem;
-    .brand-icon { font-size: 2rem; }
-    h2 { margin: 0; font-size: 1.2rem; font-weight: 700; }
-    span { font-size: 0.65rem; opacity: 0.8; letter-spacing: 0.5px; }
-  }
-
-  .nav-menu {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-
-    .nav-item {
-      display: flex;
-      align-items: center;
-      gap: 0.8rem;
-      padding: 0.75rem 1rem;
-      border-radius: 8px;
-      color: rgba(255, 255, 255, 0.8);
-      text-decoration: none;
-      cursor: pointer;
-      font-size: 0.9rem;
-
-      &.active, &:hover {
-        background: rgba(255, 255, 255, 0.15);
-        color: #fff;
-        font-weight: 600;
-      }
-    }
-  }
-
-  .sidebar-user {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    padding-top: 1rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.15);
-    .avatar {
-      width: 32px;
-      height: 32px;
-      background: rgba(255, 255, 255, 0.25);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.75rem;
-      font-weight: bold;
-    }
-    .user-info {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      strong { font-size: 0.8rem; }
-      small { font-size: 0.65rem; opacity: 0.7; }
-    }
-  }
-}
-
-/* Main Content */
-.main-content {
-  flex: 1;
-  padding: 1.5rem 2rem;
-  overflow-y: auto;
+.guests-page-container {
+  padding: 2rem 2.5rem;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .top-bar {
@@ -95,29 +21,30 @@ $text-muted: #64748b;
   align-items: center;
   margin-bottom: 1.5rem;
 
-  .page-title { margin: 0; font-size: 1.4rem; font-weight: 700; color: $text-dark; }
-  .current-date { margin: 0.2rem 0 0 0; color: $text-muted; font-size: 0.85rem; }
+  .page-title {
+    margin: 0;
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: $text-dark;
+  }
+
+  .current-date {
+    margin: 0.2rem 0 0 0;
+    color: $text-muted;
+    font-size: 0.85rem;
+  }
 
   .top-actions {
     display: flex;
     gap: 0.8rem;
     align-items: center;
 
-    .icon-btn {
-      background: #fff;
-      border: 1px solid $border-color;
-      border-radius: 8px;
-      padding: 0.6rem;
-      cursor: pointer;
-      font-size: 1.2rem;
-    }
-
     .btn-primary {
       background: $blue-primary;
-      color: #fff;
+      color: #ffffff;
       border: none;
       border-radius: 8px;
-      padding: 0.6rem 1.2rem;
+      padding: 0.65rem 1.3rem;
       display: flex;
       align-items: center;
       gap: 0.5rem;
@@ -127,41 +54,63 @@ $text-muted: #64748b;
   }
 }
 
-/* KPI Cards */
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
+  gap: 1.2rem;
   margin-bottom: 1.5rem;
 
   .kpi-card {
-    background: #fff;
-    padding: 1rem 1.2rem;
+    background: #ffffff;
+    padding: 1.1rem 1.3rem;
     border-radius: 12px;
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 1.1rem;
     border: 1px solid transparent;
 
     .kpi-icon {
-      font-size: 1.5rem;
-      padding: 0.6rem;
+      font-size: 1.6rem;
+      padding: 0.65rem;
       border-radius: 8px;
     }
 
     .kpi-data {
-      span { font-size: 0.7rem; font-weight: 700; color: $text-muted; }
-      h3 { margin: 0.1rem 0 0 0; font-size: 1.5rem; font-weight: 700; }
+      span {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: $text-muted;
+      }
+      h3 {
+        margin: 0.1rem 0 0 0;
+        font-size: 1.55rem;
+        font-weight: 700;
+      }
     }
 
-    &.card-blue { background: #f0f4ff; border-color: #dbeafe; .kpi-icon, h3 { color: #2563eb; } }
-    &.card-purple { background: #faf5ff; border-color: #f3e8ff; .kpi-icon, h3 { color: #7c3aed; } }
-    &.card-green { background: #f0fdf4; border-color: #dcfce7; .kpi-icon, h3 { color: #16a34a; } }
-    &.card-orange { background: #fffbeb; border-color: #fef3c7; .kpi-icon, h3 { color: #d97706; } }
+    &.card-blue {
+      background: #f0f4ff;
+      border-color: #dbeafe;
+      .kpi-icon, h3 { color: #2563eb; }
+    }
+    &.card-purple {
+      background: #faf5ff;
+      border-color: #f3e8ff;
+      .kpi-icon, h3 { color: #7c3aed; }
+    }
+    &.card-green {
+      background: #f0fdf4;
+      border-color: #dcfce7;
+      .kpi-icon, h3 { color: #16a34a; }
+    }
+    &.card-orange {
+      background: #fffbeb;
+      border-color: #fef3c7;
+      .kpi-icon, h3 { color: #d97706; }
+    }
   }
 }
 
-/* Toolbar */
 .toolbar {
   display: flex;
   justify-content: space-between;
@@ -170,25 +119,25 @@ $text-muted: #64748b;
 
   .tabs {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.6rem;
 
     .tab-btn {
-      background: #fff;
+      background: #ffffff;
       border: 1px solid $border-color;
-      padding: 0.5rem 0.9rem;
+      padding: 0.55rem 1rem;
       border-radius: 20px;
-      font-size: 0.8rem;
+      font-size: 0.82rem;
       color: $text-muted;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 0.4rem;
+      gap: 0.45rem;
 
       .badge {
         background: #f1f5f9;
-        padding: 0.1rem 0.4rem;
+        padding: 0.1rem 0.45rem;
         border-radius: 10px;
-        font-size: 0.7rem;
+        font-size: 0.72rem;
       }
 
       &.active {
@@ -199,7 +148,7 @@ $text-muted: #64748b;
 
         .badge {
           background: $blue-primary;
-          color: #fff;
+          color: #ffffff;
         }
       }
     }
@@ -207,15 +156,15 @@ $text-muted: #64748b;
 
   .filters {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.6rem;
 
     .search-input {
-      background: #fff;
+      background: #ffffff;
       border: 1px solid $border-color;
       border-radius: 8px;
       display: flex;
       align-items: center;
-      padding: 0.4rem 0.8rem;
+      padding: 0.45rem 0.9rem;
       gap: 0.5rem;
       color: $text-muted;
 
@@ -223,14 +172,15 @@ $text-muted: #64748b;
         border: none;
         outline: none;
         font-size: 0.85rem;
+        background: transparent;
       }
     }
 
     .filter-btn {
-      background: #fff;
+      background: #ffffff;
       border: 1px solid $border-color;
       border-radius: 8px;
-      padding: 0.4rem 0.8rem;
+      padding: 0.45rem 0.9rem;
       display: flex;
       align-items: center;
       gap: 0.4rem;
@@ -241,30 +191,29 @@ $text-muted: #64748b;
   }
 }
 
-/* Guest Cards */
 .cards-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1.2rem;
+  gap: 1.3rem;
 
   .guest-card {
-    background: #fff;
+    background: #ffffff;
     border-radius: 16px;
-    padding: 1.2rem;
+    padding: 1.25rem;
     border: 1px solid $border-color;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
     display: flex;
     flex-direction: column;
-    gap: 0.9rem;
+    gap: 0.95rem;
 
     .card-header {
       display: flex;
       align-items: center;
-      gap: 0.6rem;
+      gap: 0.65rem;
 
       .avatar-tag {
-        width: 36px;
-        height: 36px;
+        width: 38px;
+        height: 38px;
         border-radius: 8px;
         display: flex;
         align-items: center;
@@ -280,14 +229,30 @@ $text-muted: #64748b;
 
       .header-details {
         flex: 1;
+
         .title-line {
           display: flex;
           align-items: center;
           gap: 0.3rem;
-          h4 { margin: 0; font-size: 0.95rem; font-weight: 600; color: $text-dark; }
-          .star-icon { color: #eab308; font-size: 0.85rem; }
+
+          h4 {
+            margin: 0;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: $text-dark;
+          }
+
+          .star-icon {
+            color: #eab308;
+            font-size: 0.85rem;
+          }
         }
-        p { margin: 0.1rem 0 0 0; font-size: 0.75rem; color: $text-muted; }
+
+        p {
+          margin: 0.1rem 0 0 0;
+          font-size: 0.75rem;
+          color: $text-muted;
+        }
       }
 
       .status-pill {
@@ -298,25 +263,40 @@ $text-muted: #64748b;
         display: flex;
         align-items: center;
         gap: 0.3rem;
-        border: 1px solid;
+        border: 1px solid transparent;
 
-        .dot { width: 5px; height: 5px; border-radius: 50%; }
+        .dot {
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+        }
 
         &.hospedado {
-          border-color: #bfdbfe; color: #2563eb; background: #eff6ff;
+          border-color: #bfdbfe;
+          color: #2563eb;
+          background: #eff6ff;
           .dot { background: #2563eb; }
         }
+
         &.checkin_hoy {
-          border-color: #bbf7d0; color: #16a34a; background: #f0fdf4;
+          border-color: #bbf7d0;
+          color: #16a34a;
+          background: #f0fdf4;
           .dot { background: #16a34a; }
         }
+
         &.checkout_hoy {
-          border-color: #fed7aa; color: #ea580c; background: #fff7ed;
+          border-color: #fed7aa;
+          color: #ea580c;
+          background: #fff7ed;
           .dot { background: #ea580c; }
         }
       }
 
-      .menu-icon { color: $text-muted; cursor: pointer; }
+      .menu-icon {
+        color: $text-muted;
+        cursor: pointer;
+      }
     }
 
     .room-info {
@@ -324,12 +304,17 @@ $text-muted: #64748b;
       justify-content: space-between;
       font-size: 0.75rem;
       color: $text-muted;
-      span { display: flex; align-items: center; gap: 0.3rem; }
+
+      span {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+      }
     }
 
     .status-box {
       border-radius: 10px;
-      padding: 0.8rem;
+      padding: 0.85rem;
       border: 1px solid transparent;
 
       .box-header {
@@ -344,11 +329,20 @@ $text-muted: #64748b;
       .box-metrics {
         display: flex;
         justify-content: space-between;
+
         div {
           display: flex;
           flex-direction: column;
-          small { font-size: 0.65rem; color: $text-muted; }
-          strong { font-size: 0.85rem; color: $text-dark; }
+
+          small {
+            font-size: 0.65rem;
+            color: $text-muted;
+          }
+
+          strong {
+            font-size: 0.85rem;
+            color: $text-dark;
+          }
         }
       }
 
@@ -366,11 +360,13 @@ $text-muted: #64748b;
         border-color: #dbeafe;
         .box-header { color: #2563eb; }
       }
+
       &.checkin_hoy {
         background: #f2fbf6;
         border-color: #dcfce7;
         .box-header, .recurrent-tag { color: #16a34a; }
       }
+
       &.checkout_hoy {
         background: #fffdf5;
         border-color: #fef3c7;
@@ -381,11 +377,12 @@ $text-muted: #64748b;
     .card-actions {
       display: flex;
       gap: 0.5rem;
+
       button {
         flex: 1;
-        background: #fff;
+        background: #ffffff;
         border: 1px solid $border-color;
-        padding: 0.4rem;
+        padding: 0.45rem;
         border-radius: 6px;
         font-size: 0.75rem;
         color: $text-muted;
@@ -395,7 +392,10 @@ $text-muted: #64748b;
         justify-content: center;
         gap: 0.3rem;
 
-        &:hover { background: #f8fafc; color: $text-dark; }
+        &:hover {
+          background: #f8fafc;
+          color: $text-dark;
+        }
       }
     }
   }

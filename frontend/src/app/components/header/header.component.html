@@ -1,17 +1,42 @@
-<ion-toolbar>
-  <div class="header-content">
-    <span class="header-title">{{ sedeLabel() }}</span>
-    <div class="header-actions">
-      @if (canEditSede()) {
-        <ion-button fill="clear" [disabled]="!hasSede()" (click)="openEditSede()">
-          Editar sede
-        </ion-button>
+<header class="app-header">
+  <!-- Lado Izquierdo: Logo HosPal + Chip de Sede -->
+  <div class="header-left">
+    <div class="brand-box">
+      <ion-icon name="business-outline" class="brand-icon"></ion-icon>
+      <div class="brand-text">
+        <h2>HosPal</h2>
+        <span>GESTIÓN DE HOSTALES</span>
+      </div>
+    </div>
+
+    <div 
+      class="sede-chip" 
+      [class.clickable]="hasSede() && canEditSede()"
+      (click)="openEditSede()">
+      <ion-icon name="business-outline" class="sede-icon"></ion-icon>
+      <span class="sede-name">{{ hasSede() ? sedeLabel() : 'Panel de Administración' }}</span>
+      @if (hasSede() && canEditSede()) {
+        <small class="edit-hint">(Editar)</small>
       }
-      <ion-button fill="clear">Configuración</ion-button>
     </div>
   </div>
-</ion-toolbar>
 
-@if (canEditSede()) {
-  <app-edit-sede-banner [isOpen]="editSedeOpen()" (closed)="closeEditSede()"></app-edit-sede-banner>
+  <!-- Lado Derecho: Acciones -->
+  <div class="header-right">
+    <button type="button" class="header-icon-btn" aria-label="Notificaciones">
+      <ion-icon name="notifications-outline"></ion-icon>
+    </button>
+
+    <button 
+      type="button"
+      class="header-icon-btn config-btn" 
+      aria-label="Configuración"
+      (click)="openEditSede()">
+      <ion-icon name="settings-outline"></ion-icon>
+    </button>
+  </div>
+</header>
+
+@if (editSedeOpen()) {
+  <app-edit-sede-banner (close)="closeEditSede()"></app-edit-sede-banner>
 }

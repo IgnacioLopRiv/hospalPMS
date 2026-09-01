@@ -1,3 +1,16 @@
 <ion-app>
-  <ion-router-outlet></ion-router-outlet>
+  <!-- Header global -->
+  @if (showLayout()) {
+    <app-header></app-header>
+  }
+
+  <div class="app-body-container" [class.no-layout]="!showLayout()">
+    @if (showLayout()) {
+      <app-sidebar></app-sidebar>
+    }
+
+    <div class="app-main-viewport">
+      <ion-router-outlet></ion-router-outlet>
+    </div>
+  </div>
 </ion-app>

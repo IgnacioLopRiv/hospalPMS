@@ -1,22 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonContent, IonIcon } from '@ionic/angular/standalone';
-import { RouterLink } from '@angular/router';
+import { IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
-  businessOutline,
   peopleOutline,
   bedOutline,
   calendarOutline,
-  swapHorizontalOutline,
-  timeOutline,
-  chevronDownOutline,
-  notificationsOutline,
   enterOutline,
   exitOutline,
-  logInOutline,
-  logOutOutline,
   searchOutline,
   funnelOutline,
   star,
@@ -36,8 +28,6 @@ import { GuestCardView } from '../../models/hostal.model';
   imports: [
     CommonModule,
     FormsModule,
-    RouterLink,
-    IonContent,
     IonIcon
   ]
 })
@@ -49,18 +39,11 @@ export class GuestsViewPage implements OnInit {
 
   constructor(private hostalService: HostalService) {
     addIcons({
-      businessOutline,
       peopleOutline,
       bedOutline,
       calendarOutline,
-      swapHorizontalOutline,
-      timeOutline,
-      chevronDownOutline,
-      notificationsOutline,
       enterOutline,
       exitOutline,
-      logInOutline,
-      logOutOutline,
       searchOutline,
       funnelOutline,
       star,
