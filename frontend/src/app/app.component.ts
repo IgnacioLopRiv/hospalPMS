@@ -1,5 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
 import { HeaderComponent } from './components/header/header.component';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
@@ -17,4 +19,26 @@ import { SidebarComponent } from './components/sidebar/sidebar.component';
     SidebarComponent
   ],
 })
-export class AppComponent {}
+export class AppComponent {
+  private readonly router = inject(Router);
+
+  // Rutas donde NO se debe mostrar ni el header ni la sidebar
+  private readonly excludedRoutes = [
+    '/home',
+    // Agrega aquí el path exacto de la página que necesitas limpia (ej. '/login')
+  ];
+
+  readonly showLayout = signal<boolean>(true);
+
+  constructor() {
+    this.router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe((event: NavigationEnd) => {
+        const currentUrl = event.urlAfterRedirects.split('?')[0];
+        const isExcluded = this.excludedRoutes.some(
+          route => currentUrl === route || currentUrl.startsWith(`${route}/`)
+        );
+        this.showLayout.set(!isExcluded);
+      });
+  }
+}

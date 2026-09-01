@@ -1,11 +1,17 @@
 <ion-app>
-  <!-- 1. Header superior que cruza de lado a lado (100% width) -->
-  <app-header></app-header>
+  <!-- Header global -->
+  @if (showLayout()) {
+    <app-header></app-header>
+  }
 
-  <!-- 2. Cuerpo: Sidebar a la izquierda y páginas a la derecha -->
-  <div class="app-body-container">
-    <app-sidebar></app-sidebar>
+  <!-- Contenedor principal -->
+  <div class="app-body-container" [class.no-layout]="!showLayout()">
+    <!-- Sidebar global -->
+    @if (showLayout()) {
+      <app-sidebar></app-sidebar>
+    }
 
+    <!-- Vista de la ruta actual -->
     <div class="app-main-viewport">
       <ion-router-outlet></ion-router-outlet>
     </div>
