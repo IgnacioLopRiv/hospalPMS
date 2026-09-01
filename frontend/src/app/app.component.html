@@ -4,14 +4,11 @@
     <app-header></app-header>
   }
 
-  <!-- Contenedor principal -->
   <div class="app-body-container" [class.no-layout]="!showLayout()">
-    <!-- Sidebar global -->
     @if (showLayout()) {
       <app-sidebar></app-sidebar>
     }
 
-    <!-- Vista de la ruta actual -->
     <div class="app-main-viewport">
       <ion-router-outlet></ion-router-outlet>
     </div>

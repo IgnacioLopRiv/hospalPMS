@@ -22,10 +22,8 @@ import { SidebarComponent } from './components/sidebar/sidebar.component';
 export class AppComponent {
   private readonly router = inject(Router);
 
-  // Rutas donde NO se debe mostrar ni el header ni la sidebar
   private readonly excludedRoutes = [
     '/home',
-    // Agrega aquí el path exacto de la página que necesitas limpia (ej. '/login')
   ];
 
   readonly showLayout = signal<boolean>(true);
