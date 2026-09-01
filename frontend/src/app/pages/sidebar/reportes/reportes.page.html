@@ -1,0 +1,10 @@
+<div class="reportes-page-container">
+  <main class="page-content">
+    <h1>Reportes</h1>
+    @if (sede(); as currentSede) {
+      <p class="sede-description">Gestión de reportería de {{ currentSede.nombre }}.</p>
+    }
+
+    <!-- Aquí irá tu tabla o listado de reservas -->
+  </main>
+</div>

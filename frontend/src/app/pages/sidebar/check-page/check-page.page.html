@@ -1,0 +1,10 @@
+<div class="reservas-page-container">
+  <main class="page-content">
+    <h1>Check-in / out</h1>
+    @if (sede(); as currentSede) {
+      <p class="sede-description">Salidas e ingresos de {{ currentSede.nombre }}.</p>
+    }
+
+    <!-- Aquí irá tu tabla o listado de reservas -->
+  </main>
+</div>

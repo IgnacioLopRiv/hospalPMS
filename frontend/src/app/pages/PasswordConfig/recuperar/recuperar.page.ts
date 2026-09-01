@@ -2,7 +2,7 @@ import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { IonButton, IonContent, IonInput, IonItem } from '@ionic/angular/standalone';
-import { AuthService } from '../../services/auth.service';
+import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-recuperar',

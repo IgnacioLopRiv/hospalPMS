@@ -17,8 +17,8 @@ import {
   callOutline
 } from 'ionicons/icons';
 
-import { HostalService } from '../../services/hostal.service';
-import { GuestCardView } from '../../models/hostal.model';
+import { HostalService } from '../../../services/hostal.service';
+import { GuestCardView } from '../../../models/hostal.model';
 
 @Component({
   selector: 'app-guests-view',

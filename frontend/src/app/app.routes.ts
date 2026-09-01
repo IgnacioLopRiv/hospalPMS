@@ -23,21 +23,26 @@ export const routes: Routes = [
   },
   {
     path: 'guests-view',
-    loadComponent: () => import('./pages/guests-view/guests-view.page').then((m) => m.GuestsViewPage),
+    loadComponent: () => import('./pages/sidebar/guests-view/guests-view.page').then((m) => m.GuestsViewPage),
   },
 {
     path: 'habitaciones',
     canActivate: [authGuard],
-    loadComponent: () =>import('./pages/habitaciones/habitaciones.page').then((m) => m.HabitacionesPage),
+    loadComponent: () =>import('./pages/sidebar/habitaciones/habitaciones.page').then((m) => m.HabitacionesPage),
   },
   {
     path: 'reportes',
     canActivate: [authGuard, permissionGuard('viewReports')],
-    loadComponent: () => import('./pages/reportes/reportes.page').then((m) => m.ReportesPage),
+    loadComponent: () => import('./pages/sidebar/reportes/reportes.page').then((m) => m.ReportesPage),
   },
   {
     path: 'reservas',
     canActivate: [authGuard],
-    loadComponent: () => import('./pages/reservas/reservas.page').then((m) => m.ReservasPage),
+    loadComponent: () => import('./pages/sidebar/reservas/reservas.page').then((m) => m.ReservasPage),
+  },
+  {
+    path: 'check-page',
+    loadComponent: () => import('./pages/sidebar/check-page/check-page.page').then( m => m.CheckPagePage)
   }
+
 ];

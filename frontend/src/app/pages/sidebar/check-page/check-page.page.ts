@@ -1,15 +1,15 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SedeService } from '../../services/sede.service';
+import { SedeService } from '../../../services/sede.service';
 
 @Component({
-  selector: 'app-reservas',
-  templateUrl: './reservas.page.html',
-  styleUrls: ['./reservas.page.scss'],
+  selector: 'app-check-page',
+  templateUrl: './check-page.page.html',
+  styleUrls: ['./check-page.page.scss'],
   standalone: true,
   imports: [CommonModule],
 })
-export class ReservasPage {
+export class CheckPagePage {
   private readonly sedeService = inject(SedeService);
 
   readonly sede = this.sedeService.selectedSede;
