@@ -24,6 +24,12 @@ ion-app {
   height: calc(100vh - 64px); // Resta la altura del header
   overflow: hidden;
   background-color: $bg-light;
+
+  &.no-layout {
+    display: block;
+    height: 100vh;
+    overflow: hidden;
+  }
 }
 
 /* Área donde cargan las páginas */
@@ -33,4 +39,8 @@ ion-app {
   overflow-y: auto;
   min-width: 0;
   position: relative;
+
+  .no-layout & {
+    height: 100%;
+  }
 }

@@ -1,5 +1,10 @@
+$bg-light: #f4f6fc;
+$text-dark: #1f2937;
+$text-muted: #64748b;
+$blue-primary: #1e50d8;
+
 .home-content {
-  --background: var(--ion-color-light, #f4f5f8);
+  --background: $bg-light;
 }
 
 .home-container {
@@ -15,18 +20,20 @@
     font-size: 32px;
     font-weight: 700;
     text-align: center;
+    color: $blue-primary;
   }
   h2 {
     margin: 1;
     font-size: 24px;
     font-weight: 100;
     text-align: center;
+      color: $text-dark;
   }
 
   .subtitle {
     margin: 12px 0 0;
     text-align: center;
-    color: var(--ion-color-medium, #92949c);
+    color: $text-muted;
   }
 }
 
@@ -36,7 +43,7 @@
   gap: 12px;
   padding: 24px;
   border-radius: 12px;
-  background: var(--ion-background-color, #fff);
+  background: $blue-primary;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 
   ion-item {
@@ -47,7 +54,7 @@
 
   .error {
     margin: 0;
-    color: var(--ion-color-danger, #eb445a);
+    color: #e93030;
     font-size: 14px;
   }
 }
@@ -57,4 +64,18 @@
   text-align: center;
   font-size: 13px;
   color: var(--ion-color-medium, #92949c);
+}
+ion-button {
+  --background: #7b6dff;
+  --background-hover: #000308;
+  --color: #ffffff;
+  --border-radius: 12px;
+  font-weight: 500;
+}
+ion-button[fill='outline'] {
+  --background: #60a6f5;
+  --background-hover: #000205;
+  --color: #000d3a;
+  --border-color: #1e50d8;
+  --border-radius: 12px;
 }

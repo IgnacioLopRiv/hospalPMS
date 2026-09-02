@@ -24,6 +24,7 @@ export class AppComponent {
 
   private readonly excludedRoutes = [
     '/home',
+    '/sedes',
   ];
 
   readonly showLayout = signal<boolean>(true);
