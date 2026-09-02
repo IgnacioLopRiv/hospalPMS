@@ -1,40 +1,56 @@
+$border-color: #e5e9f2;
+$text-dark: #1f2937;
+$text-muted: #64748b;
+$blue-primary: #1e50d8;
+
 .sedes-content {
-  --background: var(--ion-color-light, #f4f5f8);
+  --background: #f4f6fc;
+  min-height: 100vh;
 }
 
 .sedes-container {
-  max-width: 520px;
+  max-width: 560px;
+  min-height: 100vh;
   margin: 0 auto;
-  padding: 48px 24px;
+  padding: 3rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  
 
   h1 {
-    margin: 0 0 8px;
-    font-size: 28px;
+    margin: 0 0 0.5rem;
+    font-size: 2rem;
     font-weight: 700;
+    color: $text-dark;
+    text-align: center;
   }
 
   .subtitle {
-    margin: 0 0 24px;
-    color: var(--ion-color-medium, #92949c);
+    margin: 0 0 1.5rem;
+    text-align: center;
+    color: $text-muted;
   }
 }
 
 .sedes-list {
-  border-radius: 12px;
+  background: $blue-primary;
+  border: 1px solid $border-color;
+  border-radius: 16px;
   overflow: hidden;
-  background: var(--ion-background-color, #fff);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 
   ion-item {
+    --background: transparent;
     --padding-start: 16px;
     --inner-padding-end: 16px;
 
     h2 {
+      color: "#ffffff";
       font-weight: 600;
     }
 
     p {
-      color: var(--ion-color-medium, #92949c);
+      color: "#ffffff";
     }
   }
 }

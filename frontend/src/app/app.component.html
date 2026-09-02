@@ -9,7 +9,7 @@
       <app-sidebar></app-sidebar>
     }
 
-    <div class="app-main-viewport">
+    <div class="app-main-viewport" [class.no-layout]="!showLayout()">
       <ion-router-outlet></ion-router-outlet>
     </div>
   </div>
