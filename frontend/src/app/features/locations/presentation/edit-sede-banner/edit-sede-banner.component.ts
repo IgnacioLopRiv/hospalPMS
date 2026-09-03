@@ -1,4 +1,4 @@
-import { Component, inject, input, output, signal } from '@angular/core';
+import { Component, effect, inject, input, output, signal } from '@angular/core';
 import {
   IonButton,
   IonInput,
@@ -34,6 +34,7 @@ export class EditSedeBannerComponent {
 
   readonly isOpen = input(false);
   readonly closed = output<void>();
+  readonly close = this.closed;
 
   readonly roomTypes = ROOM_TYPES;
   readonly nombre = signal('');
@@ -41,6 +42,14 @@ export class EditSedeBannerComponent {
   readonly cantidadNueva = signal(1);
   readonly tipoNuevo = signal<RoomType>('Doble');
   readonly errorMessage = signal('');
+
+  constructor() {
+    effect(() => {
+      if (this.isOpen()) {
+        this.loadDraft();
+      }
+    });
+  }
 
   loadDraft(): void {
     const sede = this.sedeService.selectedSede();

@@ -1,5 +1,10 @@
 <aside class="sidebar-container">
   <nav class="nav-menu">
+    <a class="nav-item" routerLink="/main" routerLinkActive="active">
+      <ion-icon name="home-outline"></ion-icon>
+      <span>Inicio</span>
+    </a>
+
     <a class="nav-item" routerLink="/guests-view" routerLinkActive="active">
       <ion-icon name="people-outline"></ion-icon>
       <span>Huéspedes</span>
@@ -21,10 +26,10 @@
     </a>
 
     @if (canViewReports()) {
-      <a class="nav-item" routerLink="/reportes" routerLinkActive="active">
-        <ion-icon name="bar-chart-outline"></ion-icon>
-        <span>Reportes</span>
-      </a>
+    <a class="nav-item" routerLink="/reportes" routerLinkActive="active">
+      <ion-icon name="bar-chart-outline"></ion-icon>
+      <span>Reportes</span>
+    </a>
     }
 
     <a class="nav-item logout-btn" (click)="logout()">
