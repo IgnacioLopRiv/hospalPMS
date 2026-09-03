@@ -1,0 +1,123 @@
+$blue-primary: #1e50d8;
+$danger-color: #eb445a;
+$text-dark: #1f2937;
+
+:host {
+  display: block;
+}
+
+.config-dropdown-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1040;
+  background: transparent;
+}
+
+.config-dropdown-tab {
+  position: fixed;
+  top: 68px;
+  right: 1.5rem;
+  z-index: 1050;
+  min-width: 220px;
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.16), 0 4px 10px rgba(0, 0, 0, 0.05);
+  padding: 6px;
+  animation: tabSlideDown 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: top right;
+
+  .tab-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.65rem 0.85rem;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: $text-dark;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.18s ease;
+
+    .action-icon-box {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      background: rgba(30, 80, 216, 0.08);
+      color: $blue-primary;
+      font-size: 1.15rem;
+      transition: all 0.18s ease;
+      flex-shrink: 0;
+    }
+
+    .action-label {
+      flex: 1;
+      letter-spacing: -0.1px;
+    }
+
+    &:hover {
+      background: rgba(30, 80, 216, 0.08);
+      color: $blue-primary;
+
+      .action-icon-box {
+        background: $blue-primary;
+        color: #ffffff;
+      }
+    }
+
+    &:active {
+      transform: scale(0.98);
+    }
+
+    &.logout-btn {
+      .action-icon-box {
+        background: rgba(235, 68, 90, 0.08);
+        color: $danger-color;
+      }
+
+      &:hover {
+        background: rgba(235, 68, 90, 0.08);
+        color: #dc2626;
+
+        .action-icon-box {
+          background: $danger-color;
+          color: #ffffff;
+        }
+      }
+    }
+  }
+
+  .tab-divider {
+    height: 1px;
+    background: rgba(0, 0, 0, 0.06);
+    margin: 4px 6px;
+  }
+}
+
+@keyframes tabSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

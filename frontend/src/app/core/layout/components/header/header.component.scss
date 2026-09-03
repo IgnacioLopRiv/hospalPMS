@@ -50,7 +50,7 @@ $blue-primary: #1e50d8;
     }
 
     .sede-chip {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 0.5rem;
       padding: 0.4rem 0.85rem;
@@ -58,8 +58,12 @@ $blue-primary: #1e50d8;
       border: 1px solid rgba(255, 255, 255, 0.25);
       border-radius: 8px;
       color: #ffffff;
+      font-family: inherit;
       font-size: 0.85rem;
       font-weight: 600;
+      line-height: normal;
+      outline: none;
+      transition: all 0.2s ease;
 
       .sede-icon {
         font-size: 1.05rem;
@@ -72,9 +76,24 @@ $blue-primary: #1e50d8;
 
       &.clickable {
         cursor: pointer;
+
         &:hover {
           background: rgba(255, 255, 255, 0.25);
+          border-color: rgba(255, 255, 255, 0.4);
         }
+
+        &:active {
+          transform: translateY(1px);
+        }
+
+        &:focus-visible {
+          box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px $blue-primary;
+        }
+      }
+
+      &:disabled {
+        opacity: 0.8;
+        cursor: default;
       }
     }
   }
@@ -84,7 +103,9 @@ $blue-primary: #1e50d8;
     align-items: center;
     gap: 0.6rem;
 
-    .header-icon-btn {
+    .header-icon-btn,
+    .notif-btn,
+    .config-btn {
       background: rgba(255, 255, 255, 0.15);
       border: 1px solid rgba(255, 255, 255, 0.25);
       border-radius: 8px;
@@ -97,6 +118,7 @@ $blue-primary: #1e50d8;
       cursor: pointer;
       font-size: 1.2rem;
       transition: all 0.2s ease;
+      outline: none;
 
       &:hover {
         background: rgba(255, 255, 255, 0.3);
@@ -105,6 +127,12 @@ $blue-primary: #1e50d8;
 
       &.config-btn:hover {
         transform: rotate(30deg);
+      }
+
+      &.config-btn.active {
+        background: rgba(255, 255, 255, 0.35);
+        border-color: #ffffff;
+        transform: rotate(45deg);
       }
     }
   }

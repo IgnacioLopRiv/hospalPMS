@@ -9,34 +9,31 @@
       </div>
     </div>
 
-    <div 
-      class="sede-chip" 
-      [class.clickable]="hasSede() && canEditSede()"
-      (click)="openEditSede()">
+    <button type="button" class="sede-chip" [class.clickable]="canEditSede()" [disabled]="!canEditSede()"
+      aria-label="Editar configuración de la sede" (click)="openEditSede()">
       <ion-icon name="business-outline" class="sede-icon"></ion-icon>
       <span class="sede-name">{{ hasSede() ? sedeLabel() : 'Panel de Administración' }}</span>
-      @if (hasSede() && canEditSede()) {
-        <small class="edit-hint">(Editar)</small>
+      @if (canEditSede()) {
+      <small class="edit-hint">(Editar)</small>
       }
-    </div>
+    </button>
   </div>
 
   <!-- Lado Derecho: Acciones -->
   <div class="header-right">
-    <button type="button" class="header-icon-btn" aria-label="Notificaciones">
+    <button type="button" class="notif-btn" aria-label="Notificaciones">
       <ion-icon name="notifications-outline"></ion-icon>
     </button>
 
-    <button 
-      type="button"
-      class="header-icon-btn config-btn" 
-      aria-label="Configuración"
-      (click)="openEditSede()">
+    <button type="button" class="config-btn" [class.active]="configOptionsOpen()" aria-label="Opciones" (click)="configOptions()">
       <ion-icon name="settings-outline"></ion-icon>
     </button>
   </div>
 </header>
 
-@if (editSedeOpen()) {
-  <app-edit-sede-banner (close)="closeEditSede()"></app-edit-sede-banner>
+@if (configOptionsOpen()) {
+  <app-config-options (close)="closeConfigOptions()"></app-config-options>
 }
+
+<app-edit-sede-banner [isOpen]="editSedeOpen()" (closed)="closeEditSede()" (close)="closeEditSede()">
+</app-edit-sede-banner>
