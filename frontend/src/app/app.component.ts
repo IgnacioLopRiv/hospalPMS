@@ -3,8 +3,8 @@ import { CommonModule } from '@angular/common';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
-import { HeaderComponent } from './components/header/header.component';
-import { SidebarComponent } from './components/sidebar/sidebar.component';
+import { HeaderComponent } from './core/layout/components/header/header.component';
+import { SidebarComponent } from './core/layout/components/sidebar/sidebar.component';
 
 @Component({
   selector: 'app-root',
