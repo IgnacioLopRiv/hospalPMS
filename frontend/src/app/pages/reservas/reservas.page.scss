@@ -1,16 +1,6 @@
-$blue-primary: #1e50d8;
 $border-color: #e5e9f2;
 $text-dark: #1f2937;
 $text-muted: #64748b;
-
-$color-suite: #fbbf24;
-$color-suite-bg: #fffbeb;
-$color-junior: #f97316;
-$color-junior-bg: #fff7ed;
-$color-doble: #10b981;
-$color-doble-bg: #ecfdf5;
-$color-single: #8b5cf6;
-$color-single-bg: #f5f3ff;
 
 :host {
   display: block;
@@ -81,6 +71,7 @@ $color-single-bg: #f5f3ff;
   gap: 0.8rem;
   font-size: 0.75rem;
   color: $text-muted;
+  flex-wrap: wrap;
 
   .legend-item {
     display: flex;
@@ -92,13 +83,9 @@ $color-single-bg: #f5f3ff;
       height: 8px;
       border-radius: 2px;
 
-      &.dot-suite { background: $color-suite; }
-      &.dot-junior { background: $color-junior; }
-      &.dot-doble { background: $color-doble; }
-      &.dot-single { background: $color-single; }
       &.dot-pendiente {
-        border: 1px dashed $color-junior;
-        background: transparent;
+        border: 1.5px dashed #f97316;
+        background: transparent !important;
       }
     }
   }
@@ -246,10 +233,6 @@ $color-single-bg: #f5f3ff;
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        &.suite { background: $color-suite; }
-        &.junior { background: $color-junior; }
-        &.doble { background: $color-doble; }
-        &.single { background: $color-single; }
       }
 
       .category-count { color: $text-muted; }
@@ -285,10 +268,6 @@ $color-single-bg: #f5f3ff;
           width: 3px;
           height: 14px;
           border-radius: 2px;
-          &.suite { background: $color-suite; }
-          &.junior { background: $color-junior; }
-          &.doble { background: $color-doble; }
-          &.single { background: $color-single; }
         }
 
         strong { font-size: 0.82rem; color: $text-dark; }
@@ -341,6 +320,8 @@ $color-single-bg: #f5f3ff;
           margin: 0 3px;
           height: 38px;
           border-radius: 8px;
+          border-width: 1.5px;
+          border-style: solid;
           display: flex;
           align-items: center;
           padding: 0 0.75rem;
@@ -358,32 +339,7 @@ $color-single-bg: #f5f3ff;
             box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08);
           }
 
-          &.suite {
-            background: $color-suite-bg;
-            border: 1.5px solid #fde68a;
-            color: #92400e;
-          }
-
-          &.junior {
-            background: $color-junior-bg;
-            border: 1.5px solid #fed7aa;
-            color: #9a3412;
-          }
-
-          &.doble {
-            background: $color-doble-bg;
-            border: 1.5px solid #a7f3d0;
-            color: #065f46;
-          }
-
-          &.single {
-            background: $color-single-bg;
-            border: 1.5px solid #ddd6fe;
-            color: #5b21b6;
-          }
-
           &.pending {
-            background: #ffffff !important;
             border-style: dashed !important;
           }
         }

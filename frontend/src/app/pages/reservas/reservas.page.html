@@ -21,12 +21,17 @@
       </div>
     </div>
 
+    <!-- Leyenda Dinámica generada por las categorías reales -->
     <div class="categories-legend">
-      <span class="legend-item"><span class="dot dot-suite"></span> Suite</span>
-      <span class="legend-item"><span class="dot dot-junior"></span> Junior Suite</span>
-      <span class="legend-item"><span class="dot dot-doble"></span> Doble</span>
-      <span class="legend-item"><span class="dot dot-single"></span> Single</span>
-      <span class="legend-item"><span class="dot dot-pendiente"></span> Pendiente</span>
+      @for (category of categories(); track category.name) {
+        <span class="legend-item">
+          <span class="dot" [style.background-color]="category.theme.primary"></span>
+          {{ category.name }}
+        </span>
+      }
+      <span class="legend-item">
+        <span class="dot dot-pendiente"></span> Pendiente
+      </span>
     </div>
 
     <div class="date-navigator">
@@ -62,7 +67,7 @@
 
     <div class="planner-body">
       @for (category of categories(); track category.name) {
-        <!-- Fila de Categoría con botón de colapso -->
+        <!-- Cabecera de Categoría Dinámica -->
         <div 
           class="category-header-row" 
           (click)="toggleCategory(category.name)"
@@ -74,20 +79,19 @@
               class="collapse-arrow"
               [class.rotated]="isCategoryCollapsed(category.name)"
             ></ion-icon>
-            <span class="category-dot" [ngClass]="category.colorClass"></span>
+            <span class="category-dot" [style.background-color]="category.theme.primary"></span>
             <strong>{{ category.name }}</strong>
             <small class="category-count">({{ category.count }})</small>
           </div>
           <div class="days-columns-bg"></div>
         </div>
 
-        <!-- Solo se muestran las habitaciones si la tipología no está colapsada -->
         @if (!isCategoryCollapsed(category.name)) {
           @for (room of category.rooms; track room.numero) {
             <div class="room-row">
               <div class="room-info-cell">
                 <div class="room-title">
-                  <span class="indicator-bar" [ngClass]="category.colorClass"></span>
+                  <span class="indicator-bar" [style.background-color]="category.theme.primary"></span>
                   <strong>{{ room.name }}</strong>
                 </div>
                 <small class="room-beds">
@@ -103,13 +107,18 @@
                   }
                 </div>
 
+                <!-- Bloques con colores automáticos calculados -->
                 <div class="reservations-layer">
                   @for (res of getReservationsForRoom(room.numero); track res.id) {
+                    @let theme = getThemeForName(res.categoryName || category.name);
                     <div
                       class="reservation-card"
-                      [ngClass]="[res.category, res.isPending ? 'pending' : '']"
+                      [class.pending]="res.isPending"
                       [style.grid-column-start]="getGridColumnStart(res.startDay)"
                       [style.grid-column-end]="'span ' + res.durationDays"
+                      [style.background-color]="res.isPending ? '#ffffff' : theme.background"
+                      [style.border-color]="theme.border"
+                      [style.color]="theme.text"
                     >
                       <span class="guest-name">{{ res.guestName }}</span>
                     </div>

@@ -14,13 +14,20 @@ import {
 } from 'ionicons/icons';
 import { SedeService } from '../../services/sede.service';
 
+export interface CategoryTheme {
+  primary: string;    // Color principal (puntos, bordes principales)
+  background: string; // Fondo suave para las tarjetas de reserva
+  border: string;     // Borde de la tarjeta de reserva
+  text: string;       // Color de la tipografía dentro del bloque
+}
+
 export interface ReservationBlock {
   id: string;
   roomNumero: string;
   guestName: string;
   startDay: number;
   durationDays: number;
-  category: 'suite' | 'junior' | 'doble' | 'single';
+  categoryName: string; // Nombre dinámico de la tipología
   isPending?: boolean;
 }
 
@@ -32,6 +39,18 @@ export interface DayColumn {
 }
 
 const STORAGE_KEY_RESERVAS = 'hospal_reservas_data';
+
+// Paleta institucional dinámica armonizada para tarjetas y tags
+const COLOR_PALETTE: CategoryTheme[] = [
+  { primary: '#d97706', background: '#fffbeb', border: '#fde68a', text: '#92400e' }, // Ámbar / Dorado
+  { primary: '#ea580c', background: '#fff7ed', border: '#fed7aa', text: '#9a3412' }, // Naranja
+  { primary: '#059669', background: '#ecfdf5', border: '#a7f3d0', text: '#065f46' }, // Esmeralda / Verde
+  { primary: '#7c3aed', background: '#f5f3ff', border: '#ddd6fe', text: '#5b21b6' }, // Violeta
+  { primary: '#2563eb', background: '#eff6ff', border: '#bfdbfe', text: '#1e40af' }, // Azul
+  { primary: '#db2777', background: '#fdf2f8', border: '#fbcfe8', text: '#9d174d' }, // Rosa / Fucsia
+  { primary: '#0891b2', background: '#ecfeff', border: '#a5f3fc', text: '#155e75' }, // Cian / Teal
+  { primary: '#4f46e5', background: '#eef2ff', border: '#c7d2fe', text: '#3730a3' }  // Índigo
+];
 
 @Component({
   selector: 'app-reservas',
@@ -47,8 +66,6 @@ export class ReservasPage implements OnInit {
   readonly dbHabitaciones = this.sedeService.habitaciones;
 
   readonly reservations = signal<ReservationBlock[]>([]);
-
-  // Set reactivo para controlar qué categorías están contraídas
   readonly collapsedCategories = signal<Set<string>>(new Set<string>());
 
   readonly days: DayColumn[] = [
@@ -68,6 +85,7 @@ export class ReservasPage implements OnInit {
     { dayName: 'LUN', dayNumber: 22, monthName: 'Jun' }
   ];
 
+  // Genera grupos de categorías asignándoles una paleta de colores fija y determinista
   readonly categories = computed(() => {
     const habs = this.dbHabitaciones();
 
@@ -77,22 +95,26 @@ export class ReservasPage implements OnInit {
 
     const map = new Map<string, any[]>();
     habs.forEach((h: any) => {
-      const tipo = (h.tipo || 'DOBLE').toUpperCase();
+      const tipo = (h.tipo || 'General').trim();
       if (!map.has(tipo)) map.set(tipo, []);
       map.get(tipo)!.push({
         id: String(h.id),
         numero: String(h.numero),
         name: `Habitación ${h.numero}`,
-        beds: h.camas || (tipo.includes('SINGLE') ? 1 : 2)
+        tipo: tipo,
+        beds: h.camas || 2
       });
     });
 
-    return Array.from(map.entries()).map(([tipo, rooms]) => ({
-      name: tipo,
-      count: rooms.length,
-      colorClass: this.resolveColorClass(tipo),
-      rooms
-    }));
+    return Array.from(map.entries()).map(([tipo, rooms], index) => {
+      const theme = this.getThemeForName(tipo, index);
+      return {
+        name: tipo,
+        count: rooms.length,
+        theme,
+        rooms
+      };
+    });
   });
 
   constructor() {
@@ -111,7 +133,6 @@ export class ReservasPage implements OnInit {
     this.loadReservationsFromStorage();
   }
 
-  // Alterna la categoría en el Set
   toggleCategory(categoryName: string): void {
     this.collapsedCategories.update((set) => {
       const updated = new Set(set);
@@ -124,9 +145,27 @@ export class ReservasPage implements OnInit {
     });
   }
 
-  // Comprueba si una categoría está contraída
   isCategoryCollapsed(categoryName: string): boolean {
     return this.collapsedCategories().has(categoryName);
+  }
+
+  // Obtiene el tema de color para una tipología
+  getThemeForName(name: string, fallbackIndex: number = 0): CategoryTheme {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % COLOR_PALETTE.length;
+    return COLOR_PALETTE[index] || COLOR_PALETTE[fallbackIndex % COLOR_PALETTE.length];
+  }
+
+  getReservationsForRoom(roomNumero: string): ReservationBlock[] {
+    return this.reservations().filter((res) => String(res.roomNumero) === String(roomNumero));
+  }
+
+  getGridColumnStart(startDay: number): number {
+    const idx = this.days.findIndex((d) => d.dayNumber === startDay);
+    return idx !== -1 ? idx + 1 : 1;
   }
 
   private loadReservationsFromStorage(): void {
@@ -142,24 +181,24 @@ export class ReservasPage implements OnInit {
     }
 
     const defaultData: ReservationBlock[] = [
-      { id: 'r1', roomNumero: '101', guestName: 'Ana Martínez', startDay: 13, durationDays: 4, category: 'suite' },
-      { id: 'r2', roomNumero: '101', guestName: 'Carlos Ruiz', startDay: 19, durationDays: 3, category: 'suite' },
-      { id: 'r3', roomNumero: '102', guestName: 'María González', startDay: 10, durationDays: 6, category: 'suite' },
-      { id: 'r4', roomNumero: '102', guestName: 'David López', startDay: 17, durationDays: 4, category: 'suite' },
-      { id: 'r5', roomNumero: '201', guestName: 'Laura García', startDay: 12, durationDays: 7, category: 'junior' },
-      { id: 'r6', roomNumero: '201', guestName: 'Pedro Sánchez', startDay: 20, durationDays: 2, category: 'junior', isPending: true },
-      { id: 'r7', roomNumero: '202', guestName: 'Isabel Torres', startDay: 9, durationDays: 3, category: 'junior' },
-      { id: 'r8', roomNumero: '202', guestName: 'Roberto Chen', startDay: 15, durationDays: 5, category: 'junior' },
-      { id: 'r9', roomNumero: '301', guestName: 'Lucía Flores', startDay: 9, durationDays: 5, category: 'doble' },
-      { id: 'r10', roomNumero: '301', guestName: 'Tomás Rivera', startDay: 16, durationDays: 3, category: 'doble' },
-      { id: 'r11', roomNumero: '301', guestName: 'Emma Wilson', startDay: 20, durationDays: 2, category: 'doble', isPending: true },
-      { id: 'r12', roomNumero: '302', guestName: 'M. Á. Costa', startDay: 10, durationDays: 7, category: 'doble' },
-      { id: 'r13', roomNumero: '302', guestName: 'Sofia Müller', startDay: 18, durationDays: 4, category: 'doble' },
-      { id: 'r14', roomNumero: '303', guestName: 'Ana Pérez', startDay: 9, durationDays: 2, category: 'doble' },
-      { id: 'r15', roomNumero: '303', guestName: 'Juan Díaz', startDay: 12, durationDays: 3, category: 'doble' },
-      { id: 'r16', roomNumero: '303', guestName: 'Rachel Green', startDay: 16, durationDays: 5, category: 'doble' },
-      { id: 'r17', roomNumero: '304', guestName: 'F. Nakamura', startDay: 13, durationDays: 7, category: 'doble' },
-      { id: 'r18', roomNumero: '401', guestName: 'Alejandro Kim', startDay: 9, durationDays: 11, category: 'single' }
+      { id: 'r1', roomNumero: '101', guestName: 'Ana Martínez', startDay: 13, durationDays: 4, categoryName: 'Suite' },
+      { id: 'r2', roomNumero: '101', guestName: 'Carlos Ruiz', startDay: 19, durationDays: 3, categoryName: 'Suite' },
+      { id: 'r3', roomNumero: '102', guestName: 'María González', startDay: 10, durationDays: 6, categoryName: 'Suite' },
+      { id: 'r4', roomNumero: '102', guestName: 'David López', startDay: 17, durationDays: 4, categoryName: 'Suite' },
+      { id: 'r5', roomNumero: '201', guestName: 'Laura García', startDay: 12, durationDays: 7, categoryName: 'Junior Suite' },
+      { id: 'r6', roomNumero: '201', guestName: 'Pedro Sánchez', startDay: 20, durationDays: 2, categoryName: 'Junior Suite', isPending: true },
+      { id: 'r7', roomNumero: '202', guestName: 'Isabel Torres', startDay: 9, durationDays: 3, categoryName: 'Junior Suite' },
+      { id: 'r8', roomNumero: '202', guestName: 'Roberto Chen', startDay: 15, durationDays: 5, categoryName: 'Junior Suite' },
+      { id: 'r9', roomNumero: '301', guestName: 'Lucía Flores', startDay: 9, durationDays: 5, categoryName: 'Doble' },
+      { id: 'r10', roomNumero: '301', guestName: 'Tomás Rivera', startDay: 16, durationDays: 3, categoryName: 'Doble' },
+      { id: 'r11', roomNumero: '301', guestName: 'Emma Wilson', startDay: 20, durationDays: 2, categoryName: 'Doble', isPending: true },
+      { id: 'r12', roomNumero: '302', guestName: 'M. Á. Costa', startDay: 10, durationDays: 7, categoryName: 'Doble' },
+      { id: 'r13', roomNumero: '302', guestName: 'Sofia Müller', startDay: 18, durationDays: 4, categoryName: 'Doble' },
+      { id: 'r14', roomNumero: '303', guestName: 'Ana Pérez', startDay: 9, durationDays: 2, categoryName: 'Doble' },
+      { id: 'r15', roomNumero: '303', guestName: 'Juan Díaz', startDay: 12, durationDays: 3, categoryName: 'Doble' },
+      { id: 'r16', roomNumero: '303', guestName: 'Rachel Green', startDay: 16, durationDays: 5, categoryName: 'Doble' },
+      { id: 'r17', roomNumero: '304', guestName: 'F. Nakamura', startDay: 13, durationDays: 7, categoryName: 'Doble' },
+      { id: 'r18', roomNumero: '401', guestName: 'Alejandro Kim', startDay: 9, durationDays: 11, categoryName: 'Single' }
     ];
 
     this.saveReservationsToStorage(defaultData);
@@ -170,62 +209,46 @@ export class ReservasPage implements OnInit {
     this.reservations.set(data);
   }
 
-  getReservationsForRoom(roomNumero: string): ReservationBlock[] {
-    return this.reservations().filter((res) => String(res.roomNumero) === String(roomNumero));
-  }
-
-  getGridColumnStart(startDay: number): number {
-    const idx = this.days.findIndex((d) => d.dayNumber === startDay);
-    return idx !== -1 ? idx + 1 : 1;
-  }
-
-  private resolveColorClass(tipo: string): string {
-    const t = tipo.toLowerCase();
-    if (t.includes('junior')) return 'junior';
-    if (t.includes('suite')) return 'suite';
-    if (t.includes('single')) return 'single';
-    return 'doble';
-  }
-
   private getDefaultCategories() {
-    return [
+    const list = [
       {
-        name: 'SUITE',
+        name: 'Suite',
         count: 2,
-        colorClass: 'suite',
         rooms: [
-          { id: '1', numero: '101', name: 'Suite 101', beds: 2 },
-          { id: '2', numero: '102', name: 'Suite 102', beds: 2 }
+          { id: '1', numero: '101', name: 'Suite 101', tipo: 'Suite', beds: 2 },
+          { id: '2', numero: '102', name: 'Suite 102', tipo: 'Suite', beds: 2 }
         ]
       },
       {
-        name: 'JUNIOR SUITE',
+        name: 'Junior Suite',
         count: 2,
-        colorClass: 'junior',
         rooms: [
-          { id: '3', numero: '201', name: 'Junior Suite 201', beds: 2 },
-          { id: '4', numero: '202', name: 'Junior Suite 202', beds: 2 }
+          { id: '3', numero: '201', name: 'Junior Suite 201', tipo: 'Junior Suite', beds: 2 },
+          { id: '4', numero: '202', name: 'Junior Suite 202', tipo: 'Junior Suite', beds: 2 }
         ]
       },
       {
-        name: 'DOBLE',
+        name: 'Doble',
         count: 4,
-        colorClass: 'doble',
         rooms: [
-          { id: '5', numero: '301', name: 'Doble 301', beds: 2 },
-          { id: '6', numero: '302', name: 'Doble 302', beds: 2 },
-          { id: '7', numero: '303', name: 'Doble 303', beds: 2 },
-          { id: '8', numero: '304', name: 'Doble 304', beds: 2 }
+          { id: '5', numero: '301', name: 'Doble 301', tipo: 'Doble', beds: 2 },
+          { id: '6', numero: '302', name: 'Doble 302', tipo: 'Doble', beds: 2 },
+          { id: '7', numero: '303', name: 'Doble 303', tipo: 'Doble', beds: 2 },
+          { id: '8', numero: '304', name: 'Doble 304', tipo: 'Doble', beds: 2 }
         ]
       },
       {
-        name: 'SINGLE',
+        name: 'Single',
         count: 1,
-        colorClass: 'single',
         rooms: [
-          { id: '9', numero: '401', name: 'Single 401', beds: 1 }
+          { id: '9', numero: '401', name: 'Single 401', tipo: 'Single', beds: 1 }
         ]
       }
     ];
+
+    return list.map((cat, idx) => ({
+      ...cat,
+      theme: this.getThemeForName(cat.name, idx)
+    }));
   }
 }
