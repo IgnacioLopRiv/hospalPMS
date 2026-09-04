@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard, permissionGuard } from './guards/auth.guard';
+import { guestGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -26,7 +26,6 @@ export const routes: Routes = [
   },
   {
     path: 'reservas',
-    canActivate: [authGuard],
     loadComponent: () => import('./pages/reservas/reservas.page').then((m) => m.ReservasPage),
   }
 ];
