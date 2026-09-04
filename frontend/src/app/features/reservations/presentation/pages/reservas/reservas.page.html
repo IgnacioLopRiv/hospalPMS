@@ -1,10 +1,134 @@
-<div class="reservas-page-container">
-  <main class="page-content">
-    <h1>Reservas</h1>
-    @if (sede(); as currentSede) {
-      <p class="sede-description">Gestión de reservas de {{ currentSede.nombre }}.</p>
-    }
+<div class="reservas-view-container">
+  <header class="scheduler-toolbar">
+    <div class="kpi-chips">
+      <div class="kpi-chip">
+        <strong class="count">15</strong>
+        <span class="label">Total</span>
+      </div>
+      <div class="kpi-chip highlight-blue">
+        <strong class="count">11</strong>
+        <span class="label">Ocupadas</span>
+      </div>
+      <div class="kpi-chip highlight-green">
+        <ion-icon name="log-in-outline"></ion-icon>
+        <strong class="count">2</strong>
+        <span class="label">Check-in</span>
+      </div>
+      <div class="kpi-chip highlight-orange">
+        <ion-icon name="log-out-outline"></ion-icon>
+        <strong class="count">2</strong>
+        <span class="label">Check-out</span>
+      </div>
+    </div>
 
-    <!-- Aquí irá tu tabla o listado de reservas -->
-  </main>
+    <!-- Leyenda Dinámica generada por las categorías reales -->
+    <div class="categories-legend">
+      @for (category of categories(); track category.name) {
+        <span class="legend-item">
+          <span class="dot" [style.background-color]="category.theme.primary"></span>
+          {{ category.name }}
+        </span>
+      }
+      <span class="legend-item">
+        <span class="dot dot-pendiente"></span> Pendiente
+      </span>
+    </div>
+
+    <div class="date-navigator">
+      <div class="nav-controls">
+        <button class="nav-btn" aria-label="Semana anterior">
+          <ion-icon name="chevron-back-outline"></ion-icon>
+        </button>
+        <button class="today-btn">Hoy</button>
+        <button class="nav-btn" aria-label="Semana siguiente">
+          <ion-icon name="chevron-forward-outline"></ion-icon>
+        </button>
+      </div>
+      <div class="date-range-badge">
+        <ion-icon name="calendar-outline"></ion-icon>
+        <span>9 Jun — 22 Jun 2026</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="planner-grid-wrapper">
+    <div class="planner-header">
+      <div class="room-col-header">HABITACIÓN</div>
+      <div class="days-columns">
+        @for (day of days; track day.dayNumber) {
+          <div class="day-cell" [class.current-day]="day.isCurrent">
+            <span class="day-name">{{ day.dayName }}</span>
+            <span class="day-number">{{ day.dayNumber }}</span>
+            <span class="day-month">{{ day.monthName }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="planner-body">
+      @for (category of categories(); track category.name) {
+        <!-- Cabecera de Categoría Dinámica -->
+        <div 
+          class="category-header-row" 
+          (click)="toggleCategory(category.name)"
+          [class.collapsed]="isCategoryCollapsed(category.name)"
+        >
+          <div class="room-col-category">
+            <ion-icon 
+              name="chevron-down-outline" 
+              class="collapse-arrow"
+              [class.rotated]="isCategoryCollapsed(category.name)"
+            ></ion-icon>
+            <span class="category-dot" [style.background-color]="category.theme.primary"></span>
+            <strong>{{ category.name }}</strong>
+            <small class="category-count">({{ category.count }})</small>
+          </div>
+          <div class="days-columns-bg"></div>
+        </div>
+
+        @if (!isCategoryCollapsed(category.name)) {
+          @for (room of category.rooms; track room.numero) {
+            <div class="room-row">
+              <div class="room-info-cell">
+                <div class="room-title">
+                  <span class="indicator-bar" [style.background-color]="category.theme.primary"></span>
+                  <strong>{{ room.name }}</strong>
+                </div>
+                <small class="room-beds">
+                  <ion-icon name="bed-outline"></ion-icon>
+                  {{ room.beds }} camas
+                </small>
+              </div>
+
+              <div class="timeline-cells-container">
+                <div class="grid-columns-bg">
+                  @for (day of days; track day.dayNumber) {
+                    <div class="grid-cell" [class.current-cell]="day.isCurrent"></div>
+                  }
+                </div>
+
+                <!-- Bloques con colores automáticos calculados -->
+                <div class="reservations-layer">
+                  @for (res of getReservationsForRoom(room.numero); track res.id) {
+                    @let theme = getThemeForName(res.categoryName || category.name);
+                    <div
+                      class="reservation-card"
+                      [class.pending]="res.isPending"
+                      [style.grid-column-start]="getGridColumnStart(res.startDay)"
+                      [style.grid-column-end]="'span ' + res.durationDays"
+                      [style.background-color]="res.isPending ? '#ffffff' : theme.background"
+                      [style.border-color]="theme.border"
+                      [style.color]="theme.text"
+                    >
+                      <span class="guest-name">{{ res.guestName }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+        }
+      }
+    </div>
+  </div>
 </div>
