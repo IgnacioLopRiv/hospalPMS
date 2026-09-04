@@ -9,24 +9,107 @@ $text-muted: #64748b;
 }
 
 .reportes-page-container {
-  padding: 2rem 2.5rem;
+  padding: 2rem 2.5rem 3rem;
   width: 100%;
   min-height: 100%;
   box-sizing: border-box;
   color: $text-dark;
+  background: #f8fafc;
 
   .page-content {
-    h1 {
-      margin: 0 0 0.5rem 0;
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: $text-dark;
-    }
-
-    .sede-description {
-      margin: 0 0 1.5rem 0;
-      color: $text-muted;
-      font-size: 0.95rem;
-    }
+    max-width: 1440px;
+    margin: 0 auto;
   }
+}
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+
+  .page-title { margin: 0; font-size: 1.45rem; font-weight: 700; }
+  .sede-description { margin: 0.25rem 0 0; color: $text-muted; font-size: 0.85rem; }
+}
+
+.report-period {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid $border-color;
+  border-radius: 8px;
+  background: #ffffff;
+  color: $text-muted;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.kpi-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.2rem; margin-bottom: 1.5rem; }
+
+.kpi-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-height: 104px;
+  padding: 1.1rem 1.3rem;
+  border: 1px solid transparent;
+  border-radius: 12px;
+
+  .kpi-icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 9px; font-size: 1.5rem; }
+  .kpi-data { display: flex; flex-direction: column; gap: 0.12rem; }
+  .kpi-data span, .eyebrow { color: $text-muted; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.02em; }
+  .kpi-data strong { font-size: 1.6rem; line-height: 1.1; }
+  .kpi-data small { color: $text-muted; font-size: 0.72rem; }
+  &.card-blue { background: #f0f4ff; border-color: #dbeafe; .kpi-icon, strong { color: #2563eb; } .kpi-icon { background: #dbeafe; } }
+  &.card-green { background: #f0fdf4; border-color: #dcfce7; .kpi-icon, strong { color: #16a34a; } .kpi-icon { background: #dcfce7; } }
+  &.card-purple { background: #faf5ff; border-color: #f3e8ff; .kpi-icon, strong { color: #7c3aed; } .kpi-icon { background: #f3e8ff; } }
+}
+
+.reports-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.3rem; }
+
+.report-card {
+  min-width: 0;
+  padding: 1.35rem;
+  border: 1px solid $border-color;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.03);
+}
+
+.card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.card-heading h2 { margin: 0.3rem 0 0; font-size: 1.05rem; font-weight: 700; }
+.heading-icon { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 9px; font-size: 1.3rem; }
+.blue-icon { color: #2563eb; background: #eff6ff; }
+.green-icon { color: #16a34a; background: #f0fdf4; }
+
+.occupancy-summary { display: flex; align-items: baseline; gap: 0.55rem; margin-top: 1.5rem; }
+.occupancy-summary strong { font-size: 2.3rem; line-height: 1; }
+.occupancy-summary span, .income-total span, .income-comparison span { color: $text-muted; font-size: 0.78rem; }
+.progress-track { height: 9px; margin-top: 0.8rem; overflow: hidden; border-radius: 10px; background: #e2e8f0; }
+.progress-value { display: block; width: 75%; height: 100%; border-radius: inherit; background: #2563eb; }
+.legend-row { display: flex; justify-content: space-between; gap: 0.8rem; margin-top: 0.8rem; color: $text-muted; font-size: 0.75rem; }
+.legend-row span { display: flex; align-items: center; gap: 0.35rem; }
+.legend-row strong { color: $text-dark; }
+.legend-dot { width: 7px; height: 7px; border-radius: 50%; }
+.occupied { background: #2563eb; }
+.available { background: #cbd5e1; }
+
+.occupancy-bars, .income-chart { display: flex; align-items: end; gap: 0.6rem; height: 108px; margin-top: 1.45rem; padding: 0 0.2rem; border-bottom: 1px solid #e2e8f0; }
+.occupancy-bars span, .income-chart span { flex: 1; min-width: 8px; border-radius: 5px 5px 0 0; background: #bfdbfe; }
+.income-chart span { background: #bbf7d0; }
+.bars-labels { display: flex; justify-content: space-between; gap: 0.6rem; padding: 0.45rem 0.2rem 0; color: $text-muted; font-size: 0.68rem; text-align: center; }
+.bars-labels span { flex: 1; }
+.income-total { display: flex; flex-direction: column; gap: 0.35rem; margin-top: 1.5rem; }
+.income-total strong { font-size: 1.8rem; }
+.income-comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-top: 1.2rem; }
+.income-comparison div { display: flex; flex-direction: column; gap: 0.3rem; padding-left: 0.75rem; border-left: 3px solid #bbf7d0; }
+.income-comparison div:last-child { border-left-color: #cbd5e1; }
+.income-comparison strong { font-size: 0.95rem; }
+
+@media (max-width: 760px) {
+  .reportes-page-container { padding: 1.25rem 1rem 2rem; }
+  .top-bar { align-items: flex-start; flex-direction: column; }
+  .kpi-grid, .reports-grid { grid-template-columns: 1fr; }
 }
