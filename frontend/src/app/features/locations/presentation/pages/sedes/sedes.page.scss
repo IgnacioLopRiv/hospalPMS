@@ -1,56 +1,232 @@
-$border-color: #e5e9f2;
-$text-dark: #1f2937;
-$text-muted: #64748b;
 $blue-primary: #1e50d8;
+$blue-dark: #172554;
+$blue-card-hover: #eff6ff;
+$text-dark: #0f172a;
+$text-muted: #64748b;
 
-.sedes-content {
-  --background: #f4f6fc;
-  min-height: 100vh;
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
-.sedes-container {
-  max-width: 560px;
+.sedes-content {
+  --background: radial-gradient(circle at top, #2563eb 0%, #1e3a8a 55%, #0f172a 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sedes-wrapper {
   min-height: 100vh;
-  margin: 0 auto;
-  padding: 3rem 1.5rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  
+  align-items: center;
+  padding: 2.5rem 1.5rem;
+  box-sizing: border-box;
+}
+
+/* Encabezado con Icono y Logo HosPal PMS al lado */
+.sedes-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  .brand-badge-header {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.85rem;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.45rem 1.25rem 0.45rem 0.6rem;
+    border-radius: 50px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(8px);
+    margin-bottom: 1.25rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+
+    .header-icon-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      color: #ffffff;
+    }
+
+    .brand-title {
+      display: flex;
+      flex-direction: column;
+      text-align: left;
+
+      .brand-name {
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: #ffffff;
+        letter-spacing: 0.3px;
+        line-height: 1.1;
+      }
+
+      .brand-tagline {
+        font-size: 0.65rem;
+        color: rgba(255, 255, 255, 0.75);
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+      }
+    }
+  }
 
   h1 {
-    margin: 0 0 0.5rem;
     font-size: 2rem;
     font-weight: 700;
-    color: $text-dark;
-    text-align: center;
+    color: #ffffff;
+    margin: 0;
+    letter-spacing: -0.5px;
   }
 
   .subtitle {
-    margin: 0 0 1.5rem;
-    text-align: center;
-    color: $text-muted;
+    margin: 0.5rem 0 0 0;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.95rem;
+    max-width: 400px;
   }
 }
 
-.sedes-list {
-  background: $blue-primary;
-  border: 1px solid $border-color;
-  border-radius: 16px;
-  overflow: hidden;
+/* Bloque contenedor de botones */
+.sedes-card-box {
+  width: 100%;
+  max-width: 520px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 20px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
 
-  ion-item {
-    --background: transparent;
-    --padding-start: 16px;
-    --inner-padding-end: 16px;
+  .box-legend {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    padding: 0 0.4rem;
+
+    .legend-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #93c5fd;
+      letter-spacing: 0.8px;
+    }
+
+    .legend-count {
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.65);
+    }
+  }
+}
+
+/* Grilla / Botones */
+.sedes-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.sede-btn-card {
+  width: 100%;
+  background: #ffffff;
+  border: none;
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04);
+
+  .card-icon-tag {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: #eff6ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    color: $blue-primary;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .card-details {
+    flex: 1;
 
     h2 {
-      color: "#ffffff";
-      font-weight: 600;
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: $text-dark;
+      transition: color 0.2s ease;
     }
 
     p {
-      color: "#ffffff";
+      margin: 0.2rem 0 0 0;
+      font-size: 0.8rem;
+      color: $text-muted;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+
+      ion-icon {
+        font-size: 0.85rem;
+        color: #94a3b8;
+      }
     }
+  }
+
+  .card-action {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: #94a3b8;
+    font-size: 0.78rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+
+    ion-icon {
+      font-size: 1rem;
+      transition: transform 0.2s ease;
+    }
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+
+    .card-icon-tag {
+      background: $blue-primary;
+      color: #ffffff;
+    }
+
+    .card-details h2 {
+      color: $blue-primary;
+    }
+
+    .card-action {
+      color: $blue-primary;
+
+      ion-icon {
+        transform: translateX(3px);
+      }
+    }
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 }
