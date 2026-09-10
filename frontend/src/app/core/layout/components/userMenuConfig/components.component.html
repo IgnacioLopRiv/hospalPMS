@@ -1,0 +1,42 @@
+<ion-modal class="user-menu-config" [isOpen]="isOpen()" [backdropDismiss]="true" (willPresent)="loadDraft()"
+  (didDismiss)="dismiss()">
+  <ng-template>
+    <div class="modal-container">
+      <header class="modal-header">
+        <h2>Editar perfil</h2>
+        <ion-button fill="clear" (click)="dismiss()">Cerrar</ion-button>
+      </header>
+
+      <div class="modal-body">
+        <ion-item lines="none">
+          <ion-input label="Nombre" labelPlacement="stacked" type="text" placeholder="Tu nombre completo"
+            [value]="name()" (ionInput)="name.set($any($event.target).value)"></ion-input>
+        </ion-item>
+
+        <ion-item lines="none">
+          <ion-input label="Correo electrónico" labelPlacement="stacked" type="email" placeholder="correo@ejemplo.com"
+            [value]="email()" (ionInput)="email.set($any($event.target).value)"></ion-input>
+        </ion-item>
+
+        <ion-item lines="none">
+          <ion-select label="Rol" labelPlacement="stacked" [value]="role()" (ionChange)="role.set($any($event.detail.value))">
+            @for (rol of roles; track rol) {
+            <ion-select-option [value]="rol">
+              {{ rol === 'admin' ? 'Administrador' : 'Personal' }}
+            </ion-select-option>
+            }
+          </ion-select>
+        </ion-item>
+
+        @if (errorMessage()) {
+        <p class="error-message">{{ errorMessage() }}</p>
+        }
+      </div>
+
+      <footer class="modal-actions">
+        <ion-button fill="outline" (click)="dismiss()">Cancelar</ion-button>
+        <ion-button (click)="save()">Guardar cambios</ion-button>
+      </footer>
+    </div>
+  </ng-template>
+</ion-modal>
