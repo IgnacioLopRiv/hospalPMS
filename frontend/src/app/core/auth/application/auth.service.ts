@@ -87,6 +87,11 @@ export class AuthService {
     localStorage.removeItem(SESSION_KEY);
   }
 
+  updateCurrentUser(updatedUser: AuthUser): void {
+    this.currentUser.set(updatedUser);
+    localStorage.setItem(SESSION_KEY, JSON.stringify(updatedUser));
+  }
+
   async requestPasswordRecovery(email: string): Promise<{ ok: boolean; message: string }> {
     const trimmedEmail = email.trim().toLowerCase();
 

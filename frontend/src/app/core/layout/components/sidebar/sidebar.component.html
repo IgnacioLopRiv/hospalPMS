@@ -38,12 +38,14 @@
     </a>
   </nav>
 
-  <div class="sidebar-user">
-    <div class="avatar">CA</div>
+  <button class="sidebar-user" type="button" (click)="openUserMenu()" *ngIf="currentUser() as user">
+    <div class="avatar">{{ getUserInitials() }}</div>
     <div class="user-info">
-      <strong>Carlos Admin</strong>
-      <small>Administrador</small>
+      <strong>{{ user.name }}</strong>
+      <small>{{ getUserRoleLabel() }}</small>
     </div>
     <ion-icon name="chevron-down-outline"></ion-icon>
-  </div>
+  </button>
+
+  <app-user-menu-config [isOpen]="userMenuOpen()" (closed)="closeUserMenu()"></app-user-menu-config>
 </aside>
