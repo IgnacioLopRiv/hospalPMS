@@ -1,6 +1,6 @@
 export type UserRole = 'admin' | 'staff';
 
-export type Permission = 'editSede' | 'viewReports';
+export type Permission = 'editSede' | 'viewReports' | 'manageUsers';
 
 export interface AuthUser {
   id: number;
@@ -18,6 +18,6 @@ export interface UsersFile {
 }
 
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
-  admin: ['editSede', 'viewReports'],
+  admin: ['editSede', 'viewReports', 'manageUsers'],
   staff: [],
 };

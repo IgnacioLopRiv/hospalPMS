@@ -2,7 +2,7 @@
   <!-- Lado Izquierdo: Logo HosPal + Chip de Sede -->
   <div class="header-left">
     <div class="brand-box">
-      <ion-icon name="business-outline" class="brand-icon"></ion-icon>
+      <img src="assets/icon/PMSwhite.png" class="brand-icon" alt="HosPal logo" />
       <div class="brand-text">
         <h2>HosPal</h2>
         <span>GESTIÓN DE HOSTALES</span>
@@ -25,15 +25,19 @@
       <ion-icon name="notifications-outline"></ion-icon>
     </button>
 
-    <button type="button" class="config-btn" [class.active]="configOptionsOpen()" aria-label="Opciones" (click)="configOptions()">
+    <button type="button" class="config-btn" [class.active]="configOptionsOpen()" aria-label="Opciones"
+      (click)="configOptions()">
       <ion-icon name="settings-outline"></ion-icon>
     </button>
   </div>
 </header>
 
 @if (configOptionsOpen()) {
-  <app-config-options (close)="closeConfigOptions()"></app-config-options>
+<app-config-options (close)="closeConfigOptions()" (manageProfiles)="openEditPerfiles()"></app-config-options>
 }
 
 <app-edit-sede-banner [isOpen]="editSedeOpen()" (closed)="closeEditSede()" (close)="closeEditSede()">
 </app-edit-sede-banner>
+
+<app-edit-perfiles [isOpen]="editPerfilesOpen()" (closed)="closeEditPerfiles()">
+</app-edit-perfiles>

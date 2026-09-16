@@ -30,7 +30,9 @@ $blue-primary: #1e50d8;
       color: #ffffff;
 
       .brand-icon {
-        font-size: 1.8rem;
+        width: 46px;
+        height: 46px;
+        object-fit: contain;
       }
 
       .brand-text {
@@ -40,6 +42,7 @@ $blue-primary: #1e50d8;
           font-weight: 700;
           letter-spacing: -0.3px;
         }
+
         span {
           font-size: 0.6rem;
           opacity: 0.8;

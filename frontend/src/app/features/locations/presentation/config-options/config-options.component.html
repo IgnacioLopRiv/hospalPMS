@@ -4,14 +4,16 @@
 <!-- Pestaña de opciones ubicada bajo el header y a la derecha -->
 <aside class="config-dropdown-tab" role="dialog" aria-label="Opciones de configuración">
   <nav class="tab-actions">
-    <button type="button" class="action-btn" (click)="handleManageProfiles()">
-      <div class="action-icon-box">
-        <ion-icon name="people-outline"></ion-icon>
-      </div>
-      <span class="action-label">Gestionar perfiles</span>
-    </button>
+    @if (canManageUsers()) {
+      <button type="button" class="action-btn" (click)="handleManageProfiles()">
+        <div class="action-icon-box">
+          <ion-icon name="people-outline"></ion-icon>
+        </div>
+        <span class="action-label">Gestionar perfiles</span>
+      </button>
 
-    <div class="tab-divider"></div>
+      <div class="tab-divider"></div>
+    }
 
     <button type="button" class="action-btn logout-btn" (click)="handleLogout()">
       <div class="action-icon-box">

@@ -1,7 +1,7 @@
 <ion-content [fullscreen]="true" class="home-content">
   <div class="home-container">
     <h1>Hospal PMS</h1>
-    <h2>Bienvenido al sistema de gestión hospitalaria</h2>
+    <h2>Bienvenido al sistema de gestión interna de hostales</h2>
     <p class="subtitle">Por favor, ingresa tu correo y contraseña para continuar</p>
 
     <ion-segment value="login">
@@ -12,27 +12,17 @@
 
     <div class="auth-form">
       <ion-item lines="none">
-        <ion-input
-          label="Correo electrónico"
-          labelPlacement="stacked"
-          type="email"
-          placeholder="correo@ejemplo.com"
-          [(ngModel)]="email"
-        ></ion-input>
+        <ion-input label="Correo electrónico" labelPlacement="stacked" type="email" placeholder="correo@ejemplo.com"
+          [(ngModel)]="email"></ion-input>
       </ion-item>
 
       <ion-item lines="none">
-        <ion-input
-          label="Contraseña"
-          labelPlacement="stacked"
-          type="password"
-          placeholder="••••••••"
-          [(ngModel)]="password"
-        ></ion-input>
+        <ion-input label="Contraseña" labelPlacement="stacked" type="password" placeholder="••••••••"
+          [(ngModel)]="password"></ion-input>
       </ion-item>
 
       @if (errorMessage) {
-        <p class="error">{{ errorMessage }}</p>
+      <p class="error">{{ errorMessage }}</p>
       }
 
       <ion-button expand="block" [disabled]="submitting" (click)="continue()">
@@ -40,9 +30,9 @@
       </ion-button>
 
       @if (showRecover) {
-        <ion-button expand="block" fill="outline" (click)="goRecover()">
-          Recuperar contraseña
-        </ion-button>
+      <ion-button expand="block" fill="outline" (click)="goRecover()">
+        Recuperar contraseña
+      </ion-button>
       }
     </div>
 
