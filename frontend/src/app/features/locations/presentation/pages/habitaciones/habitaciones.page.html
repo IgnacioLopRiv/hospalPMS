@@ -1,14 +1,27 @@
 <div class="habitaciones-page-container">
   <main class="page-content">
-    <h1>Habitaciones</h1>
+    <header class="page-header">
+      <div class="title-group">
+        <h1>Habitaciones</h1>
+        @if (sede(); as currentSede) {
+          <p class="sede-description">Habitaciones registradas de {{ currentSede.nombre }}.</p>
+        }
+      </div>
 
-    @if (sede(); as currentSede) {
-      <p class="sede-description">Habitaciones registradas de {{ currentSede.nombre }}.</p>
-    }
+      @if (isAdmin()) {
+        <button type="button" class="addhabit-btn" (click)="addHabitaciones()">
+          <ion-icon name="create-outline"></ion-icon>
+          <span>Gestionar habitaciones</span>
+        </button>
+      }
+    </header>
 
     @if (habitaciones().length === 0) {
       <p class="sin_habitacion">
-        No hay habitaciones registradas. Usa <strong>Editar sede</strong> para agregarlas.
+        No hay habitaciones registradas.
+        @if (isAdmin()) {
+          Usa <strong>Gestionar habitaciones</strong> para agregarlas.
+        }
       </p>
     } @else {
       <section class="rooms-grid">
@@ -35,3 +48,9 @@
     }
   </main>
 </div>
+
+<app-edit-habitaciones-modal
+  [isOpen]="editHabitacionesOpen()"
+  (closed)="closeEditHabitaciones()"
+  (close)="closeEditHabitaciones()">
+</app-edit-habitaciones-modal>

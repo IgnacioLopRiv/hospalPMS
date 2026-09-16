@@ -17,17 +17,65 @@ $blue-primary: #1e50d8;
   color: $text-dark;
 
   .page-content {
-    h1 {
-      margin: 0 0 0.5rem 0;
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: $text-dark;
-    }
+    .page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
 
-    .sede-description {
-      margin: 0 0 1.5rem 0;
-      color: $text-muted;
-      font-size: 0.95rem;
+      .title-group {
+        h1 {
+          margin: 0 0 0.35rem 0;
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: $text-dark;
+        }
+
+        .sede-description {
+          margin: 0;
+          color: $text-muted;
+          font-size: 0.95rem;
+        }
+      }
+
+      .addhabit-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.55rem 1.1rem;
+        background-color: $blue-primary;
+        color: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(30, 80, 216, 0.25);
+        transition: all 0.2s ease;
+        outline: none;
+
+        ion-icon {
+          font-size: 1.15rem;
+        }
+
+        &:hover {
+          background-color: #1742b8;
+          box-shadow: 0 4px 10px rgba(30, 80, 216, 0.35);
+          transform: translateY(-1px);
+        }
+
+        &:active {
+          transform: translateY(1px);
+          box-shadow: 0 1px 3px rgba(30, 80, 216, 0.2);
+        }
+
+        &:focus-visible {
+          box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px $blue-primary;
+        }
+      }
     }
 
     .sin_habitacion {

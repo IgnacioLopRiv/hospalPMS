@@ -1,0 +1,243 @@
+<ion-modal
+  class="edit-perfiles-banner"
+  [isOpen]="isOpen()"
+  [backdropDismiss]="true"
+  (didDismiss)="dismiss()"
+>
+  <ng-template>
+    <div class="banner">
+
+      <!-- ── Header ── -->
+      <header class="banner-header">
+        <div class="banner-title">
+          <ion-icon name="people-outline" class="title-icon"></ion-icon>
+          <h2>Gestionar perfiles</h2>
+        </div>
+        <div class="banner-header-actions">
+          <button
+            type="button"
+            class="add-btn"
+            id="add-user-btn"
+            (click)="openAdd()"
+            aria-label="Agregar nuevo usuario"
+          >
+            <ion-icon name="add-outline"></ion-icon>
+          </button>
+          <button
+            type="button"
+            class="close-btn"
+            id="close-perfiles-btn"
+            (click)="dismiss()"
+            aria-label="Cerrar panel de perfiles"
+          >
+            <ion-icon name="close-outline"></ion-icon>
+          </button>
+        </div>
+      </header>
+
+      <!-- ── Body ── -->
+      <div class="banner-body">
+
+        <!-- Toast de éxito -->
+        @if (successMessage()) {
+          <div class="success-toast" role="status">{{ successMessage() }}</div>
+        }
+
+        <!-- Formulario inline (agregar / editar) -->
+        @if (formMode() !== null) {
+          <section class="user-form" aria-label="Formulario de usuario">
+            <h3>{{ formMode() === 'add' ? 'Nuevo usuario' : 'Editar usuario' }}</h3>
+
+            <div class="form-grid">
+              <ion-item lines="none">
+                <ion-input
+                  label="Nombre completo"
+                  labelPlacement="stacked"
+                  type="text"
+                  placeholder="Ej. Juan García"
+                  [value]="form().name"
+                  (ionInput)="patchForm('name', $any($event.target).value)"
+                ></ion-input>
+              </ion-item>
+
+              <ion-item lines="none">
+                <ion-input
+                  label="Correo electrónico"
+                  labelPlacement="stacked"
+                  type="email"
+                  placeholder="correo@ejemplo.com"
+                  [value]="form().email"
+                  (ionInput)="patchForm('email', $any($event.target).value)"
+                ></ion-input>
+              </ion-item>
+
+              <ion-item lines="none">
+                <ion-input
+                  [label]="formMode() === 'add' ? 'Contraseña' : 'Contraseña (vacío = sin cambio)'"
+                  labelPlacement="stacked"
+                  type="password"
+                  [placeholder]="formMode() === 'add' ? 'Mínimo 6 caracteres' : 'Sin cambios'"
+                  [value]="form().password"
+                  (ionInput)="patchForm('password', $any($event.target).value)"
+                ></ion-input>
+              </ion-item>
+
+              <ion-item lines="none">
+                <ion-select
+                  label="Rol"
+                  labelPlacement="stacked"
+                  [value]="form().role"
+                  (ionChange)="patchForm('role', $any($event.detail.value))"
+                >
+                  @for (rol of roles; track rol) {
+                    <ion-select-option [value]="rol">
+                      {{ rol === 'admin' ? 'Administrador' : 'Personal (Staff)' }}
+                    </ion-select-option>
+                  }
+                </ion-select>
+              </ion-item>
+            </div>
+
+            @if (errorMessage()) {
+              <p class="error-msg" role="alert">{{ errorMessage() }}</p>
+            }
+
+            <div class="form-actions">
+              <ion-button fill="outline" (click)="cancelForm()">Cancelar</ion-button>
+              <ion-button (click)="saveForm()">
+                {{ formMode() === 'add' ? 'Agregar usuario' : 'Guardar cambios' }}
+              </ion-button>
+            </div>
+          </section>
+        }
+
+        <!-- Error standalone (fuera del formulario, p.ej. al eliminar) -->
+        @if (errorMessage() && formMode() === null) {
+          <p class="error-msg standalone" role="alert">{{ errorMessage() }}</p>
+        }
+
+        <!-- ── Sección Administradores ── -->
+        <section class="role-section" aria-label="Administradores">
+          <div class="role-heading">
+            <ion-icon name="shield-checkmark-outline"></ion-icon>
+            <span>Administradores</span>
+            <span class="role-count">{{ admins().length }}</span>
+          </div>
+
+          @if (admins().length === 0) {
+            <p class="empty-state">No hay administradores registrados.</p>
+          } @else {
+            <ul class="user-list" role="list">
+              @for (user of admins(); track user.id) {
+                <li class="user-card" [class.is-current]="isCurrentUser(user.id)" role="listitem">
+
+                  <div class="user-avatar">{{ user.name.charAt(0).toUpperCase() }}</div>
+
+                  <div class="user-info">
+                    <strong class="user-name">
+                      {{ user.name }}
+                      @if (isCurrentUser(user.id)) {
+                        <span class="current-badge">Tú</span>
+                      }
+                    </strong>
+                    <span class="user-email">{{ user.email }}</span>
+                  </div>
+
+                  <!-- Confirmación de eliminación inline -->
+                  @if (deleteConfirmId() === user.id) {
+                    <div class="confirm-delete" role="alert">
+                      <span>¿Eliminar?</span>
+                      <button class="icon-btn danger" (click)="confirmDelete(user.id)" title="Confirmar eliminación">✓</button>
+                      <button class="icon-btn" (click)="cancelDelete()" title="Cancelar">✕</button>
+                    </div>
+                  } @else {
+                    <div class="user-actions">
+                      <button
+                        class="icon-btn edit"
+                        (click)="openEdit(user)"
+                        [attr.aria-label]="'Editar a ' + user.name"
+                        title="Editar usuario"
+                      >
+                        <ion-icon name="create-outline"></ion-icon>
+                      </button>
+                      <button
+                        class="icon-btn delete"
+                        [disabled]="isCurrentUser(user.id)"
+                        (click)="requestDelete(user.id)"
+                        [attr.aria-label]="'Eliminar a ' + user.name"
+                        title="Eliminar usuario"
+                      >
+                        <ion-icon name="trash-outline"></ion-icon>
+                      </button>
+                    </div>
+                  }
+                </li>
+              }
+            </ul>
+          }
+        </section>
+
+        <!-- ── Sección Staff ── -->
+        <section class="role-section" aria-label="Personal Staff">
+          <div class="role-heading">
+            <ion-icon name="briefcase-outline"></ion-icon>
+            <span>Personal (Staff)</span>
+            <span class="role-count">{{ staff().length }}</span>
+          </div>
+
+          @if (staff().length === 0) {
+            <p class="empty-state">No hay personal registrado.</p>
+          } @else {
+            <ul class="user-list" role="list">
+              @for (user of staff(); track user.id) {
+                <li class="user-card" [class.is-current]="isCurrentUser(user.id)" role="listitem">
+
+                  <div class="user-avatar staff">{{ user.name.charAt(0).toUpperCase() }}</div>
+
+                  <div class="user-info">
+                    <strong class="user-name">
+                      {{ user.name }}
+                      @if (isCurrentUser(user.id)) {
+                        <span class="current-badge">Tú</span>
+                      }
+                    </strong>
+                    <span class="user-email">{{ user.email }}</span>
+                  </div>
+
+                  @if (deleteConfirmId() === user.id) {
+                    <div class="confirm-delete" role="alert">
+                      <span>¿Eliminar?</span>
+                      <button class="icon-btn danger" (click)="confirmDelete(user.id)" title="Confirmar eliminación">✓</button>
+                      <button class="icon-btn" (click)="cancelDelete()" title="Cancelar">✕</button>
+                    </div>
+                  } @else {
+                    <div class="user-actions">
+                      <button
+                        class="icon-btn edit"
+                        (click)="openEdit(user)"
+                        [attr.aria-label]="'Editar a ' + user.name"
+                        title="Editar usuario"
+                      >
+                        <ion-icon name="create-outline"></ion-icon>
+                      </button>
+                      <button
+                        class="icon-btn delete"
+                        [disabled]="isCurrentUser(user.id)"
+                        (click)="requestDelete(user.id)"
+                        [attr.aria-label]="'Eliminar a ' + user.name"
+                        title="Eliminar usuario"
+                      >
+                        <ion-icon name="trash-outline"></ion-icon>
+                      </button>
+                    </div>
+                  }
+                </li>
+              }
+            </ul>
+          }
+        </section>
+
+      </div>
+    </div>
+  </ng-template>
+</ion-modal>

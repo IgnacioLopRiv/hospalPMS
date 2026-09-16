@@ -13,13 +13,14 @@ import { AuthService } from '../../../auth/application/auth.service';
 import { SedeService } from '../../../../features/locations/application/sede.service';
 import { EditSedeBannerComponent } from '../../../../features/locations/presentation/edit-sede-banner/edit-sede-banner.component';
 import { ConfigOptionsComponent } from '../../../../features/locations/presentation/config-options/config-options.component';
+import { EditPerfilesComponent } from '../edit-perfiles/edit-perfiles.component';
 
 @Component({
   selector: 'app-header',
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.scss'],
   standalone: true,
-  imports: [CommonModule, IonIcon, EditSedeBannerComponent, ConfigOptionsComponent],
+  imports: [CommonModule, IonIcon, EditSedeBannerComponent, ConfigOptionsComponent, EditPerfilesComponent],
 })
 export class HeaderComponent {
   private readonly sedeService = inject(SedeService);
@@ -27,6 +28,8 @@ export class HeaderComponent {
 
   readonly editSedeOpen = signal(false);
   readonly configOptionsOpen = signal(false);
+  readonly editPerfilesOpen = signal(false);
+
   readonly hasSede = computed(() => this.sedeService.selectedSede() !== null);
   readonly canEditSede = computed(() => {
     const user = this.auth.currentUser();
@@ -49,6 +52,8 @@ export class HeaderComponent {
       personCircleOutline
     });
   }
+
+  // ── Sede ──────────────────────────────────────────────────────────────────
 
   openEditSede(): void {
     if (!this.canEditSede()) {
@@ -76,6 +81,8 @@ export class HeaderComponent {
     this.editSedeOpen.set(false);
   }
 
+  // ── Config options ────────────────────────────────────────────────────────
+
   configOptions(): void {
     if (this.editSedeOpen()) {
       this.closeEditSede();
@@ -85,5 +92,17 @@ export class HeaderComponent {
 
   closeConfigOptions(): void {
     this.configOptionsOpen.set(false);
+  }
+
+  // ── Gestionar perfiles ────────────────────────────────────────────────────
+
+  openEditPerfiles(): void {
+    this.closeConfigOptions();
+    this.closeEditSede();
+    this.editPerfilesOpen.set(true);
+  }
+
+  closeEditPerfiles(): void {
+    this.editPerfilesOpen.set(false);
   }
 }

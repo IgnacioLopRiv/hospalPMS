@@ -29,6 +29,9 @@ export class ConfigOptionsComponent {
   readonly manageProfiles = output<void>();
   readonly logout = output<void>();
 
+  /** Reutiliza el mismo patrón de permisos que canEditSede en el header */
+  readonly canManageUsers = this.auth.canManageUsers;
+
   constructor() {
     addIcons({
       peopleOutline,

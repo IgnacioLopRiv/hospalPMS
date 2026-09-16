@@ -1,0 +1,86 @@
+<ion-modal class="edit-habitaciones-modal" [isOpen]="isOpen()" [backdropDismiss]="true" (willPresent)="loadDraft()"
+  (didDismiss)="dismiss()">
+  <ng-template>
+    <div class="banner">
+      <header class="banner-header">
+        <h2>Gestionar habitaciones</h2>
+        <ion-button fill="clear" (click)="dismiss()">Cerrar</ion-button>
+      </header>
+
+      <div class="banner-body">
+        <section class="rooms-section">
+          <p class="hint">Indica cuántas habitaciones agregar y de qué tipo, o edita y elimina las existentes.</p>
+
+          <div class="add-row">
+            <ion-item lines="none">
+              <ion-input type="number" label="Cantidad" labelPlacement="stacked" min="1" [value]="cantidadNueva()"
+                (ionInput)="setCantidadNueva($any($event.target).value)"></ion-input>
+            </ion-item>
+            <ion-item lines="none">
+              <ion-select label="Tipo" labelPlacement="stacked" [value]="tipoNuevo()"
+                (ionChange)="tipoNuevo.set($any($event.detail.value))">
+                @for (tipo of roomTypes; track tipo) {
+                <ion-select-option [value]="tipo">{{ tipo }}</ion-select-option>
+                }
+              </ion-select>
+            </ion-item>
+            <ion-button (click)="addHabitaciones()">Agregar</ion-button>
+          </div>
+
+          @if (habitaciones().length === 0) {
+          <p class="empty">Todavía no hay habitaciones registradas en esta sede.</p>
+          } @else {
+          <div class="rooms-list">
+            <h3>Habitaciones registradas:</h3>
+            @for (habitacion of habitaciones(); track habitacion.id) {
+            <article class="room-card">
+              <div class="room-card-header">
+                <strong>Habitación {{ habitacion.numero }}</strong>
+                <ion-button fill="clear" color="danger" (click)="removeHabitacion(habitacion.id)">
+                  Quitar
+                </ion-button>
+              </div>
+
+              <div class="room-fields">
+                <ion-item lines="none">
+                  <ion-input label="Número" labelPlacement="stacked" [value]="habitacion.numero"
+                    (ionInput)="updateHabitacion(habitacion.id, { numero: $any($event.target).value })"></ion-input>
+                </ion-item>
+                <ion-item lines="none">
+                  <ion-select label="Tipo" labelPlacement="stacked" [value]="habitacion.tipo"
+                    (ionChange)="updateHabitacion(habitacion.id, { tipo: $any($event.detail.value) })">
+                    @for (tipo of roomTypes; track tipo) {
+                    <ion-select-option [value]="tipo">{{ tipo }}</ion-select-option>
+                    }
+                  </ion-select>
+                </ion-item>
+                <ion-item lines="none">
+                  <ion-input type="number" label="Tamaño (m²)" labelPlacement="stacked" min="1"
+                    [value]="habitacion.tamanoM2"
+                    (ionInput)="setTamano(habitacion.id, $any($event.target).value)"></ion-input>
+                </ion-item>
+                <ion-item lines="none" class="full-width">
+                  <ion-textarea label="Disposición de muebles" labelPlacement="stacked" autoGrow="true"
+                    placeholder="Ej. cama queen, escritorio, silla y mesa de noche"
+                    [value]="habitacion.disposicionMuebles"
+                    (ionInput)="updateHabitacion(habitacion.id, { disposicionMuebles: $any($event.target).value })"></ion-textarea>
+                </ion-item>
+              </div>
+            </article>
+            }
+          </div>
+          }
+        </section>
+
+        @if (errorMessage()) {
+        <p class="error">{{ errorMessage() }}</p>
+        }
+      </div>
+
+      <footer class="banner-actions">
+        <ion-button fill="outline" (click)="dismiss()">Cancelar</ion-button>
+        <ion-button (click)="save()">Guardar cambios</ion-button>
+      </footer>
+    </div>
+  </ng-template>
+</ion-modal>
