@@ -43,4 +43,11 @@ ion-app {
   .no-layout & {
     height: 100%;
   }
+
+  ion-router-outlet {
+    display: block;
+    position: relative;
+    width: 100%;
+    min-height: 100%;
+  }
 }

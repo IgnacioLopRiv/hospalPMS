@@ -1,18 +1,13 @@
 <aside class="sidebar-container">
   <nav class="nav-menu">
-    <a class="nav-item" routerLink="/main" routerLinkActive="active">
+    <!--<a class="nav-item" routerLink="/main" routerLinkActive="active">
       <ion-icon name="home-outline"></ion-icon>
       <span>Inicio</span>
-    </a>
+    </a>-->
 
     <a class="nav-item" routerLink="/guests-view" routerLinkActive="active">
       <ion-icon name="people-outline"></ion-icon>
       <span>Huéspedes</span>
-    </a>
-
-    <a class="nav-item" routerLink="/habitaciones" routerLinkActive="active">
-      <ion-icon name="bed-outline"></ion-icon>
-      <span>Habitaciones</span>
     </a>
 
     <a class="nav-item" routerLink="/reservas" routerLinkActive="active">
@@ -23,6 +18,11 @@
     <a class="nav-item" routerLink="/check-page" routerLinkActive="active">
       <ion-icon name="swap-horizontal-outline"></ion-icon>
       <span>Check-in / out</span>
+    </a>
+
+    <a class="nav-item" routerLink="/habitaciones" routerLinkActive="active">
+      <ion-icon name="bed-outline"></ion-icon>
+      <span>Habitaciones</span>
     </a>
 
     @if (canViewReports()) {

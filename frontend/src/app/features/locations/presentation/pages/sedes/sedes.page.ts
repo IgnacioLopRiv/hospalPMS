@@ -23,6 +23,6 @@ export class SedesPage {
 
   selectSede(sede: Sede): void {
     this.sedeService.selectSede(sede);
-    this.router.navigate(['/main']);
+    this.router.navigate(['/guests-view']);
   }
 }
