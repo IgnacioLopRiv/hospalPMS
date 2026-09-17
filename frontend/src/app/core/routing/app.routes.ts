@@ -14,6 +14,7 @@ export const routes: Routes = [
   },
   {
     path: 'main',
+    canActivate: [authGuard],
     loadComponent: () => import('../../features/dashboard/presentation/pages/main/main.page').then((m) => m.MainPage),
   },
   {
@@ -23,12 +24,13 @@ export const routes: Routes = [
   },
   {
     path: 'guests-view',
+    canActivate: [authGuard],
     loadComponent: () => import('../../features/guests/presentation/pages/guests-view/guests-view.page').then((m) => m.GuestsViewPage),
   },
-{
+  {
     path: 'habitaciones',
     canActivate: [authGuard],
-    loadComponent: () =>import('../../features/locations/presentation/pages/habitaciones/habitaciones.page').then((m) => m.HabitacionesPage),
+    loadComponent: () => import('../../features/locations/presentation/pages/habitaciones/habitaciones.page').then((m) => m.HabitacionesPage),
   },
   {
     path: 'reportes',
@@ -42,7 +44,8 @@ export const routes: Routes = [
   },
   {
     path: 'check-page',
-    loadComponent: () => import('../../features/reservations/presentation/pages/check-page/check-page.page').then( m => m.CheckPagePage)
+    canActivate: [authGuard],
+    loadComponent: () => import('../../features/reservations/presentation/pages/check-page/check-page.page').then(m => m.CheckPagePage),
   },
   {
     path: 'recuperar',

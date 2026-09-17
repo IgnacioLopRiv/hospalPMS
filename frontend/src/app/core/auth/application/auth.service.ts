@@ -29,6 +29,9 @@ const LOGIN_MESSAGES: Record<LoginErrorCode, string> = {
   password: 'La contraseña es incorrecta.',
 };
 
+const CURRENT_USER_STORAGE_KEY = 'hospal.currentUser';
+const USERS_STORAGE_KEY = 'hospal.users';
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
@@ -39,11 +42,11 @@ export class AuthService {
   private readonly recoveryTokens = new Map<string, RecoveryEntry>();
 
   // ── Public signals ────────────────────────────────────────────────────────
-  /** Usuario con sesión activa. Se resetea a null al recargar la página. */
-  readonly currentUser = signal<AuthUser | null>(null);
+  /** Usuario con sesión activa. Persistido en localStorage para sobrevivir a recargas de página. */
+  readonly currentUser = signal<AuthUser | null>(this.readSavedCurrentUser());
 
-  /** Lista reactiva de todos los usuarios cargados desde el JSON + modificaciones en memoria. */
-  readonly users = signal<StoredUser[]>([]);
+  /** Lista reactiva de todos los usuarios cargados desde localStorage o JSON. */
+  readonly users = signal<StoredUser[]>(this.readSavedUsers());
 
   readonly isAuthenticated = computed(() => this.currentUser() !== null);
   readonly canEditSede = computed(() => this.can('editSede'));
@@ -81,53 +84,63 @@ export class AuthService {
       return { ok: false, error: 'password', message: LOGIN_MESSAGES.password };
     }
 
-    this.currentUser.set(this.toPublicUser(user));
+    const publicUser = this.toPublicUser(user);
+    this.currentUser.set(publicUser);
+    this.saveCurrentUser(publicUser);
     return { ok: true };
   }
 
   logout(): void {
     this.currentUser.set(null);
+    this.saveCurrentUser(null);
   }
 
-  /** Actualiza el usuario activo en la sesión y sincroniza la lista en memoria. */
+  /** Actualiza el usuario activo en la sesión y sincroniza la lista en memoria y localStorage. */
   updateCurrentUser(updatedUser: AuthUser): void {
     this.currentUser.set(updatedUser);
-    this.users.update((list) =>
-      list.map((u) => (u.id === updatedUser.id ? { ...u, ...updatedUser } : u)),
-    );
+    this.saveCurrentUser(updatedUser);
+    this.users.update((list) => {
+      const nextList = list.map((u) => (u.id === updatedUser.id ? { ...u, ...updatedUser } : u));
+      this.saveUsers(nextList);
+      return nextList;
+    });
   }
 
   // ── User CRUD ─────────────────────────────────────────────────────────────
 
-  /** Garantiza que la lista de usuarios está cargada desde el JSON. */
+  /** Garantiza que la lista de usuarios está cargada desde el JSON o localStorage. */
   async ensureUsersLoaded(): Promise<void> {
     await this.ensureUsers();
   }
 
   /**
-   * Agrega un nuevo usuario a la lista en memoria con ID auto-incremental.
+   * Agrega un nuevo usuario a la lista en memoria y persiste en localStorage.
    */
   addUser(data: Omit<StoredUser, 'id'>): void {
     const list = this.users();
     const maxId = list.length > 0 ? Math.max(...list.map((u) => u.id)) : 0;
     const newUser: StoredUser = { id: maxId + 1, ...data };
-    this.users.update((u) => [...u, newUser]);
+    const nextList = [...list, newUser];
+    this.users.set(nextList);
+    this.saveUsers(nextList);
   }
 
   /**
    * Edita los campos del usuario indicado. Si es el usuario activo, sincroniza la sesión.
    */
   updateUser(id: number, patch: Partial<StoredUser>): void {
-    this.users.update((list) =>
-      list.map((u) => (u.id === id ? { ...u, ...patch } : u)),
-    );
+    const nextList = this.users().map((u) => (u.id === id ? { ...u, ...patch } : u));
+    this.users.set(nextList);
+    this.saveUsers(nextList);
 
     // Sincronizar sesión si editamos al usuario actual
     const current = this.currentUser();
     if (current && current.id === id) {
-      const updated = this.users().find((u) => u.id === id);
+      const updated = nextList.find((u) => u.id === id);
       if (updated) {
-        this.currentUser.set(this.toPublicUser(updated));
+        const publicUser = this.toPublicUser(updated);
+        this.currentUser.set(publicUser);
+        this.saveCurrentUser(publicUser);
       }
     }
   }
@@ -140,7 +153,9 @@ export class AuthService {
     if (current && current.id === id) {
       return { ok: false, message: 'No puedes eliminar al usuario con sesión activa.' };
     }
-    this.users.update((list) => list.filter((u) => u.id !== id));
+    const nextList = this.users().filter((u) => u.id !== id);
+    this.users.set(nextList);
+    this.saveUsers(nextList);
     return { ok: true };
   }
 
@@ -236,6 +251,11 @@ export class AuthService {
 
   // ── Private helpers ───────────────────────────────────────────────────────
   private async ensureUsers(): Promise<void> {
+    if (this.users().length > 0) {
+      this.loaded = true;
+      return;
+    }
+
     if (this.loaded) return;
 
     if (!this.loadPromise) {
@@ -243,11 +263,59 @@ export class AuthService {
         this.http.get<UsersFile>('assets/data/users.json'),
       ).then((file) => {
         this.users.set(file.users);
+        this.saveUsers(file.users);
         this.loaded = true;
       });
     }
 
     await this.loadPromise;
+  }
+
+  private readSavedCurrentUser(): AuthUser | null {
+    try {
+      const raw = localStorage.getItem(CURRENT_USER_STORAGE_KEY);
+      if (raw) {
+        return JSON.parse(raw) as AuthUser;
+      }
+    } catch {
+      // Ignorar error de almacenamiento
+    }
+    return null;
+  }
+
+  private saveCurrentUser(user: AuthUser | null): void {
+    try {
+      if (user) {
+        localStorage.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify(user));
+      } else {
+        localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
+      }
+    } catch {
+      // Ignorar error de almacenamiento
+    }
+  }
+
+  private readSavedUsers(): StoredUser[] {
+    try {
+      const raw = localStorage.getItem(USERS_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch {
+      // Ignorar error de almacenamiento
+    }
+    return [];
+  }
+
+  private saveUsers(users: StoredUser[]): void {
+    try {
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+    } catch {
+      // Ignorar error de almacenamiento
+    }
   }
 
   private findUser(email: string): StoredUser | undefined {
