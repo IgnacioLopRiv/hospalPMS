@@ -19,13 +19,20 @@
     <!-- Sección de botones / sedes -->
     <section class="sedes-card-box">
       <div class="box-legend">
-        <span class="legend-badge">SEDES DISPONIBLES</span>
-        <span class="legend-count">{{ sedes().length }} registradas</span>
+        <div class="legend-info">
+          <span class="legend-badge">SEDES DISPONIBLES</span>
+          <span class="legend-count">{{ sedes().length }} registradas</span>
+        </div>
+        <!-- Botón para crear sede -->
+        <button type="button" class="btn-create-sede" (click)="openCreateSedeAlert()">
+          <ion-icon name="add-outline"></ion-icon>
+          <span>Nueva Sede</span>
+        </button>
       </div>
 
       <div class="sedes-grid">
         @for (sede of sedes(); track sede.id) {
-          <button type="button" class="sede-btn-card" (click)="selectSede(sede)">
+          <div class="sede-btn-card" (click)="selectSede(sede)">
             <div class="card-icon-tag">
               <ion-icon name="business-outline"></ion-icon>
             </div>
@@ -38,11 +45,27 @@
               </p>
             </div>
 
+            <!-- Menú de opciones CRUD -->
+            <button 
+              type="button" 
+              class="card-options-btn" 
+              aria-label="Opciones de sede" 
+              (click)="openSedeOptions($event, sede)">
+              <ion-icon name="ellipsis-vertical-outline"></ion-icon>
+            </button>
+
             <div class="card-action">
               <span class="action-label">Ingresar</span>
               <ion-icon name="chevron-forward-outline"></ion-icon>
             </div>
-          </button>
+          </div>
+        } @empty {
+          <div class="empty-state">
+            <p>No tienes sedes registradas en este momento.</p>
+            <button type="button" class="btn-create-empty" (click)="openCreateSedeAlert()">
+              Crear primera sede
+            </button>
+          </div>
         }
       </div>
     </section>

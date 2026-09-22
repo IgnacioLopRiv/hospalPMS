@@ -115,21 +115,47 @@ $text-muted: #64748b;
     margin-bottom: 1rem;
     padding: 0 0.4rem;
 
-    .legend-badge {
-      font-size: 0.7rem;
-      font-weight: 700;
-      color: #93c5fd;
-      letter-spacing: 0.8px;
+    .legend-info {
+      display: flex;
+      align-items: baseline;
+      gap: 0.6rem;
+
+      .legend-badge {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #93c5fd;
+        letter-spacing: 0.8px;
+      }
+
+      .legend-count {
+        font-size: 0.75rem;
+        color: rgba(255, 255, 255, 0.65);
+      }
     }
 
-    .legend-count {
+    .btn-create-sede {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #ffffff;
+      padding: 0.35rem 0.75rem;
+      border-radius: 20px;
       font-size: 0.75rem;
-      color: rgba(255, 255, 255, 0.65);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: #ffffff;
+        color: $blue-primary;
+      }
     }
   }
 }
 
-/* Grilla / Botones */
+/* Grilla / Tarjetas */
 .sedes-grid {
   display: flex;
   flex-direction: column;
@@ -139,7 +165,6 @@ $text-muted: #64748b;
 .sede-btn-card {
   width: 100%;
   background: #ffffff;
-  border: none;
   border-radius: 14px;
   padding: 1rem 1.25rem;
   display: flex;
@@ -147,6 +172,7 @@ $text-muted: #64748b;
   gap: 1rem;
   text-align: left;
   cursor: pointer;
+  box-sizing: border-box;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04);
 
@@ -189,6 +215,25 @@ $text-muted: #64748b;
     }
   }
 
+  .card-options-btn {
+    background: transparent;
+    border: none;
+    padding: 0.4rem;
+    font-size: 1.15rem;
+    color: #94a3b8;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: #f1f5f9;
+      color: $text-dark;
+    }
+  }
+
   .card-action {
     display: flex;
     align-items: center;
@@ -228,5 +273,27 @@ $text-muted: #64748b;
 
   &:active {
     transform: translateY(0);
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: rgba(255, 255, 255, 0.85);
+
+  p {
+    margin: 0 0 1rem 0;
+    font-size: 0.95rem;
+  }
+
+  .btn-create-empty {
+    background: #ffffff;
+    color: $blue-primary;
+    border: none;
+    border-radius: 10px;
+    padding: 0.6rem 1.2rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
   }
 }

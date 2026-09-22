@@ -1,5 +1,4 @@
 import { Injectable, computed, signal } from '@angular/core';
-
 import { ROOM_TYPES, RoomType, Sede, SedeHabitacion as Habitacion } from '../../../shared/domain/hostal.model';
 
 export { ROOM_TYPES, RoomType } from '../../../shared/domain/hostal.model';
@@ -38,6 +37,75 @@ export class SedeService {
       localStorage.removeItem(SELECTED_SEDE_KEY);
     } catch {
       // Ignorar error de almacenamiento
+    }
+  }
+
+  /**
+   * C (Crear): Agrega una nueva sede al listado
+   */
+  createSede(data: { nombre: string; ciudad: string }): Sede {
+    const nextId = this.sedes().length > 0 
+      ? Math.max(...this.sedes().map((s) => s.id)) + 1 
+      : 1;
+
+    const nuevaSede: Sede = {
+      id: nextId,
+      nombre: data.nombre.trim(),
+      ciudad: data.ciudad.trim(),
+      habitaciones: [],
+    };
+
+    this.sedes.update((list) => {
+      const nextList = [...list, nuevaSede];
+      this.saveSedes(nextList);
+      return nextList;
+    });
+
+    return nuevaSede;
+  }
+
+  /**
+   * U (Actualizar datos generales): Modifica nombre y ciudad de una sede
+   */
+  updateSedeInfo(id: number, data: { nombre: string; ciudad: string }): void {
+    this.sedes.update((list) => {
+      const nextList = list.map((sede) =>
+        sede.id === id
+          ? { ...sede, nombre: data.nombre.trim(), ciudad: data.ciudad.trim() }
+          : sede
+      );
+      this.saveSedes(nextList);
+      return nextList;
+    });
+
+    // Si la sede editada es la seleccionada, actualizarla
+    const selected = this.selectedSede();
+    if (selected && selected.id === id) {
+      const updated = { ...selected, nombre: data.nombre.trim(), ciudad: data.ciudad.trim() };
+      this.selectedSede.set(updated);
+      this.saveSelectedSede(updated);
+    }
+  }
+
+  /**
+   * D (Eliminar): Elimina una sede por su ID
+   */
+  deleteSede(id: number): void {
+    this.sedes.update((list) => {
+      const nextList = list.filter((sede) => sede.id !== id);
+      this.saveSedes(nextList);
+      return nextList;
+    });
+
+    // Si se eliminó la sede activa, limpiar o reasignar
+    const selected = this.selectedSede();
+    if (selected && selected.id === id) {
+      const remaining = this.sedes();
+      if (remaining.length > 0) {
+        this.selectSede(remaining[0]);
+      } else {
+        this.clearSede();
+      }
     }
   }
 
@@ -94,7 +162,7 @@ export class SedeService {
         }
       }
     } catch {
-      // Fallback a primera sede
+      // Fallback
     }
     return allSedes[0] ?? null;
   }
