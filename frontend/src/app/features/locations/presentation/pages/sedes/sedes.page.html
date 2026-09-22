@@ -23,11 +23,13 @@
           <span class="legend-badge">SEDES DISPONIBLES</span>
           <span class="legend-count">{{ sedes().length }} registradas</span>
         </div>
-        <!-- Botón para crear sede -->
-        <button type="button" class="btn-create-sede" (click)="openCreateSedeAlert()">
-          <ion-icon name="add-outline"></ion-icon>
-          <span>Nueva Sede</span>
-        </button>
+        @if (canEditSede()) {
+          <!-- Botón para crear sede -->
+          <button type="button" class="btn-create-sede" (click)="openCreateSedeAlert()">
+            <ion-icon name="add-outline"></ion-icon>
+            <span>Nueva Sede</span>
+          </button>
+        }
       </div>
 
       <div class="sedes-grid">
@@ -45,14 +47,16 @@
               </p>
             </div>
 
-            <!-- Menú de opciones CRUD -->
-            <button 
-              type="button" 
-              class="card-options-btn" 
-              aria-label="Opciones de sede" 
-              (click)="openSedeOptions($event, sede)">
-              <ion-icon name="ellipsis-vertical-outline"></ion-icon>
-            </button>
+            @if (canEditSede()) {
+              <!-- Menú de opciones CRUD -->
+              <button 
+                type="button" 
+                class="card-options-btn" 
+                aria-label="Opciones de sede" 
+                (click)="openSedeOptions($event, sede)">
+                <ion-icon name="ellipsis-vertical-outline"></ion-icon>
+              </button>
+            }
 
             <div class="card-action">
               <span class="action-label">Ingresar</span>
@@ -62,9 +66,11 @@
         } @empty {
           <div class="empty-state">
             <p>No tienes sedes registradas en este momento.</p>
-            <button type="button" class="btn-create-empty" (click)="openCreateSedeAlert()">
-              Crear primera sede
-            </button>
+            @if (canEditSede()) {
+              <button type="button" class="btn-create-empty" (click)="openCreateSedeAlert()">
+                Crear primera sede
+              </button>
+            }
           </div>
         }
       </div>
