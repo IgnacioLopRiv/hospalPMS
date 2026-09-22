@@ -14,4 +14,9 @@ describe('CheckPagePage', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should have pending check-ins and check-outs initialized', () => {
+    expect(component.pendingCheckIns.length).toBeGreaterThan(0);
+    expect(component.pendingCheckOuts.length).toBeGreaterThan(0);
+  });
 });

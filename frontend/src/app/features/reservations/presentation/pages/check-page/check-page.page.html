@@ -1,10 +1,236 @@
-<div class="reservas-page-container">
-  <main class="page-content">
-    <h1>Check-in / out</h1>
-    @if (sede(); as currentSede) {
-      <p class="sede-description">Salidas e ingresos de {{ currentSede.nombre }}.</p>
-    }
+<div class="check-page-container">
+  <!-- Encabezado de la página -->
+  <header class="top-bar">
+    <div>
+      <h1 class="page-title">Check-in & Check-out</h1>
+      <p class="current-date">
+        @if (sede(); as currentSede) {
+        <span>{{ currentSede.nombre }} · {{ currentDateFormatted }}</span>
+        } @else {
+        <span>{{ currentDateFormatted }}</span>
+        }
+      </p>
+    </div>
+    <div class="top-actions">
+      <button type="button" class="btn-top-action">
+        <ion-icon name="enter-outline"></ion-icon>
+        <span>Nuevo Ingreso</span>
+      </button>
+    </div>
+  </header>
 
-    <!-- Aquí irá tu tabla o listado de reservas -->
-  </main>
+  <!-- Tarjetas KPI / Resumen del día -->
+  <section class="kpi-grid">
+    <div class="kpi-card card-green">
+      <div class="kpi-icon"><ion-icon name="enter-outline"></ion-icon></div>
+      <div class="kpi-data">
+        <span>CHECK-INS PENDIENTES HOY</span>
+        <h3>{{ pendingCheckIns.length }}</h3>
+      </div>
+    </div>
+    <div class="kpi-card card-orange">
+      <div class="kpi-icon"><ion-icon name="exit-outline"></ion-icon></div>
+      <div class="kpi-data">
+        <span>CHECK-OUTS PENDIENTES HOY</span>
+        <h3>{{ pendingCheckOuts.length }}</h3>
+      </div>
+    </div>
+    <div class="kpi-card card-blue">
+      <div class="kpi-icon"><ion-icon name="swap-horizontal-outline"></ion-icon></div>
+      <div class="kpi-data">
+        <span>TOTAL MOVIMIENTOS HOY</span>
+        <h3>{{ pendingCheckIns.length + pendingCheckOuts.length }}</h3>
+      </div>
+    </div>
+    <div class="kpi-card card-purple">
+      <div class="kpi-icon"><ion-icon name="bed-outline"></ion-icon></div>
+      <div class="kpi-data">
+        <span>HABITACIONES INVOLUCRADAS</span>
+        <h3>{{ totalRoomsInvolved() }}</h3>
+      </div>
+    </div>
+  </section>
+
+  <!-- Listado del día en dos columnas -->
+  <section class="check-columns-grid">
+    <!-- Columna 1: Check-ins pendientes hoy -->
+    <div class="check-column column-checkin">
+      <div class="column-header">
+        <div class="column-title-group">
+          <div class="column-icon-badge checkin">
+            <ion-icon name="enter-outline"></ion-icon>
+          </div>
+          <div>
+            <h2>Check-ins pendientes hoy</h2>
+            <p class="column-subtitle">Huéspedes programados para ingresar a la sede hoy</p>
+          </div>
+        </div>
+        <span class="count-badge checkin">{{ pendingCheckIns.length }} pendientes</span>
+      </div>
+
+      <div class="cards-list">
+        @for (item of pendingCheckIns; track item.id) {
+        <article class="guest-card">
+          <!-- Header con avatar, nombre, nacionalidad, habitación y pill de estado -->
+          <div class="card-header">
+            <div class="avatar-tag" [ngClass]="'color-' + item.avatarColor">{{ item.initials }}</div>
+            <div class="header-details">
+              <div class="title-line">
+                <h4>{{ item.guestName }}</h4>
+                @if (item.isVip) {
+                <ion-icon name="star" class="star-icon" title="Huésped VIP / Frecuente"></ion-icon>
+                }
+              </div>
+              <p>{{ item.country }} · <strong>Hab. {{ item.roomNumber }}</strong></p>
+            </div>
+
+            <span class="status-pill checkin_hoy">
+              <span class="dot"></span>
+              {{ item.statusBadge }}
+            </span>
+
+            <ion-icon name="ellipsis-vertical-outline" class="menu-icon"></ion-icon>
+          </div>
+
+          <!-- Información de habitación y fechas -->
+          <div class="room-info">
+            <span><ion-icon name="bed-outline"></ion-icon> {{ item.roomType }}</span>
+            <span><ion-icon name="calendar-outline"></ion-icon> {{ item.dateRange }} ({{ item.nights }} noches)</span>
+          </div>
+
+          <!-- Caja de tiempos de llegada -->
+          <div class="status-box checkin_hoy">
+            <div class="box-header">
+              <ion-icon name="enter-outline"></ion-icon>
+              <span>TIEMPO DE LLEGADA</span>
+            </div>
+            <div class="box-metrics">
+              <div>
+                <small>{{ item.timeWindowLabel }}</small>
+                <strong>{{ item.scheduledTime }}</strong>
+              </div>
+              <div>
+                <small>Estadía</small>
+                <strong>{{ item.nights }} {{ item.nights === 1 ? 'noche' : 'noches' }}</strong>
+              </div>
+            </div>
+            @if (item.notes) {
+            <div class="recurrent-tag">
+              <ion-icon name="information-circle-outline"></ion-icon> {{ item.notes }}
+            </div>
+            }
+          </div>
+
+          <!-- Acciones rápidas -->
+          <div class="card-actions">
+            <button type="button" class="btn-action-primary checkin">
+              <ion-icon name="log-in-outline"></ion-icon>
+              <span>Registrar Check-in</span>
+            </button>
+            <button type="button" class="btn-action-secondary">
+              <ion-icon name="call-outline"></ion-icon>
+              <span>Contactar</span>
+            </button>
+          </div>
+        </article>
+        } @empty {
+        <div class="empty-column-box">
+          <ion-icon name="checkmark-circle-outline" class="empty-icon checkin"></ion-icon>
+          <h4>¡Todo al día!</h4>
+          <p>No hay check-ins pendientes para el día de hoy.</p>
+        </div>
+        }
+      </div>
+    </div>
+
+    <!-- Columna 2: Check-outs pendientes hoy -->
+    <div class="check-column column-checkout">
+      <div class="column-header">
+        <div class="column-title-group">
+          <div class="column-icon-badge checkout">
+            <ion-icon name="exit-outline"></ion-icon>
+          </div>
+          <div>
+            <h2>Check-outs pendientes hoy</h2>
+            <p class="column-subtitle">Huéspedes programados para desalojar habitaciones hoy</p>
+          </div>
+        </div>
+        <span class="count-badge checkout">{{ pendingCheckOuts.length }} pendientes</span>
+      </div>
+
+      <div class="cards-list">
+        @for (item of pendingCheckOuts; track item.id) {
+        <article class="guest-card">
+          <!-- Header con avatar, nombre, nacionalidad, habitación y pill de estado -->
+          <div class="card-header">
+            <div class="avatar-tag" [ngClass]="'color-' + item.avatarColor">{{ item.initials }}</div>
+            <div class="header-details">
+              <div class="title-line">
+                <h4>{{ item.guestName }}</h4>
+                @if (item.isVip) {
+                <ion-icon name="star" class="star-icon" title="Huésped VIP / Frecuente"></ion-icon>
+                }
+              </div>
+              <p>{{ item.country }} · <strong>Hab. {{ item.roomNumber }}</strong></p>
+            </div>
+
+            <span class="status-pill checkout_hoy">
+              <span class="dot"></span>
+              {{ item.statusBadge }}
+            </span>
+
+            <ion-icon name="ellipsis-vertical-outline" class="menu-icon"></ion-icon>
+          </div>
+
+          <!-- Información de habitación y fechas -->
+          <div class="room-info">
+            <span><ion-icon name="bed-outline"></ion-icon> {{ item.roomType }}</span>
+            <span><ion-icon name="calendar-outline"></ion-icon> {{ item.dateRange }} ({{ item.nights }} noches)</span>
+          </div>
+
+          <!-- Caja de tiempos de salida -->
+          <div class="status-box checkout_hoy">
+            <div class="box-header">
+              <ion-icon name="exit-outline"></ion-icon>
+              <span>TIEMPO DE SALIDA</span>
+            </div>
+            <div class="box-metrics">
+              <div>
+                <small>{{ item.timeWindowLabel }}</small>
+                <strong>{{ item.scheduledTime }}</strong>
+              </div>
+              <div>
+                <small>Total estadía</small>
+                <strong>{{ item.nights }} {{ item.nights === 1 ? 'noche' : 'noches' }}</strong>
+              </div>
+            </div>
+            @if (item.notes) {
+            <div class="recurrent-tag">
+              <ion-icon name="information-circle-outline"></ion-icon> {{ item.notes }}
+            </div>
+            }
+          </div>
+
+          <!-- Acciones rápidas -->
+          <div class="card-actions">
+            <button type="button" class="btn-action-primary checkout">
+              <ion-icon name="log-out-outline"></ion-icon>
+              <span>Procesar Check-out</span>
+            </button>
+            <button type="button" class="btn-action-secondary">
+              <ion-icon name="call-outline"></ion-icon>
+              <span>Contactar</span>
+            </button>
+          </div>
+        </article>
+        } @empty {
+        <div class="empty-column-box">
+          <ion-icon name="checkmark-circle-outline" class="empty-icon checkout"></ion-icon>
+          <h4>¡Todo al día!</h4>
+          <p>No hay check-outs pendientes para el día de hoy.</p>
+        </div>
+        }
+      </div>
+    </div>
+  </section>
 </div>
