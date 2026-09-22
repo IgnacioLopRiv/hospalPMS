@@ -17,6 +17,7 @@ import {
   trashOutline
 } from 'ionicons/icons';
 import { Sede, SedeService } from '../../../application/sede.service';
+import { AuthService } from '../../../../../core/auth/application/auth.service';
 
 @Component({
   selector: 'app-sedes',
@@ -27,10 +28,12 @@ import { Sede, SedeService } from '../../../application/sede.service';
 export class SedesPage {
   private readonly router = inject(Router);
   private readonly sedeService = inject(SedeService);
+  private readonly auth = inject(AuthService);
   private readonly alertCtrl = inject(AlertController);
   private readonly actionSheetCtrl = inject(ActionSheetController);
 
   readonly sedes = this.sedeService.sedes;
+  readonly canEditSede = this.auth.canEditSede;
 
   constructor() {
     addIcons({
@@ -54,6 +57,9 @@ export class SedesPage {
    */
   async openSedeOptions(event: Event, sede: Sede): Promise<void> {
     event.stopPropagation();
+    if (!this.canEditSede()) {
+      return;
+    }
 
     const actionSheet = await this.actionSheetCtrl.create({
       header: `Opciones de ${sede.nombre}`,
@@ -88,6 +94,10 @@ export class SedesPage {
    * Modal para Crear nueva Sede
    */
   async openCreateSedeAlert(): Promise<void> {
+    if (!this.canEditSede()) {
+      return;
+    }
+
     const alert = await this.alertCtrl.create({
       header: 'Nueva Sede',
       subHeader: 'Ingresa los datos del establecimiento',
@@ -133,6 +143,10 @@ export class SedesPage {
    * Modal para Editar Sede existente
    */
   async openEditSedeAlert(sede: Sede): Promise<void> {
+    if (!this.canEditSede()) {
+      return;
+    }
+
     const alert = await this.alertCtrl.create({
       header: 'Editar Sede',
       subHeader: 'Modifica los datos del establecimiento',
@@ -180,6 +194,10 @@ export class SedesPage {
    * Confirmación de Eliminación
    */
   async confirmDeleteSede(sede: Sede): Promise<void> {
+    if (!this.canEditSede()) {
+      return;
+    }
+
     const alert = await this.alertCtrl.create({
       header: '¿Eliminar sede?',
       message: `¿Estás seguro de que deseas eliminar <strong>${sede.nombre}</strong>? Esta acción no se puede deshacer.`,

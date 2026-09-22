@@ -1,6 +1,13 @@
+$blue-primary: #1e50d8;
 $border-color: #e5e9f2;
 $text-dark: #1f2937;
 $text-muted: #64748b;
+$green-primary: #16a34a;
+$green-light: #f0fdf4;
+$green-border: #dcfce7;
+$orange-primary: #ea580c;
+$orange-light: #fff7ed;
+$orange-border: #fed7aa;
 
 :host {
   display: block;
@@ -8,25 +15,535 @@ $text-muted: #64748b;
   box-sizing: border-box;
 }
 
-.reservas-page-container {
+.check-page-container {
   padding: 2rem 2.5rem;
-  width: 100%;
-  min-height: 100%;
   box-sizing: border-box;
+  width: 100%;
   color: $text-dark;
+}
 
-  .page-content {
-    h1 {
-      margin: 0 0 0.5rem 0;
-      font-size: 1.5rem;
+/* ── Encabezado Principal ─────────────────────────────────────────────────── */
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+
+  .page-title {
+    margin: 0;
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: $text-dark;
+  }
+
+  .current-date {
+    margin: 0.25rem 0 0 0;
+    color: $text-muted;
+    font-size: 0.85rem;
+  }
+
+  .top-actions {
+    display: flex;
+    gap: 0.8rem;
+    align-items: center;
+
+    .btn-top-action {
+      background: $blue-primary;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.65rem 1.3rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+
+      &:hover {
+        background: #1740b0;
+      }
+    }
+  }
+}
+
+/* ── Tarjetas KPI ─────────────────────────────────────────────────────────── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.2rem;
+  margin-bottom: 2rem;
+
+  .kpi-card {
+    background: #ffffff;
+    padding: 1.1rem 1.3rem;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 1.1rem;
+    border: 1px solid transparent;
+
+    .kpi-icon {
+      font-size: 1.6rem;
+      padding: 0.65rem;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .kpi-data {
+      span {
+        font-size: 0.68rem;
+        font-weight: 700;
+        color: $text-muted;
+        letter-spacing: 0.3px;
+      }
+
+      h3 {
+        margin: 0.15rem 0 0 0;
+        font-size: 1.55rem;
+        font-weight: 700;
+      }
+    }
+
+    &.card-green {
+      background: #f0fdf4;
+      border-color: $green-border;
+      .kpi-icon, h3 { color: $green-primary; }
+      .kpi-icon { background: #dcfce7; }
+    }
+
+    &.card-orange {
+      background: #fff7ed;
+      border-color: $orange-border;
+      .kpi-icon, h3 { color: $orange-primary; }
+      .kpi-icon { background: #ffedd5; }
+    }
+
+    &.card-blue {
+      background: #f0f4ff;
+      border-color: #dbeafe;
+      .kpi-icon, h3 { color: #2563eb; }
+      .kpi-icon { background: #e0f2fe; }
+    }
+
+    &.card-purple {
+      background: #faf5ff;
+      border-color: #f3e8ff;
+      .kpi-icon, h3 { color: #7c3aed; }
+      .kpi-icon { background: #f3e8ff; }
+    }
+  }
+}
+
+/* ── Grilla de Columnas ──────────────────────────────────────────────────── */
+.check-columns-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.75rem;
+  align-items: start;
+}
+
+.check-column {
+  background: #f8fafc;
+  border: 1px solid $border-color;
+  border-radius: 16px;
+  padding: 1.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+
+  &.column-checkin {
+    border-top: 4px solid $green-primary;
+  }
+
+  &.column-checkout {
+    border-top: 4px solid $orange-primary;
+  }
+
+  .column-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 0.9rem;
+    border-bottom: 1px solid #e2e8f0;
+
+    .column-title-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+
+      .column-icon-badge {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+
+        &.checkin {
+          background: #dcfce7;
+          color: $green-primary;
+        }
+
+        &.checkout {
+          background: #ffedd5;
+          color: $orange-primary;
+        }
+      }
+
+      h2 {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: $text-dark;
+      }
+
+      .column-subtitle {
+        margin: 0.15rem 0 0 0;
+        font-size: 0.75rem;
+        color: $text-muted;
+      }
+    }
+
+    .count-badge {
+      font-size: 0.72rem;
       font-weight: 700;
-      color: $text-dark;
+      padding: 0.3rem 0.7rem;
+      border-radius: 20px;
+
+      &.checkin {
+        background: #dcfce7;
+        color: $green-primary;
+      }
+
+      &.checkout {
+        background: #ffedd5;
+        color: $orange-primary;
+      }
+    }
+  }
+
+  .cards-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+
+/* ── Tarjetas de Huésped (Patrón guests-view) ────────────────────────────── */
+.guest-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 1.2rem;
+  border: 1px solid $border-color;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.06);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+
+    .avatar-tag {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.88rem;
+
+      &.color-purple { background: #f3e8ff; color: #7c3aed; }
+      &.color-orange { background: #ffedd5; color: #ea580c; }
+      &.color-green  { background: #dcfce7; color: #16a34a; }
+      &.color-blue   { background: #e0f2fe; color: #0284c7; }
     }
 
-    .sede-description {
-      margin: 0 0 1.5rem 0;
-      color: $text-muted;
-      font-size: 0.95rem;
+    .header-details {
+      flex: 1;
+
+      .title-line {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+
+        h4 {
+          margin: 0;
+          font-size: 0.95rem;
+          font-weight: 600;
+          color: $text-dark;
+        }
+
+        .star-icon {
+          color: #eab308;
+          font-size: 0.85rem;
+        }
+      }
+
+      p {
+        margin: 0.15rem 0 0 0;
+        font-size: 0.78rem;
+        color: $text-muted;
+
+        strong {
+          color: $text-dark;
+        }
+      }
     }
+
+    .status-pill {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.25rem 0.55rem;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      border: 1px solid transparent;
+
+      .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+      }
+
+      &.checkin_hoy {
+        border-color: $green-border;
+        color: $green-primary;
+        background: $green-light;
+        .dot { background: $green-primary; }
+      }
+
+      &.checkout_hoy {
+        border-color: $orange-border;
+        color: $orange-primary;
+        background: $orange-light;
+        .dot { background: $orange-primary; }
+      }
+    }
+
+    .menu-icon {
+      color: $text-muted;
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 0.2rem;
+      border-radius: 4px;
+
+      &:hover {
+        background: #f1f5f9;
+        color: $text-dark;
+      }
+    }
+  }
+
+  .room-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    color: $text-muted;
+    padding: 0 0.1rem;
+
+    span {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+
+      ion-icon {
+        font-size: 0.9rem;
+      }
+    }
+  }
+
+  .status-box {
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    border: 1px solid transparent;
+
+    .box-header {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.7rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      letter-spacing: 0.3px;
+
+      ion-icon {
+        font-size: 0.95rem;
+      }
+    }
+
+    .box-metrics {
+      display: flex;
+      justify-content: space-between;
+
+      div {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+
+        small {
+          font-size: 0.68rem;
+          color: $text-muted;
+        }
+
+        strong {
+          font-size: 0.9rem;
+          color: $text-dark;
+          font-weight: 700;
+        }
+      }
+    }
+
+    .recurrent-tag {
+      margin-top: 0.55rem;
+      padding-top: 0.45rem;
+      border-top: 1px dashed rgba(0, 0, 0, 0.08);
+      font-size: 0.72rem;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-weight: 600;
+
+      ion-icon {
+        font-size: 0.85rem;
+      }
+    }
+
+    &.checkin_hoy {
+      background: $green-light;
+      border-color: $green-border;
+      .box-header, .recurrent-tag { color: $green-primary; }
+    }
+
+    &.checkout_hoy {
+      background: $orange-light;
+      border-color: $orange-border;
+      .box-header, .recurrent-tag { color: $orange-primary; }
+    }
+  }
+
+  .card-actions {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 0.2rem;
+
+    button {
+      border-radius: 8px;
+      padding: 0.55rem 0.9rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      transition: all 0.2s ease;
+
+      ion-icon {
+        font-size: 0.95rem;
+      }
+    }
+
+    .btn-action-primary {
+      flex: 1.4;
+      color: #ffffff;
+      border: none;
+
+      &.checkin {
+        background: $green-primary;
+        &:hover { background: #15803d; }
+      }
+
+      &.checkout {
+        background: $orange-primary;
+        &:hover { background: #c2410c; }
+      }
+    }
+
+    .btn-action-secondary {
+      flex: 1;
+      background: #ffffff;
+      border: 1px solid $border-color;
+      color: $text-muted;
+
+      &:hover {
+        background: #f8fafc;
+        color: $text-dark;
+        border-color: #cbd5e1;
+      }
+    }
+  }
+}
+
+/* ── Estado Vacío de Columna ─────────────────────────────────────────────── */
+.empty-column-box {
+  background: #ffffff;
+  border: 1px dashed $border-color;
+  border-radius: 12px;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: $text-muted;
+
+  .empty-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+
+    &.checkin { color: $green-primary; }
+    &.checkout { color: $orange-primary; }
+  }
+
+  h4 {
+    margin: 0.2rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: $text-dark;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.82rem;
+  }
+}
+
+/* ── Media Queries Responsive ────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .check-page-container {
+    padding: 1.5rem 1rem;
+  }
+
+  .check-columns-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .top-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .kpi-grid {
+    grid-template-columns: 1fr;
   }
 }
