@@ -1,37 +1,57 @@
 <div class="habitaciones-page-container">
   <main class="page-content">
-    <header class="page-header">
-      <div class="title-group">
+    <!-- Banner de Encabezado Institucional -->
+    <header class="habitaciones-banner-header">
+      <div class="header-main-info">
         <h1>Habitaciones</h1>
         @if (sede(); as currentSede) {
-          <p class="sede-description">Habitaciones registradas de {{ currentSede.nombre }}.</p>
+          <p class="sede-description">
+            <ion-icon name="business-outline"></ion-icon>
+            Habitaciones registradas de <strong>{{ currentSede.nombre }}</strong> en {{ currentSede.ciudad }}
+          </p>
         }
       </div>
 
-      @if (isAdmin()) {
-        <button type="button" class="addhabit-btn" (click)="addHabitaciones()">
-          <ion-icon name="create-outline"></ion-icon>
-          <span>Gestionar habitaciones</span>
-        </button>
-      }
+      <!-- Barra divisoria con conteo y ÚNICO botón de gestión -->
+      <div class="box-legend">
+        <div class="legend-info">
+          <span class="legend-badge">HABITACIONES DISPONIBLES</span>
+          <span class="legend-count">{{ habitaciones().length }} registradas</span>
+        </div>
+
+        @if (isAdmin()) {
+          <button type="button" class="btn-manage-rooms" (click)="addHabitaciones()">
+            <ion-icon name="create-outline"></ion-icon>
+            <span>Gestionar habitaciones</span>
+          </button>
+        }
+      </div>
     </header>
 
+    <!-- Estado vacío (sin botón redundante) -->
     @if (habitaciones().length === 0) {
-      <p class="sin_habitacion">
-        No hay habitaciones registradas.
-        @if (isAdmin()) {
-          Usa <strong>Gestionar habitaciones</strong> para agregarlas.
-        }
-      </p>
+      <div class="sin_habitacion">
+        <div class="empty-icon-circle">
+          <ion-icon name="bed-outline"></ion-icon>
+        </div>
+        <p>No hay habitaciones registradas para esta sede.</p>
+      </div>
     } @else {
+      <!-- Grilla de Tarjetas -->
       <section class="rooms-grid">
         @for (habitacion of habitaciones(); track habitacion.id) {
           <article class="room-summary">
-            <h2>Habitación {{ habitacion.numero }}</h2>
+            <div class="room-card-header">
+              <div class="room-icon-tag">
+                <ion-icon name="bed-outline"></ion-icon>
+              </div>
+              <h2>Habitación {{ habitacion.numero }}</h2>
+            </div>
+
             <dl>
               <div>
                 <dt>Tipo</dt>
-                <dd>{{ habitacion.tipo }}</dd>
+                <dd class="badge-tipo">{{ habitacion.tipo }}</dd>
               </div>
               <div>
                 <dt>Tamaño</dt>

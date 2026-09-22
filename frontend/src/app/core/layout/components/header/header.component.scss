@@ -52,51 +52,27 @@ $blue-primary: #1e50d8;
       }
     }
 
-    .sede-chip {
+    /* Etiqueta de sede informativa */
+    .sede-chip-info {
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      padding: 0.4rem 0.85rem;
-      background: rgba(255, 255, 255, 0.15);
-      border: 1px solid rgba(255, 255, 255, 0.25);
+      padding: 0.45rem 1rem;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.22);
       border-radius: 8px;
       color: #ffffff;
-      font-family: inherit;
       font-size: 0.85rem;
       font-weight: 600;
-      line-height: normal;
-      outline: none;
-      transition: all 0.2s ease;
+      user-select: none;
 
       .sede-icon {
         font-size: 1.05rem;
+        color: #93c5fd;
       }
 
-      .edit-hint {
-        font-size: 0.75rem;
-        color: rgba(255, 255, 255, 0.8);
-      }
-
-      &.clickable {
-        cursor: pointer;
-
-        &:hover {
-          background: rgba(255, 255, 255, 0.25);
-          border-color: rgba(255, 255, 255, 0.4);
-        }
-
-        &:active {
-          transform: translateY(1px);
-        }
-
-        &:focus-visible {
-          box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px $blue-primary;
-        }
-      }
-
-      &:disabled {
-        opacity: 0.8;
-        cursor: default;
+      .sede-name {
+        letter-spacing: 0.2px;
       }
     }
   }
@@ -106,7 +82,6 @@ $blue-primary: #1e50d8;
     align-items: center;
     gap: 0.6rem;
 
-    .header-icon-btn,
     .notif-btn,
     .config-btn {
       background: rgba(255, 255, 255, 0.15);

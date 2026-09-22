@@ -1,5 +1,5 @@
 <header class="app-header">
-  <!-- Lado Izquierdo: Logo HosPal + Chip de Sede -->
+  <!-- Lado Izquierdo: Logo HosPal + Chip informativo de Sede -->
   <div class="header-left">
     <div class="brand-box">
       <img src="assets/icon/PMSwhite.png" class="brand-icon" alt="HosPal logo" />
@@ -9,14 +9,11 @@
       </div>
     </div>
 
-    <button type="button" class="sede-chip" [class.clickable]="canEditSede()" [disabled]="!canEditSede()"
-      aria-label="Editar configuración de la sede" (click)="openEditSede()">
+    <!-- Etiqueta informativa fija (sin acción de click ni edición) -->
+    <div class="sede-chip-info">
       <ion-icon name="business-outline" class="sede-icon"></ion-icon>
-      <span class="sede-name">{{ hasSede() ? sedeLabel() : 'Panel de Administración' }}</span>
-      @if (canEditSede()) {
-      <small class="edit-hint">(Editar)</small>
-      }
-    </button>
+      <span class="sede-name">{{ sedeInfoLabel() }}</span>
+    </div>
   </div>
 
   <!-- Lado Derecho: Acciones -->
@@ -33,11 +30,8 @@
 </header>
 
 @if (configOptionsOpen()) {
-<app-config-options (close)="closeConfigOptions()" (manageProfiles)="openEditPerfiles()"></app-config-options>
+  <app-config-options (close)="closeConfigOptions()" (manageProfiles)="openEditPerfiles()"></app-config-options>
 }
-
-<app-edit-sede-banner [isOpen]="editSedeOpen()" (closed)="closeEditSede()" (close)="closeEditSede()">
-</app-edit-sede-banner>
 
 <app-edit-perfiles [isOpen]="editPerfilesOpen()" (closed)="closeEditPerfiles()">
 </app-edit-perfiles>

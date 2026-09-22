@@ -1,142 +1,99 @@
-import { Component, effect, inject, input, output, signal } from '@angular/core';
-import {
-  IonButton,
-  IonInput,
-  IonItem,
-  IonModal,
-  IonSelect,
-  IonSelectOption,
-  IonTextarea,
-} from '@ionic/angular/standalone';
-import {
-  Habitacion,
-  ROOM_TYPES,
-  RoomType,
-  SedeService,
-} from '../../application/sede.service';
+import { Component, EventEmitter, Input, Output, inject, OnChanges, SimpleChanges } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { IonIcon } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { bedOutline, trashOutline } from 'ionicons/icons';
+import { Habitacion, ROOM_TYPES, RoomType, SedeService } from '../../application/sede.service';
 
 @Component({
   selector: 'app-edit-habitaciones-modal',
   templateUrl: './edit-habitaciones-modal.component.html',
   styleUrls: ['./edit-habitaciones-modal.component.scss'],
   standalone: true,
-  imports: [
-    IonModal,
-    IonButton,
-    IonItem,
-    IonInput,
-    IonSelect,
-    IonSelectOption,
-    IonTextarea,
-  ],
+  imports: [CommonModule, FormsModule, IonIcon],
 })
-export class EditHabitacionesModalComponent {
+export class EditHabitacionesModalComponent implements OnChanges {
   private readonly sedeService = inject(SedeService);
 
-  readonly isOpen = input(false);
-  readonly closed = output<void>();
-  readonly close = this.closed;
+  @Input() isOpen = false;
+  @Output() closed = new EventEmitter<void>();
+  @Output() close = new EventEmitter<void>();
 
-  readonly roomTypes = ROOM_TYPES;
-  readonly habitaciones = signal<Habitacion[]>([]);
-  readonly cantidadNueva = signal(1);
-  readonly tipoNuevo = signal<RoomType>('Doble');
-  readonly errorMessage = signal('');
+  readonly roomTypes: RoomType[] = [...ROOM_TYPES];
+
+  cantidad = 1;
+  tipoSeleccionado: RoomType = 'Doble';
+  tempHabitaciones: Habitacion[] = [];
 
   constructor() {
-    effect(() => {
-      if (this.isOpen()) {
-        this.loadDraft();
-      }
-    });
+    addIcons({ bedOutline, trashOutline });
   }
 
-  loadDraft(): void {
-    const sede = this.sedeService.selectedSede();
-    this.habitaciones.set((sede?.habitaciones ?? []).map((habitacion) => ({ ...habitacion })));
-    this.cantidadNueva.set(1);
-    this.tipoNuevo.set('Doble');
-    this.errorMessage.set('');
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['isOpen'] && this.isOpen) {
+      this.cargarHabitacionesActuales();
+    }
+  }
+
+  cargarHabitacionesActuales(): void {
+    const actuales = this.sedeService.habitaciones();
+    this.tempHabitaciones = actuales.map((h) => ({ ...h }));
+    this.cantidad = 1;
+    this.tipoSeleccionado = 'Doble';
+  }
+
+  agregarHabitaciones(): void {
+    const cant = Math.max(1, Number(this.cantidad) || 1);
+    const startNum = this.tempHabitaciones.length > 0 
+      ? Math.max(...this.tempHabitaciones.map((h) => Number(h.numero) || 0)) + 1 
+      : 101;
+
+    for (let i = 0; i < cant; i++) {
+      const nuevoNumero = startNum + i;
+      
+      // Cálculo de m2 según tipología en español
+      let tamano = 22;
+      let muebles = '1 Cama Matrimonial';
+
+      if (this.tipoSeleccionado === 'Individual') {
+        tamano = 14;
+        muebles = '1 Cama 1 Plaza';
+      } else if (this.tipoSeleccionado === 'Triple') {
+        tamano = 28;
+        muebles = '3 Camas 1 Plaza';
+      } else if (this.tipoSeleccionado === 'Familiar') {
+        tamano = 36;
+        muebles = '1 Cama Matrimonial + 2 Camas 1 Plaza';
+      }
+
+      this.tempHabitaciones.push({
+        id: this.sedeService.createHabitacionId(),
+        numero: String(nuevoNumero),
+        tipo: this.tipoSeleccionado,
+        tamanoM2: tamano,
+        disposicionMuebles: muebles,
+      });
+    }
+  }
+
+  eliminarHabitacion(index: number): void {
+    this.tempHabitaciones.splice(index, 1);
+  }
+
+  guardarCambios(): void {
+    const sedeActual = this.sedeService.selectedSede();
+    if (sedeActual) {
+      this.sedeService.updateSelectedSede({
+        nombre: sedeActual.nombre,
+        habitaciones: this.tempHabitaciones,
+      });
+    }
+    this.dismiss();
   }
 
   dismiss(): void {
     this.closed.emit();
-  }
-
-  addHabitaciones(): void {
-    const cantidad = Math.max(1, Math.floor(this.cantidadNueva() || 0));
-    const tipo = this.tipoNuevo();
-    const current = this.habitaciones();
-    const nextNumero = this.nextRoomNumber(current);
-
-    const created: Habitacion[] = Array.from({ length: cantidad }, (_, index) => ({
-      id: this.sedeService.createHabitacionId(),
-      numero: String(nextNumero + index),
-      tipo,
-      tamanoM2: null,
-      disposicionMuebles: '',
-    }));
-
-    this.habitaciones.set([...current, ...created]);
-  }
-
-  removeHabitacion(id: number): void {
-    this.habitaciones.update((list) => list.filter((habitacion) => habitacion.id !== id));
-  }
-
-  updateHabitacion(id: number, patch: Partial<Habitacion>): void {
-    this.habitaciones.update((list) =>
-      list.map((habitacion) => (habitacion.id === id ? { ...habitacion, ...patch } : habitacion)),
-    );
-  }
-
-  setCantidadNueva(value: string | number | null | undefined): void {
-    this.cantidadNueva.set(Math.max(1, Number(value) || 1));
-  }
-
-  setTamano(id: number, value: string | number | null | undefined): void {
-    const raw = value === '' || value === null || value === undefined ? null : Number(value);
-    this.updateHabitacion(id, { tamanoM2: raw === null || Number.isNaN(raw) ? null : raw });
-  }
-
-  save(): void {
-    const currentSede = this.sedeService.selectedSede();
-    if (!currentSede) {
-      this.errorMessage.set('No hay una sede seleccionada.');
-      return;
-    }
-
-    const invalidRoom = this.habitaciones().find(
-      (habitacion) =>
-        !habitacion.numero.trim() ||
-        habitacion.tamanoM2 === null ||
-        habitacion.tamanoM2 <= 0 ||
-        !habitacion.disposicionMuebles.trim(),
-    );
-
-    if (invalidRoom) {
-      this.errorMessage.set(
-        'Completa número, tamaño y disposición de muebles en todas las habitaciones.',
-      );
-      return;
-    }
-
-    this.sedeService.updateSelectedSede({
-      nombre: currentSede.nombre,
-      habitaciones: this.habitaciones(),
-    });
-    this.dismiss();
-  }
-
-  private nextRoomNumber(habitaciones: Habitacion[]): number {
-    const numbers = habitaciones
-      .map((habitacion) => Number.parseInt(habitacion.numero, 10))
-      .filter((value) => Number.isFinite(value));
-
-    if (numbers.length === 0) {
-      return 101;
-    }
-
-    return Math.max(...numbers) + 1;
+    this.close.emit();
   }
 }

@@ -2,7 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { bedOutline, createOutline } from 'ionicons/icons';
+import { bedOutline, businessOutline, createOutline } from 'ionicons/icons';
 import { SedeService } from '../../../application/sede.service';
 import { AuthService } from '../../../../../core/auth/application/auth.service';
 import { EditHabitacionesModalComponent } from '../../edit-habitaciones-modal/edit-habitaciones-modal.component';
@@ -24,7 +24,7 @@ export class HabitacionesPage {
   readonly editHabitacionesOpen = signal(false);
 
   constructor() {
-    addIcons({ bedOutline, createOutline });
+    addIcons({ bedOutline, createOutline, businessOutline });
   }
 
   addHabitaciones(): void {
