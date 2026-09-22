@@ -1,15 +1,15 @@
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { IonContent, IonIcon } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
 import {
-  IonButton,
-  IonContent,
-  IonInput,
-  IonItem,
-  IonLabel,
-  IonSegment,
-  IonSegmentButton,
-} from '@ionic/angular/standalone';
+  alertCircleOutline,
+  businessOutline,
+  chevronForwardOutline,
+  lockClosedOutline,
+  mailOutline,
+} from 'ionicons/icons';
 import { AuthService } from '../../../application/auth.service';
 
 @Component({
@@ -19,12 +19,7 @@ import { AuthService } from '../../../application/auth.service';
   imports: [
     FormsModule,
     IonContent,
-    IonSegment,
-    IonSegmentButton,
-    IonLabel,
-    IonItem,
-    IonInput,
-    IonButton,
+    IonIcon,
   ],
 })
 export class HomePage {
@@ -36,6 +31,16 @@ export class HomePage {
   errorMessage = '';
   showRecover = false;
   submitting = false;
+
+  constructor() {
+    addIcons({
+      businessOutline,
+      chevronForwardOutline,
+      mailOutline,
+      lockClosedOutline,
+      alertCircleOutline,
+    });
+  }
 
   async continue(): Promise<void> {
     if (this.submitting) {

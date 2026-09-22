@@ -1,45 +1,85 @@
 <ion-content [fullscreen]="true" class="home-content">
-  <div class="home-container">
-    <h1>Hospal PMS</h1>
-    <h2>Bienvenido al sistema de gestión interna de hostales</h2>
-    <p class="subtitle">Por favor, ingresa tu correo y contraseña para continuar</p>
+  <div class="home-wrapper">
+    <!-- Cabecera institucional con Logo -->
+    <header class="home-header">
+      <div class="brand-badge-header">
+        <div class="header-icon-circle">
+          <img src="assets/icon/PMSwhite.png" alt="HosPal PMS Logo" class="brand-logo-img" />
+        </div>
+        <div class="brand-title">
+          <span class="brand-name">HosPal PMS</span>
+          <span class="brand-tagline">Sistema de Gestión Interna</span>
+        </div>
+      </div>
 
-    <ion-segment value="login">
-      <ion-segment-button value="login">
-        <ion-label>Ingresar</ion-label>
-      </ion-segment-button>
-    </ion-segment>
+      <h1>Iniciar Sesión</h1>
+      <p class="subtitle">Ingresa tus credenciales para acceder a la plataforma</p>
+    </header>
 
-    <div class="auth-form">
-      <ion-item lines="none">
-        <ion-input label="Correo electrónico" labelPlacement="stacked" type="email" placeholder="correo@ejemplo.com"
-          [(ngModel)]="email"></ion-input>
-      </ion-item>
+    <!-- Tarjeta central de autenticación -->
+    <section class="auth-card-box">
+      <form class="auth-form" (ngSubmit)="continue()">
+        <div class="input-field-group">
+          <label class="custom-label" for="emailInput">Correo electrónico</label>
+          <div class="input-wrapper">
+            <ion-icon name="mail-outline"></ion-icon>
+            <input
+              id="emailInput"
+              type="email"
+              placeholder="correo@ejemplo.com"
+              [(ngModel)]="email"
+              name="email"
+              autocomplete="email"
+            />
+          </div>
+        </div>
 
-      <ion-item lines="none">
-        <ion-input label="Contraseña" labelPlacement="stacked" type="password" placeholder="••••••••"
-          [(ngModel)]="password"></ion-input>
-      </ion-item>
+        <div class="input-field-group">
+          <label class="custom-label" for="passwordInput">Contraseña</label>
+          <div class="input-wrapper">
+            <ion-icon name="lock-closed-outline"></ion-icon>
+            <input
+              id="passwordInput"
+              type="password"
+              placeholder="••••••••"
+              [(ngModel)]="password"
+              name="password"
+              autocomplete="current-password"
+            />
+          </div>
+        </div>
 
-      @if (errorMessage) {
-      <p class="error">{{ errorMessage }}</p>
-      }
+        @if (errorMessage) {
+          <div class="error-banner">
+            <ion-icon name="alert-circle-outline"></ion-icon>
+            <span>{{ errorMessage }}</span>
+          </div>
+        }
 
-      <ion-button expand="block" [disabled]="submitting" (click)="continue()">
-        Ingresar
-      </ion-button>
+        <button type="submit" class="btn-submit" [disabled]="submitting">
+          <span>{{ submitting ? 'Verificando...' : 'Ingresar al Sistema' }}</span>
+          <ion-icon name="chevron-forward-outline"></ion-icon>
+        </button>
 
-      @if (showRecover) {
-      <ion-button expand="block" fill="outline" (click)="goRecover()">
-        Recuperar contraseña
-      </ion-button>
-      }
-    </div>
+        @if (showRecover) {
+          <button type="button" class="btn-secondary" (click)="goRecover()">
+            ¿Olvidaste tu contraseña? Recuperar aquí
+          </button>
+        }
+      </form>
 
-    <p class="test-accounts">
-      Cuentas de prueba:<br />
-      admin: admintest@gmail.com / Admin123<br />
-      staff: stafftest@gmail.com / staff123
-    </p>
+      <!-- Pie con cuentas de demostración -->
+      <footer class="demo-accounts-box">
+        <span class="demo-title">Credenciales de prueba</span>
+        <div class="demo-badges">
+          <div class="demo-badge">
+            <strong>Admin:</strong> admintest@gmail.com / Admin123
+          </div>
+          <div class="demo-badge">
+            <strong>Staff:</strong> stafftest@gmail.com / staff123
+          </div>
+        </div>
+      </footer>
+    </section>
   </div>
 </ion-content>
