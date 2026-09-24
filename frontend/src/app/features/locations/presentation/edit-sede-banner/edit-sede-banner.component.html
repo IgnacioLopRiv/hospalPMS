@@ -23,10 +23,10 @@
                 (ionInput)="setCantidadNueva($any($event.target).value)"></ion-input>
             </ion-item>
             <ion-item lines="none">
-              <ion-select label="Tipo" labelPlacement="stacked" [value]="tipoNuevo()"
+              <ion-select label="Tipología" labelPlacement="stacked" [value]="tipoNuevo()"
                 (ionChange)="tipoNuevo.set($any($event.detail.value))">
-                @for (tipo of roomTypes; track tipo) {
-                <ion-select-option [value]="tipo">{{ tipo }}</ion-select-option>
+                @for (t of tipologias(); track t.id) {
+                <ion-select-option [value]="t.nombre">{{ t.nombre }} ({{ t.capacidad }}p)</ion-select-option>
                 }
               </ion-select>
             </ion-item>
@@ -53,10 +53,10 @@
                     (ionInput)="updateHabitacion(habitacion.id, { numero: $any($event.target).value })"></ion-input>
                 </ion-item>
                 <ion-item lines="none">
-                  <ion-select label="Tipo" labelPlacement="stacked" [value]="habitacion.tipo"
-                    (ionChange)="updateHabitacion(habitacion.id, { tipo: $any($event.detail.value) })">
-                    @for (tipo of roomTypes; track tipo) {
-                    <ion-select-option [value]="tipo">{{ tipo }}</ion-select-option>
+                  <ion-select label="Tipología" labelPlacement="stacked" [value]="habitacion.tipo"
+                    (ionChange)="updateHabitacionTipo(habitacion.id, $any($event.detail.value))">
+                    @for (t of tipologias(); track t.id) {
+                    <ion-select-option [value]="t.nombre">{{ t.nombre }}</ion-select-option>
                     }
                   </ion-select>
                 </ion-item>

@@ -6,7 +6,7 @@
       <header class="modal-header">
         <div class="header-titles">
           <h2>Gestionar habitaciones</h2>
-          <p>Indica cuántas habitaciones agregar y de qué tipo, o edita y elimina las existentes.</p>
+          <p>Indica cuántas habitaciones agregar y de qué tipología, o edita y elimina las existentes.</p>
         </div>
         <button type="button" class="btn-close-text" (click)="dismiss()">
           CERRAR
@@ -30,18 +30,31 @@
           </div>
 
           <div class="input-block type-block">
-            <label for="roomType">Tipo</label>
+            <label for="roomType">Tipología</label>
             <select id="roomType" [(ngModel)]="tipoSeleccionado">
-              @for (tipo of roomTypes; track tipo) {
-                <option [value]="tipo">{{ tipo }}</option>
+              @for (tipologia of tipologias(); track tipologia.id) {
+                <option [value]="tipologia.nombre">
+                  {{ tipologia.nombre }} ({{ tipologia.capacidad }}p)
+                </option>
               }
             </select>
           </div>
 
-          <button type="button" class="btn-add-action" (click)="agregarHabitaciones()">
+          <button
+            type="button"
+            class="btn-add-action"
+            [disabled]="tipologias().length === 0"
+            (click)="agregarHabitaciones()">
             AGREGAR
           </button>
         </div>
+
+        @if (tipologias().length === 0) {
+          <div class="empty-notice warning">
+            <ion-icon name="alert-circle-outline"></ion-icon>
+            <span>Esta sede no tiene tipologías configuradas. Ve a la configuración de la sede para agregar tipologías primero.</span>
+          </div>
+        }
 
         <!-- Listado de habitaciones cargadas -->
         <div class="rooms-management-list">
@@ -61,10 +74,13 @@
                   </div>
 
                   <div class="room-field">
-                    <label>Tipo</label>
-                    <select [(ngModel)]="hab.tipo">
-                      @for (t of roomTypes; track t) {
-                        <option [value]="t">{{ t }}</option>
+                    <label>Tipología</label>
+                    <select [ngModel]="hab.tipo" (ngModelChange)="onTipoChange(hab, $event)">
+                      @for (t of tipologias(); track t.id) {
+                        <option [value]="t.nombre">{{ t.nombre }}</option>
+                      }
+                      @if (isCustomOrLegacyType(hab.tipo)) {
+                        <option [value]="hab.tipo">{{ hab.tipo }} (Legacy)</option>
                       }
                     </select>
                   </div>

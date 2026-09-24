@@ -12,19 +12,27 @@ import {
 import { SedeService } from '../../../../features/locations/application/sede.service';
 import { ConfigOptionsComponent } from '../../../../features/locations/presentation/config-options/config-options.component';
 import { EditPerfilesComponent } from '../edit-perfiles/edit-perfiles.component';
+import { EditTipologiasComponent } from '../../../../features/locations/presentation/edit-tipologias/edit-tipologias.component';
 
 @Component({
   selector: 'app-header',
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.scss'],
   standalone: true,
-  imports: [CommonModule, IonIcon, ConfigOptionsComponent, EditPerfilesComponent],
+  imports: [
+    CommonModule,
+    IonIcon,
+    ConfigOptionsComponent,
+    EditPerfilesComponent,
+    EditTipologiasComponent,
+  ],
 })
 export class HeaderComponent {
   private readonly sedeService = inject(SedeService);
 
   readonly configOptionsOpen = signal(false);
   readonly editPerfilesOpen = signal(false);
+  readonly editTipologiasOpen = signal(false);
 
   // Genera el texto fijo: Estás en "Nombre Sede"
   readonly sedeInfoLabel = computed(() => {
@@ -60,5 +68,16 @@ export class HeaderComponent {
 
   closeEditPerfiles(): void {
     this.editPerfilesOpen.set(false);
+  }
+
+  // ── Gestionar tipologías ──────────────────────────────────────────────────
+
+  openEditTipologias(): void {
+    this.closeConfigOptions();
+    this.editTipologiasOpen.set(true);
+  }
+
+  closeEditTipologias(): void {
+    this.editTipologiasOpen.set(false);
   }
 }
