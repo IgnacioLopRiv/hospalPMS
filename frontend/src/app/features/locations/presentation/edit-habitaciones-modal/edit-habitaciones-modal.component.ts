@@ -3,8 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { bedOutline, trashOutline } from 'ionicons/icons';
-import { Habitacion, ROOM_TYPES, RoomType, SedeService } from '../../application/sede.service';
+import { bedOutline, trashOutline, alertCircleOutline } from 'ionicons/icons';
+import { Habitacion, SedeService, SedeTipologia } from '../../application/sede.service';
 
 @Component({
   selector: 'app-edit-habitaciones-modal',
@@ -20,14 +20,14 @@ export class EditHabitacionesModalComponent implements OnChanges {
   @Output() closed = new EventEmitter<void>();
   @Output() close = new EventEmitter<void>();
 
-  readonly roomTypes: RoomType[] = [...ROOM_TYPES];
+  readonly tipologias = this.sedeService.tipologias;
 
   cantidad = 1;
-  tipoSeleccionado: RoomType = 'Doble';
+  tipoSeleccionado = '';
   tempHabitaciones: Habitacion[] = [];
 
   constructor() {
-    addIcons({ bedOutline, trashOutline });
+    addIcons({ bedOutline, trashOutline, alertCircleOutline });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -40,7 +40,9 @@ export class EditHabitacionesModalComponent implements OnChanges {
     const actuales = this.sedeService.habitaciones();
     this.tempHabitaciones = actuales.map((h) => ({ ...h }));
     this.cantidad = 1;
-    this.tipoSeleccionado = 'Doble';
+
+    const available = this.tipologias();
+    this.tipoSeleccionado = available.length > 0 ? available[0].nombre : 'General';
   }
 
   agregarHabitaciones(): void {
@@ -49,20 +51,26 @@ export class EditHabitacionesModalComponent implements OnChanges {
       ? Math.max(...this.tempHabitaciones.map((h) => Number(h.numero) || 0)) + 1 
       : 101;
 
+    const available = this.tipologias();
+    const matchedTipologia = available.find((t) => t.nombre === this.tipoSeleccionado) ?? available[0];
+    const tipoFinal = matchedTipologia ? matchedTipologia.nombre : this.tipoSeleccionado || 'General';
+    const tipologiaId = matchedTipologia?.id;
+    const capacidad = matchedTipologia?.capacidad ?? 2;
+
     for (let i = 0; i < cant; i++) {
       const nuevoNumero = startNum + i;
       
-      // Cálculo de m2 según tipología en español
+      // Cálculo de m2 y muebles según capacidad
       let tamano = 22;
       let muebles = '1 Cama Matrimonial';
 
-      if (this.tipoSeleccionado === 'Individual') {
+      if (capacidad === 1) {
         tamano = 14;
         muebles = '1 Cama 1 Plaza';
-      } else if (this.tipoSeleccionado === 'Triple') {
+      } else if (capacidad === 3) {
         tamano = 28;
         muebles = '3 Camas 1 Plaza';
-      } else if (this.tipoSeleccionado === 'Familiar') {
+      } else if (capacidad >= 4) {
         tamano = 36;
         muebles = '1 Cama Matrimonial + 2 Camas 1 Plaza';
       }
@@ -70,11 +78,25 @@ export class EditHabitacionesModalComponent implements OnChanges {
       this.tempHabitaciones.push({
         id: this.sedeService.createHabitacionId(),
         numero: String(nuevoNumero),
-        tipo: this.tipoSeleccionado,
+        tipo: tipoFinal,
+        tipologiaId: tipologiaId,
         tamanoM2: tamano,
         disposicionMuebles: muebles,
       });
     }
+  }
+
+  onTipoChange(hab: Habitacion, nuevoTipo: string): void {
+    hab.tipo = nuevoTipo;
+    const matched = this.tipologias().find((t) => t.nombre === nuevoTipo);
+    if (matched) {
+      hab.tipologiaId = matched.id;
+    }
+  }
+
+  isCustomOrLegacyType(tipo: string): boolean {
+    if (!tipo) return false;
+    return !this.tipologias().some((t) => t.nombre.toLowerCase() === tipo.toLowerCase());
   }
 
   eliminarHabitacion(index: number): void {

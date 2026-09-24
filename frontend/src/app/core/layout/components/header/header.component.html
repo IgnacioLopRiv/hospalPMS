@@ -30,8 +30,15 @@
 </header>
 
 @if (configOptionsOpen()) {
-  <app-config-options (close)="closeConfigOptions()" (manageProfiles)="openEditPerfiles()"></app-config-options>
+  <app-config-options
+    (close)="closeConfigOptions()"
+    (manageProfiles)="openEditPerfiles()"
+    (manageTipologias)="openEditTipologias()"
+  ></app-config-options>
 }
 
 <app-edit-perfiles [isOpen]="editPerfilesOpen()" (closed)="closeEditPerfiles()">
 </app-edit-perfiles>
+
+<app-edit-tipologias [isOpen]="editTipologiasOpen()" (closed)="closeEditTipologias()">
+</app-edit-tipologias>

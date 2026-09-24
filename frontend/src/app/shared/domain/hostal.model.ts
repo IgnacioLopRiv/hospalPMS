@@ -53,12 +53,21 @@ export interface GuestCardView {
 }
 
 export const ROOM_TYPES = ['Individual', 'Doble', 'Triple', 'Suite', 'Familiar'] as const;
-export type RoomType = (typeof ROOM_TYPES)[number];
+export type RoomType = (typeof ROOM_TYPES)[number] | string;
+
+export interface SedeTipologia {
+  id: number;
+  nombre: string;
+  capacidad: number;
+  precioBase?: number;
+  descripcion?: string;
+}
 
 export interface SedeHabitacion {
   id: number;
   numero: string;
-  tipo: RoomType;
+  tipo: string;
+  tipologiaId?: number;
   tamanoM2: number | null;
   disposicionMuebles: string;
 }
@@ -67,5 +76,6 @@ export interface Sede {
   id: number;
   nombre: string;
   ciudad: string;
+  tipologias?: SedeTipologia[];
   habitaciones: SedeHabitacion[];
 }

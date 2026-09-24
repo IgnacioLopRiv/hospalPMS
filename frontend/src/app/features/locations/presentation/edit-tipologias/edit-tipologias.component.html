@@ -1,0 +1,209 @@
+<ion-modal
+  class="edit-tipologias-banner"
+  [isOpen]="isOpen()"
+  [backdropDismiss]="true"
+  (didDismiss)="dismiss()"
+>
+  <ng-template>
+    <div class="banner">
+
+      <!-- ── Header ── -->
+      <header class="banner-header">
+        <div class="banner-title">
+          <ion-icon name="pricetags-outline" class="title-icon"></ion-icon>
+          <div>
+            <h2>Gestionar tipologías</h2>
+            @if (sede(); as currentSede) {
+              <span class="sede-subtitle">
+                <ion-icon name="business-outline"></ion-icon>
+                {{ currentSede.nombre }} ({{ currentSede.ciudad }})
+              </span>
+            }
+          </div>
+        </div>
+        <div class="banner-header-actions">
+          @if (isAdmin()) {
+            <button
+              type="button"
+              class="add-btn"
+              id="add-tipologia-btn"
+              (click)="openAdd()"
+              aria-label="Agregar nueva tipología"
+              title="Agregar nueva tipología"
+            >
+              <ion-icon name="add-outline"></ion-icon>
+            </button>
+          }
+          <button
+            type="button"
+            class="close-btn"
+            id="close-tipologias-btn"
+            (click)="dismiss()"
+            aria-label="Cerrar panel de tipologías"
+          >
+            <ion-icon name="close-outline"></ion-icon>
+          </button>
+        </div>
+      </header>
+
+      <!-- ── Body ── -->
+      <div class="banner-body">
+
+        <!-- Toast de éxito -->
+        @if (successMessage()) {
+          <div class="success-toast" role="status">{{ successMessage() }}</div>
+        }
+
+        <!-- Formulario inline (agregar / editar) -->
+        @if (formMode() !== null) {
+          <section class="user-form" aria-label="Formulario de tipología">
+            <h3>{{ formMode() === 'add' ? 'Nueva tipología' : 'Editar tipología' }}</h3>
+
+            <div class="form-grid">
+              <ion-item lines="none">
+                <ion-input
+                  label="Nombre de tipología"
+                  labelPlacement="stacked"
+                  type="text"
+                  placeholder="Ej. Doble Superior, Suite Deluxe..."
+                  [value]="form().nombre"
+                  (ionInput)="patchForm('nombre', $any($event.target).value)"
+                ></ion-input>
+              </ion-item>
+
+              <ion-item lines="none">
+                <ion-input
+                  label="Capacidad (personas)"
+                  labelPlacement="stacked"
+                  type="number"
+                  min="1"
+                  max="50"
+                  placeholder="Ej. 2"
+                  [value]="form().capacidad"
+                  (ionInput)="patchForm('capacidad', $any($event.target).value)"
+                ></ion-input>
+              </ion-item>
+
+              <ion-item lines="none">
+                <ion-input
+                  label="Precio base sugerido / noche ($)"
+                  labelPlacement="stacked"
+                  type="number"
+                  min="0"
+                  placeholder="Ej. 45000"
+                  [value]="form().precioBase"
+                  (ionInput)="patchForm('precioBase', $any($event.target).value)"
+                ></ion-input>
+              </ion-item>
+
+              <ion-item lines="none">
+                <ion-input
+                  label="Descripción breve"
+                  labelPlacement="stacked"
+                  type="text"
+                  placeholder="Ej. Balcón, vista al jardín..."
+                  [value]="form().descripcion"
+                  (ionInput)="patchForm('descripcion', $any($event.target).value)"
+                ></ion-input>
+              </ion-item>
+            </div>
+
+            @if (errorMessage()) {
+              <p class="error-msg" role="alert">{{ errorMessage() }}</p>
+            }
+
+            <div class="form-actions">
+              <ion-button fill="outline" (click)="cancelForm()">Cancelar</ion-button>
+              <ion-button (click)="saveForm()">
+                {{ formMode() === 'add' ? 'Agregar tipología' : 'Guardar cambios' }}
+              </ion-button>
+            </div>
+          </section>
+        }
+
+        <!-- Error standalone (fuera del formulario, p.ej. al eliminar) -->
+        @if (errorMessage() && formMode() === null) {
+          <p class="error-msg standalone" role="alert">{{ errorMessage() }}</p>
+        }
+
+        <!-- ── Listado de Tipologías de la Sede ── -->
+        <section class="role-section" aria-label="Tipologías de la sede">
+          <div class="role-heading">
+            <ion-icon name="pricetags-outline"></ion-icon>
+            <span>Tipologías de esta sede</span>
+            <span class="role-count">{{ tipologias().length }}</span>
+          </div>
+
+          @if (tipologias().length === 0) {
+            <p class="empty-state">No hay tipologías configuradas para esta sede. Agrega una con el botón (+).</p>
+          } @else {
+            <ul class="user-list" role="list">
+              @for (tipologia of tipologias(); track tipologia.id) {
+                <li class="user-card tipologia-card" role="listitem">
+
+                  <div class="user-avatar tipologia-avatar">
+                    <ion-icon name="bed-outline"></ion-icon>
+                  </div>
+
+                  <div class="user-info">
+                    <div class="tipologia-header-row">
+                      <strong class="user-name">{{ tipologia.nombre }}</strong>
+                      <div class="badges-row">
+                        <span class="capacity-badge">
+                          <ion-icon name="people-outline"></ion-icon>
+                          {{ tipologia.capacidad }} {{ tipologia.capacidad === 1 ? 'huésped' : 'huéspedes' }}
+                        </span>
+                        @if (tipologia.precioBase) {
+                          <span class="price-badge">
+                            ${{ tipologia.precioBase.toLocaleString('es-CL') }}
+                          </span>
+                        }
+                        <span class="rooms-badge">
+                          {{ getRoomsCount(tipologia) }} {{ getRoomsCount(tipologia) === 1 ? 'habitación' : 'habitaciones' }}
+                        </span>
+                      </div>
+                    </div>
+                    @if (tipologia.descripcion) {
+                      <span class="user-email tipologia-desc">{{ tipologia.descripcion }}</span>
+                    }
+                  </div>
+
+                  <!-- Confirmación de eliminación inline -->
+                  @if (deleteConfirmId() === tipologia.id) {
+                    <div class="confirm-delete" role="alert">
+                      <span>¿Eliminar?</span>
+                      <button class="icon-btn danger" (click)="confirmDelete(tipologia.id)" title="Confirmar eliminación">✓</button>
+                      <button class="icon-btn" (click)="cancelDelete()" title="Cancelar">✕</button>
+                    </div>
+                  } @else {
+                    @if (isAdmin()) {
+                      <div class="user-actions">
+                        <button
+                          class="icon-btn edit"
+                          (click)="openEdit(tipologia)"
+                          [attr.aria-label]="'Editar ' + tipologia.nombre"
+                          title="Editar tipología"
+                        >
+                          <ion-icon name="create-outline"></ion-icon>
+                        </button>
+                        <button
+                          class="icon-btn delete"
+                          (click)="requestDelete(tipologia.id)"
+                          [attr.aria-label]="'Eliminar ' + tipologia.nombre"
+                          title="Eliminar tipología"
+                        >
+                          <ion-icon name="trash-outline"></ion-icon>
+                        </button>
+                      </div>
+                    }
+                  }
+                </li>
+              }
+            </ul>
+          }
+        </section>
+
+      </div>
+    </div>
+  </ng-template>
+</ion-modal>

@@ -36,11 +36,11 @@ export class EditSedeBannerComponent {
   readonly closed = output<void>();
   readonly close = this.closed;
 
-  readonly roomTypes = ROOM_TYPES;
+  readonly tipologias = this.sedeService.tipologias;
   readonly nombre = signal('');
   readonly habitaciones = signal<Habitacion[]>([]);
   readonly cantidadNueva = signal(1);
-  readonly tipoNuevo = signal<RoomType>('Doble');
+  readonly tipoNuevo = signal<string>('Doble');
   readonly errorMessage = signal('');
 
   constructor() {
@@ -56,7 +56,8 @@ export class EditSedeBannerComponent {
     this.nombre.set(sede?.nombre ?? '');
     this.habitaciones.set((sede?.habitaciones ?? []).map((habitacion) => ({ ...habitacion })));
     this.cantidadNueva.set(1);
-    this.tipoNuevo.set('Doble');
+    const available = this.tipologias();
+    this.tipoNuevo.set(available.length > 0 ? available[0].nombre : 'Doble');
     this.errorMessage.set('');
   }
 
@@ -69,16 +70,23 @@ export class EditSedeBannerComponent {
     const tipo = this.tipoNuevo();
     const current = this.habitaciones();
     const nextNumero = this.nextRoomNumber(current);
+    const matched = this.tipologias().find((t) => t.nombre === tipo);
 
     const created: Habitacion[] = Array.from({ length: cantidad }, (_, index) => ({
       id: this.sedeService.createHabitacionId(),
       numero: String(nextNumero + index),
       tipo,
+      tipologiaId: matched?.id,
       tamanoM2: null,
       disposicionMuebles: '',
     }));
 
     this.habitaciones.set([...current, ...created]);
+  }
+
+  updateHabitacionTipo(id: number, nuevoTipo: string): void {
+    const matched = this.tipologias().find((t) => t.nombre === nuevoTipo);
+    this.updateHabitacion(id, { tipo: nuevoTipo, tipologiaId: matched?.id });
   }
 
   removeHabitacion(id: number): void {
