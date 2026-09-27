@@ -102,9 +102,9 @@ $text-muted: #64748b;
 .sedes-card-box {
   width: 100%;
   max-width: 520px;
-  background: rgba(255, 255, 255, 0.08);
+  background: #ffffff;
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 20px;
   padding: 1.5rem;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
@@ -122,25 +122,25 @@ $text-muted: #64748b;
       gap: 0.6rem;
 
       .legend-badge {
-        font-size: 0.7rem;
+        font-size: 0.8rem;
         font-weight: 700;
-        color: #93c5fd;
+        color: $blue-primary;
         letter-spacing: 0.8px;
       }
 
       .legend-count {
-        font-size: 0.75rem;
-        color: rgba(255, 255, 255, 0.65);
+        font-size: 0.85rem;
+        color: $text-muted;
       }
     }
 
     .btn-create-sede {
-      background: rgba(255, 255, 255, 0.2);
-      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: $blue-primary;
+      border: 1px solid $blue-primary;
       color: #ffffff;
       padding: 0.35rem 0.75rem;
       border-radius: 20px;
-      font-size: 0.75rem;
+      font-size: 0.85rem;
       font-weight: 600;
       display: flex;
       align-items: center;
@@ -149,8 +149,8 @@ $text-muted: #64748b;
       transition: all 0.2s ease;
 
       &:hover {
-        background: #ffffff;
-        color: $blue-primary;
+        background: $blue-dark;
+        border-color: $blue-dark;
       }
     }
   }
@@ -166,6 +166,7 @@ $text-muted: #64748b;
 .sede-btn-card {
   width: 100%;
   background: #ffffff;
+  border: 1px solid #dbeafe;
   border-radius: 14px;
   padding: 1rem 1.25rem;
   display: flex;
@@ -242,7 +243,7 @@ $text-muted: #64748b;
     align-items: center;
     gap: 0.35rem;
     color: #94a3b8;
-    font-size: 0.78rem;
+    font-size: 0.88rem;
     font-weight: 600;
     transition: all 0.2s ease;
 
@@ -254,6 +255,7 @@ $text-muted: #64748b;
 
   &:hover {
     transform: translateY(-2px);
+    border-color: #93c5fd;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
 
     .card-icon-tag {
