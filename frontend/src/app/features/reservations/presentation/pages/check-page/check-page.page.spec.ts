@@ -79,11 +79,8 @@ describe('CheckPagePage', () => {
     expect(component.duplicateGuest?.nombre).toBe('Ana');
   });
 
-  it('provides a flag from the country code', () => {
-    expect(component.getCountryFlag('CL')).toBe('🇨🇱');
-  });
-
   it('provides country names for the residence selector', () => {
-    expect(component.countries.find((country) => country.code === 'CL')?.countryName).toBe('Chile');
+    expect(component.countries.find((country) => country.code === 'cl')?.countryName).toBe('Chile');
+    expect(component.countries.every((country) => country.code === country.code.toLowerCase())).toBeTrue();
   });
 });

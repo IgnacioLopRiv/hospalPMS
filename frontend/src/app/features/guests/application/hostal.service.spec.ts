@@ -1,4 +1,5 @@
 import { HostalService } from './hostal.service';
+import { GuestCardView } from '../../../shared/domain/hostal.model';
 
 describe('HostalService entry registration', () => {
   let service: HostalService;
@@ -24,6 +25,76 @@ describe('HostalService entry registration', () => {
   it('filters available rooms by the number of people', () => {
     const availableRooms = service.getAvailableRooms('2026-06-16', '2026-06-17', 5);
     expect(availableRooms.map((room) => room.numero_habitacion)).toEqual(['207']);
+  });
+
+  it('includes guests without a reservation in the guests view', () => {
+    const unreservedGuest = {
+      id_huesped: 9,
+      nombre: 'Ana',
+      apellido: 'Pérez',
+      nacionalidad: 'Chilena',
+      telefono: '+56912345678',
+      email: 'ana@example.com',
+    };
+    const guests = [...service.getGuests(), unreservedGuest];
+    localStorage.setItem('hospal_db_huespedes', JSON.stringify(guests));
+
+    service.refreshView();
+
+    let unreservedCard: GuestCardView | undefined;
+    const subscription = service.guestsView$.subscribe((cards) => {
+      unreservedCard = cards.find((card) => card.id_huesped === unreservedGuest.id_huesped);
+    });
+
+    expect(unreservedCard).toEqual(jasmine.objectContaining({
+      hasReservation: false,
+      status: 'inactivo',
+      statusBadge: 'INACTIVO',
+    }));
+    subscription.unsubscribe();
+  });
+
+  it('registers a guest without creating a reservation', () => {
+    const reservationCount = JSON.parse(localStorage.getItem('hospal_db_reservas') || '[]').length;
+    const guest = service.registerGuest({
+      documento: 'XK12345',
+      nombre: 'Ana',
+      apellido: 'Pérez',
+      nacionalidad: 'Chilena',
+      telefono: '+56 912345678',
+      email: 'ana@example.com',
+    });
+    let guestCard: GuestCardView | undefined;
+    const subscription = service.guestsView$.subscribe((cards) => {
+      guestCard = cards.find((card) => card.id_huesped === guest.id_huesped);
+    });
+
+    expect(service.getGuests()).toContain(jasmine.objectContaining({ id_huesped: guest.id_huesped }));
+    expect(JSON.parse(localStorage.getItem('hospal_db_reservas') || '[]').length).toBe(reservationCount);
+    expect(guestCard).toEqual(jasmine.objectContaining({
+      hasReservation: false,
+      status: 'inactivo',
+    }));
+    subscription.unsubscribe();
+  });
+
+  it('rejects registering a guest with an already registered document', () => {
+    const registeredGuest = service.registerGuest({
+      documento: 'DUPLICATE123',
+      nombre: 'Ana',
+      apellido: 'Pérez',
+      nacionalidad: 'Chilena',
+      telefono: '+56 912345678',
+      email: 'ana@example.com',
+    });
+    expect(() => service.registerGuest({
+      documento: registeredGuest.documento,
+      nombre: 'Ana',
+      apellido: 'Pérez',
+      nacionalidad: 'Chilena',
+      telefono: '+56 912345678',
+      email: 'ana@example.com',
+    })).toThrowError('Ya existe un huésped registrado con ese RUT o número de pasaporte.');
   });
 
   it('saves a new guest and reservation and prevents assigning the occupied room again', () => {

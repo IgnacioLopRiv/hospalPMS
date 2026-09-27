@@ -6,12 +6,119 @@
       <p class="current-date">Lunes, 16 de junio de 2026</p>
     </div>
     <div class="top-actions">
-      <button type="button" class="btn-primary">
+      <button type="button" class="btn-primary" (click)="openNewGuestForm()">
         <ion-icon name="enter-outline"></ion-icon>
         <span>Nuevo Huésped</span>
       </button>
     </div>
   </header>
+
+  @if (guestSuccessMessage) {
+  <div class="entry-success" role="status">{{ guestSuccessMessage }}</div>
+  }
+
+  @if (showNewGuestForm) {
+  <div class="entry-modal-backdrop" (click)="closeNewGuestForm()">
+    <section class="entry-modal" role="dialog" aria-modal="true" aria-labelledby="guest-modal-title" (click)="$event.stopPropagation()">
+      <header class="entry-modal-header">
+        <div>
+          <h2 id="guest-modal-title">Nuevo huésped</h2>
+          <p>Registra los datos personales del nuevo huésped.</p>
+        </div>
+      </header>
+
+      <form class="entry-form" #guestFormRef="ngForm" (ngSubmit)="registerGuest()">
+        <div class="entry-modal-body">
+          <section class="entry-section">
+            <h3>INFORMACIÓN DEL HUÉSPED</h3>
+            <div class="entry-fields-grid">
+              <label class="entry-field">
+                <span>Tipo de documento</span>
+                <select name="documentType" required [(ngModel)]="guestForm.documentType">
+                  <option value="rut">RUT chileno</option>
+                  <option value="passport">Pasaporte</option>
+                </select>
+              </label>
+              <label class="entry-field">
+                <span>{{ guestForm.documentType === 'rut' ? 'RUT' : 'Número de pasaporte' }}</span>
+                <input
+                  #documentModel="ngModel"
+                  name="documento"
+                  type="text"
+                  required
+                  autocomplete="off"
+                  [attr.inputmode]="guestForm.documentType === 'passport' ? 'numeric' : null"
+                  [placeholder]="guestForm.documentType === 'rut' ? 'Ej. 12.345.678-5' : 'Ingresa el número de pasaporte'"
+                  [ngModel]="guestForm.documento"
+                  (input)="handleDocumentInput($event)">
+                @if (documentModel.touched && guestForm.documentType === 'rut' && guestForm.documento && !isValidRut(guestForm.documento)) {
+                <small class="entry-field-error" role="alert">Ingresa un RUT chileno válido.</small>
+                }
+              </label>
+              <label class="entry-field">
+                <span>Nombre</span>
+                <input name="nombre" type="text" required autocomplete="given-name" [(ngModel)]="guestForm.nombre">
+              </label>
+              <label class="entry-field">
+                <span>Apellidos</span>
+                <input name="apellido" type="text" required autocomplete="family-name" [(ngModel)]="guestForm.apellido">
+              </label>
+              <label class="entry-field">
+                <span>Teléfono</span>
+                <div class="entry-phone-input">
+                  <input type="hidden" name="phoneCountry" required [(ngModel)]="guestForm.phoneCountry">
+                  <app-country-picker
+                    [countries]="countries"
+                    mode="callingCode"
+                    ariaLabel="Código telefónico del país"
+                    [(value)]="guestForm.phoneCountry">
+                  </app-country-picker>
+                  <input name="telefono" type="text" required autocomplete="tel-national" inputmode="numeric" placeholder="Número" maxlength="9" pattern="[0-9]{4,9}" [ngModel]="guestForm.telefono" (input)="handlePhoneInput($event)">
+                </div>
+              </label>
+              <label class="entry-field">
+                <span>Email</span>
+                <input #emailModel="ngModel" name="email" type="email" required autocomplete="email" [(ngModel)]="guestForm.email">
+                @if (emailModel.touched && guestForm.email && !isValidEmail(guestForm.email)) {
+                <small class="entry-field-error" role="alert">Ingresa un email válido, por ejemplo nombre@dominio.com.</small>
+                }
+              </label>
+              <label class="entry-field">
+                <span>País de residencia</span>
+                <input type="hidden" name="nacionalidad" required [(ngModel)]="guestForm.nacionalidad">
+                <app-country-picker
+                  [countries]="countries"
+                  mode="countryName"
+                  ariaLabel="País de residencia"
+                  [(value)]="guestForm.nacionalidad">
+                </app-country-picker>
+              </label>
+              <div class="guest-assignment-actions">
+                <button type="button" class="assign-reservation-button" (click)="assignReservation()">
+                  <ion-icon name="calendar-outline"></ion-icon>
+                  <span>Asignar reserva</span>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          @if (guestError) {
+          <p class="entry-error" role="alert">{{ guestError }}</p>
+          }
+        </div>
+        <footer class="entry-form-actions">
+          <button type="button" class="entry-cancel-button" (click)="closeNewGuestForm()">Cancelar</button>
+          <button
+            type="submit"
+            class="entry-submit-button"
+            [disabled]="guestFormRef.invalid || !isValidEmail(guestForm.email) || (guestForm.documentType === 'rut' && !isValidRut(guestForm.documento))">
+            Registrar huésped
+          </button>
+        </footer>
+      </form>
+    </section>
+  </div>
+  }
 
   <!-- Tarjetas KPI -->
   <section class="kpi-grid">
@@ -60,6 +167,12 @@
       <button type="button" class="tab-btn" [class.active]="selectedFilter === 'checkout'" (click)="setFilter('checkout')">
         <ion-icon name="exit-outline"></ion-icon> Check-out hoy <span class="badge">{{ getCount('checkout_hoy') }}</span>
       </button>
+      <button type="button" class="tab-btn" [class.active]="selectedFilter === 'activos'" (click)="setFilter('activos')">
+        <ion-icon name="checkmark-circle-outline"></ion-icon> Activos <span class="badge">{{ getCount('activos') }}</span>
+      </button>
+      <button type="button" class="tab-btn" [class.active]="selectedFilter === 'inactivos'" (click)="setFilter('inactivos')">
+        <ion-icon name="person-outline"></ion-icon> Inactivos <span class="badge">{{ getCount('inactivos') }}</span>
+      </button>
     </div>
 
     <div class="filters">
@@ -67,10 +180,6 @@
         <ion-icon name="search-outline"></ion-icon>
         <input type="text" placeholder="Buscar huésped, hab..." [(ngModel)]="searchTerm" (input)="applyFilters()" />
       </div>
-      <button type="button" class="filter-btn">
-        <ion-icon name="funnel-outline"></ion-icon>
-        <span>Filtrar</span>
-      </button>
     </div>
   </section>
 
@@ -103,7 +212,7 @@
       <div class="status-box" [ngClass]="guest.status">
         <div class="box-header">
           <ion-icon [name]="guest.status === 'hospedado' ? 'bed-outline' : guest.status === 'checkin_hoy' ? 'enter-outline' : guest.status === 'checkout_hoy' ? 'exit-outline' : 'calendar-outline'"></ion-icon>
-          <span>{{ guest.status === 'hospedado' ? 'ESTANCIA ACTUAL' : guest.status === 'checkin_hoy' ? 'INGRESA HOY' : guest.status === 'checkout_hoy' ? 'SALE HOY' : 'RESERVA CONFIRMADA' }}</span>
+          <span>{{ guest.status === 'inactivo' ? 'SIN RESERVA ASIGNADA' : guest.status === 'hospedado' ? 'ESTANCIA ACTUAL' : guest.status === 'checkin_hoy' ? 'INGRESA HOY' : guest.status === 'checkout_hoy' ? 'SALE HOY' : 'RESERVA CONFIRMADA' }}</span>
         </div>
         <div class="box-metrics">
           <div>
