@@ -24,7 +24,7 @@
   }
 
   @if (showNewEntryForm) {
-  <div class="entry-modal-backdrop" (click)="closeNewEntryForm()">
+  <div class="entry-modal-backdrop">
     <section class="entry-modal" role="dialog" aria-modal="true" aria-labelledby="entry-modal-title" (click)="$event.stopPropagation()">
       <header class="entry-modal-header">
         <div>
@@ -95,8 +95,10 @@
                 [attr.inputmode]="entryForm.documentType === 'passport' ? 'numeric' : null"
                 [placeholder]="entryForm.documentType === 'rut' ? 'Ej. 12.345.678-5' : 'Ingresa el número de pasaporte'"
                 [ngModel]="entryForm.documento"
+                (focus)="documentFieldFocused = true"
+                (blur)="documentFieldFocused = false"
                 (input)="handleDocumentInput($event)">
-              @if (documentModel.touched && entryForm.documentType === 'rut' && entryForm.documento && !isValidRut(entryForm.documento)) {
+              @if (documentModel.touched && !documentFieldFocused && entryForm.documentType === 'rut' && entryForm.documento && !isValidRut(entryForm.documento)) {
               <small class="entry-field-error" role="alert">Ingresa un RUT chileno válido.</small>
               }
               @if (duplicateGuest; as guest) {
@@ -128,8 +130,8 @@
             </label>
             <label class="entry-field">
               <span>Email</span>
-              <input #emailModel="ngModel" name="email" type="email" required autocomplete="email" [(ngModel)]="entryForm.email">
-              @if (emailModel.touched && entryForm.email && !isValidEmail(entryForm.email)) {
+              <input #emailModel="ngModel" name="email" type="email" required autocomplete="email" [(ngModel)]="entryForm.email" (focus)="emailFieldFocused = true" (blur)="emailFieldFocused = false">
+              @if (emailModel.touched && !emailFieldFocused && entryForm.email && !isValidEmail(entryForm.email)) {
               <small class="entry-field-error" role="alert">Ingresa un email válido, por ejemplo nombre@dominio.com.</small>
               }
             </label>

@@ -47,10 +47,21 @@ describe('HostalService entry registration', () => {
     });
 
     expect(unreservedCard).toEqual(jasmine.objectContaining({
+      guestName: 'Ana Pérez',
       hasReservation: false,
       status: 'inactivo',
       statusBadge: 'INACTIVO',
     }));
+    subscription.unsubscribe();
+  });
+
+  it('shows the complete name of a guest with a reservation', () => {
+    let guestCard: GuestCardView | undefined;
+    const subscription = service.guestsView$.subscribe((cards) => {
+      guestCard = cards.find((card) => card.id_huesped === 1);
+    });
+
+    expect(guestCard?.guestName).toBe('Valentin Torres');
     subscription.unsubscribe();
   });
 
@@ -95,6 +106,68 @@ describe('HostalService entry registration', () => {
       telefono: '+56 912345678',
       email: 'ana@example.com',
     })).toThrowError('Ya existe un huésped registrado con ese RUT o número de pasaporte.');
+  });
+
+  it('updates guest details and rejects a document assigned to another guest', () => {
+    service.updateGuest(2, {
+      documento: 'DOC-2',
+      nombre: 'Marco',
+      apellido: 'Díaz',
+      nacionalidad: 'Colombia',
+      telefono: '+57 3000000',
+      email: 'marco@example.com',
+    });
+    const guest = service.updateGuest(1, {
+      documento: 'DOC-1',
+      nombre: 'Valentín',
+      apellido: 'Torres',
+      nacionalidad: 'Argentina',
+      telefono: '+54 9110000',
+      email: 'valentin@example.com',
+    });
+    expect(guest.nombre).toBe('Valentín');
+    expect(service.getGuests()).toContain(jasmine.objectContaining({ id_huesped: 1, email: 'valentin@example.com' }));
+
+    expect(() => service.updateGuest(1, {
+      documento: 'DOC-2',
+      nombre: 'Valentín',
+      apellido: 'Torres',
+      nacionalidad: 'Argentina',
+      telefono: '+54 9110000',
+      email: 'valentin@example.com',
+    })).toThrowError('Ya existe un huésped registrado con ese RUT o número de pasaporte.');
+  });
+
+  it('deletes the guest and all reservations assigned to them', () => {
+    service.deleteGuest(1);
+
+    expect(service.getGuests().some((guest) => guest.id_huesped === 1)).toBeFalse();
+    expect(service.getReservations().some((reservation) => reservation.id_huesped === 1)).toBeFalse();
+  });
+
+  it('updates a reservation while allowing it to retain its currently assigned room', () => {
+    const updated = service.updateReservation(1, {
+      id_habitacion: 4,
+      fecha_llegada: '2026-06-14',
+      fecha_salida: '2026-06-20',
+      hora_llegada: '15:00',
+      cantidad_personas: 2,
+    });
+
+    expect(updated.hora_llegada).toBe('15:00');
+    expect(service.getReservations()).toContain(jasmine.objectContaining({
+      id_reserva: 1,
+      fecha_salida: '2026-06-20',
+    }));
+  });
+
+  it('cancels a reservation and keeps the guest registered', () => {
+    service.cancelReservation(1);
+
+    expect(service.getReservations().some((reservation) => reservation.id_reserva === 1)).toBeFalse();
+    expect(service.getGuests().some((guest) => guest.id_huesped === 1)).toBeTrue();
+    expect(service.getAvailableRooms('2026-06-14', '2026-06-19')
+      .some((room) => room.id_habitacion === 4)).toBeTrue();
   });
 
   it('saves a new guest and reservation and prevents assigning the occupied room again', () => {

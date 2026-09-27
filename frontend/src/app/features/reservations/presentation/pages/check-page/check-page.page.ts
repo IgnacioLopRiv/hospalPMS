@@ -71,13 +71,14 @@ export class CheckPagePage implements OnInit, OnDestroy {
   private readonly renderer = inject(Renderer2);
   private readonly document = inject(DOCUMENT);
   private readonly router = inject(Router);
-
   readonly sede = this.sedeService.selectedSede;
   availableGuests: Huesped[] = [];
   availableRooms: Habitacion[] = [];
   showNewEntryForm = false;
   entryError = '';
   entrySuccessMessage = '';
+  documentFieldFocused = false;
+  emailFieldFocused = false;
   guestMode: 'new' | 'existing' = 'new';
   selectedGuestId = '';
   entryStep: 1 | 2 = 1;
@@ -255,6 +256,8 @@ export class CheckPagePage implements OnInit, OnDestroy {
     }
     this.entryError = '';
     this.entrySuccessMessage = '';
+    this.documentFieldFocused = false;
+    this.emailFieldFocused = false;
     this.showNewEntryForm = true;
     this.setPageScrollLocked(true);
     this.updateAvailableRooms();

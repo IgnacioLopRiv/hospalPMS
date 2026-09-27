@@ -1,4 +1,4 @@
-import { Component, DOCUMENT, OnDestroy, OnInit, Renderer2, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DOCUMENT, ElementRef, OnDestroy, OnInit, Renderer2, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -16,11 +16,13 @@ import {
   ellipsisVerticalOutline,
   mailOutline,
   callOutline,
-  personOutline
+  personOutline,
+  createOutline,
+  trashOutline
 } from 'ionicons/icons';
 
 import { HostalService } from '../../../application/hostal.service';
-import { GuestCardView } from '../../../../../shared/domain/hostal.model';
+import { GuestCardView, Habitacion, Huesped } from '../../../../../shared/domain/hostal.model';
 import { COUNTRY_OPTIONS } from '../../../../../shared/domain/country-options';
 import { CountryPickerComponent } from '../../../../../shared/presentation/country-picker/country-picker.component';
 
@@ -40,7 +42,12 @@ export class GuestsViewPage implements OnInit, OnDestroy {
   private readonly renderer = inject(Renderer2);
   private readonly document = inject(DOCUMENT);
   private readonly router = inject(Router);
+  private readonly changeDetector = inject(ChangeDetectorRef);
   private preserveScrollLockOnDestroy = false;
+
+  @ViewChild('guestEditDialog') guestEditDialog?: ElementRef<HTMLDialogElement>;
+  @ViewChild('reservationEditDialog') reservationEditDialog?: ElementRef<HTMLDialogElement>;
+  @ViewChild('guestDeleteDialog') guestDeleteDialog?: ElementRef<HTMLDialogElement>;
 
   guests: GuestCardView[] = [];
   filteredGuests: GuestCardView[] = [];
@@ -49,8 +56,24 @@ export class GuestsViewPage implements OnInit, OnDestroy {
   showNewGuestForm = false;
   guestError = '';
   guestSuccessMessage = '';
+  documentFieldFocused = false;
+  emailFieldFocused = false;
   guestForm = this.createEmptyGuestForm();
   readonly countries = COUNTRY_OPTIONS;
+  openMenuCardIndex: number | null = null;
+  editingGuestId: number | null = null;
+  editGuestForm: Omit<Huesped, 'id_huesped'> = this.createEmptyEditGuestForm();
+  deletingGuestId: number | null = null;
+  editingReservationId: number | null = null;
+  reservationError = '';
+  availableReservationRooms: Habitacion[] = [];
+  editReservationForm = {
+    fecha_llegada: '',
+    fecha_salida: '',
+    hora_llegada: '14:00',
+    cantidad_personas: 1,
+    id_habitacion: '',
+  };
 
   constructor(private hostalService: HostalService) {
     addIcons({
@@ -65,7 +88,9 @@ export class GuestsViewPage implements OnInit, OnDestroy {
       ellipsisVerticalOutline,
       mailOutline,
       callOutline,
-      personOutline
+      personOutline,
+      createOutline,
+      trashOutline
     });
   }
 
@@ -107,10 +132,168 @@ export class GuestsViewPage implements OnInit, OnDestroy {
     return this.guests.filter((g) => g.status === status).length;
   }
 
+  get isReservationRoomAvailable(): boolean {
+    return this.availableReservationRooms.some(
+      (room) => room.id_habitacion === Number(this.editReservationForm.id_habitacion)
+    );
+  }
+
+  toggleGuestMenu(event: Event, cardIndex: number): void {
+    event.stopPropagation();
+    this.openMenuCardIndex = this.openMenuCardIndex === cardIndex ? null : cardIndex;
+  }
+
+  openGuestEditor(guestId: number): void {
+    const guest = this.hostalService.getGuests().find((item) => item.id_huesped === guestId);
+    if (!guest) {
+      this.guestError = 'No se encontró el huésped. Actualiza la lista e inténtalo otra vez.';
+      return;
+    }
+    this.editingGuestId = guestId;
+    this.editGuestForm = {
+      documento: guest.documento ?? '',
+      nombre: guest.nombre,
+      apellido: guest.apellido,
+      telefono: guest.telefono,
+      email: guest.email,
+      nacionalidad: guest.nacionalidad,
+      es_recurrente: guest.es_recurrente,
+      dias_ultimo_registro: guest.dias_ultimo_registro,
+    };
+    this.guestError = '';
+    this.openMenuCardIndex = null;
+    this.setPageScrollLocked(true);
+    this.openGuestEditDialog();
+  }
+
+  saveGuestChanges(): void {
+    if (this.editingGuestId === null) return;
+    try {
+      const guest = this.hostalService.updateGuest(this.editingGuestId, this.editGuestForm);
+      this.guestSuccessMessage = `Datos actualizados para ${guest.nombre} ${guest.apellido}.`;
+      this.closeGuestEditor();
+    } catch (error) {
+      this.guestError = error instanceof Error ? error.message : 'No se pudieron actualizar los datos del huésped.';
+    }
+  }
+
+  closeGuestEditor(): void {
+    this.closeGuestEditDialog();
+    this.editingGuestId = null;
+    this.guestError = '';
+    this.setPageScrollLocked(false);
+  }
+
+  requestGuestDeletion(guestId: number): void {
+    this.deletingGuestId = guestId;
+    this.openMenuCardIndex = null;
+    this.guestError = '';
+    this.setPageScrollLocked(true);
+    this.openGuestDeleteDialog();
+  }
+
+  deleteGuest(): void {
+    if (this.deletingGuestId === null) return;
+    try {
+      const guestId = this.deletingGuestId;
+      const guest = this.hostalService.getGuests().find((item) => item.id_huesped === guestId);
+      this.hostalService.deleteGuest(guestId);
+      this.guestSuccessMessage = `Se eliminó a ${guest ? `${guest.nombre} ${guest.apellido}` : 'el huésped'} y sus reservas asignadas.`;
+      this.closeGuestDeleteDialog();
+      this.deletingGuestId = null;
+      this.guestError = '';
+      this.setPageScrollLocked(false);
+    } catch (error) {
+      this.guestError = error instanceof Error ? error.message : 'No se pudo eliminar el huésped.';
+    }
+  }
+
+  cancelGuestDeletion(): void {
+    this.closeGuestDeleteDialog();
+    this.deletingGuestId = null;
+    this.guestError = '';
+    this.setPageScrollLocked(false);
+  }
+
+  openReservationEditor(guest: GuestCardView): void {
+    if (guest.id_reserva === undefined) return;
+    const reservation = this.hostalService.getReservations()
+      .find((item) => item.id_reserva === guest.id_reserva);
+    if (!reservation) {
+      this.reservationError = 'No se encontró la reserva. Actualiza la lista e inténtalo otra vez.';
+      return;
+    }
+
+    this.editingReservationId = reservation.id_reserva;
+    this.editReservationForm = {
+      fecha_llegada: reservation.fecha_llegada,
+      fecha_salida: reservation.fecha_salida,
+      hora_llegada: reservation.hora_llegada ?? '14:00',
+      cantidad_personas: reservation.cantidad_personas ?? 1,
+      id_habitacion: String(reservation.id_habitacion),
+    };
+    this.reservationError = '';
+    this.openMenuCardIndex = null;
+    this.refreshAvailableReservationRooms();
+    this.setPageScrollLocked(true);
+    this.openReservationEditDialog();
+  }
+
+  refreshAvailableReservationRooms(): void {
+    if (this.editingReservationId === null) return;
+    this.availableReservationRooms = this.hostalService.getAvailableRooms(
+      this.editReservationForm.fecha_llegada,
+      this.editReservationForm.fecha_salida,
+      this.editReservationForm.cantidad_personas,
+      this.editingReservationId
+    );
+  }
+
+  saveReservationChanges(): void {
+    if (this.editingReservationId === null) return;
+    try {
+      this.hostalService.updateReservation(this.editingReservationId, {
+        id_habitacion: Number(this.editReservationForm.id_habitacion),
+        fecha_llegada: this.editReservationForm.fecha_llegada,
+        fecha_salida: this.editReservationForm.fecha_salida,
+        hora_llegada: this.editReservationForm.hora_llegada,
+        cantidad_personas: this.editReservationForm.cantidad_personas,
+      });
+      this.guestSuccessMessage = 'Reserva actualizada correctamente.';
+      this.closeReservationEditor();
+    } catch (error) {
+      this.reservationError = error instanceof Error ? error.message : 'No se pudo actualizar la reserva.';
+    }
+  }
+
+  cancelReservation(): void {
+    if (this.editingReservationId === null) return;
+    if (!this.document.defaultView?.confirm('¿Confirmas que quieres cancelar esta reserva? El huésped permanecerá registrado.')) {
+      return;
+    }
+
+    try {
+      this.hostalService.cancelReservation(this.editingReservationId);
+      this.guestSuccessMessage = 'Reserva cancelada. El huésped continúa registrado.';
+      this.closeReservationEditor();
+    } catch (error) {
+      this.reservationError = error instanceof Error ? error.message : 'No se pudo cancelar la reserva.';
+    }
+  }
+
+  closeReservationEditor(): void {
+    this.closeReservationEditDialog();
+    this.editingReservationId = null;
+    this.reservationError = '';
+    this.setPageScrollLocked(false);
+  }
+
   openNewGuestForm(): void {
     this.guestForm = this.createEmptyGuestForm();
     this.guestError = '';
     this.guestSuccessMessage = '';
+    this.documentFieldFocused = false;
+    this.emailFieldFocused = false;
     this.showNewGuestForm = true;
     this.setPageScrollLocked(true);
   }
@@ -122,9 +305,45 @@ export class GuestsViewPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.closeGuestEditDialog();
+    this.closeReservationEditDialog();
+    this.closeGuestDeleteDialog();
     if (!this.preserveScrollLockOnDestroy) {
       this.setPageScrollLocked(false);
     }
+  }
+
+  onGuestEditDialogBackdropClick(event: MouseEvent): void {
+    if (event.target === event.currentTarget) {
+      this.closeGuestEditor();
+    }
+  }
+
+  onGuestEditDialogCancel(event: Event): void {
+    event.preventDefault();
+    this.closeGuestEditor();
+  }
+
+  onReservationEditDialogBackdropClick(event: MouseEvent): void {
+    if (event.target === event.currentTarget) {
+      this.closeReservationEditor();
+    }
+  }
+
+  onReservationEditDialogCancel(event: Event): void {
+    event.preventDefault();
+    this.closeReservationEditor();
+  }
+
+  onGuestDeleteDialogBackdropClick(event: MouseEvent): void {
+    if (event.target === event.currentTarget) {
+      this.cancelGuestDeletion();
+    }
+  }
+
+  onGuestDeleteDialogCancel(event: Event): void {
+    event.preventDefault();
+    this.cancelGuestDeletion();
   }
 
   registerGuest(): void {
@@ -264,6 +483,17 @@ export class GuestsViewPage implements OnInit, OnDestroy {
     };
   }
 
+  private createEmptyEditGuestForm(): Omit<Huesped, 'id_huesped'> {
+    return {
+      documento: '',
+      nombre: '',
+      apellido: '',
+      telefono: '',
+      email: '',
+      nacionalidad: '',
+    };
+  }
+
   private setPageScrollLocked(locked: boolean): void {
     if (locked) {
       this.renderer.addClass(this.document.body, 'entry-modal-open');
@@ -271,4 +501,50 @@ export class GuestsViewPage implements OnInit, OnDestroy {
       this.renderer.removeClass(this.document.body, 'entry-modal-open');
     }
   }
+
+  private openGuestEditDialog(): void {
+    this.changeDetector.detectChanges();
+    const dialog = this.guestEditDialog?.nativeElement;
+    if (dialog && !dialog.open) {
+      dialog.showModal();
+    }
+  }
+
+  private closeGuestEditDialog(): void {
+    const dialog = this.guestEditDialog?.nativeElement;
+    if (dialog?.open) {
+      dialog.close();
+    }
+  }
+
+  private openReservationEditDialog(): void {
+    this.changeDetector.detectChanges();
+    const dialog = this.reservationEditDialog?.nativeElement;
+    if (dialog && !dialog.open) {
+      dialog.showModal();
+    }
+  }
+
+  private closeReservationEditDialog(): void {
+    const dialog = this.reservationEditDialog?.nativeElement;
+    if (dialog?.open) {
+      dialog.close();
+    }
+  }
+
+  private openGuestDeleteDialog(): void {
+    this.changeDetector.detectChanges();
+    const dialog = this.guestDeleteDialog?.nativeElement;
+    if (dialog && !dialog.open) {
+      dialog.showModal();
+    }
+  }
+
+  private closeGuestDeleteDialog(): void {
+    const dialog = this.guestDeleteDialog?.nativeElement;
+    if (dialog?.open) {
+      dialog.close();
+    }
+  }
+
 }

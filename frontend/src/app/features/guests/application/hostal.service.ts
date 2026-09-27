@@ -81,7 +81,7 @@ export class HostalService {
     const huespedes: Huesped[] = JSON.parse(localStorage.getItem(this.PREFIX + 'huespedes') || '[]');
     const habitaciones: Habitacion[] = JSON.parse(localStorage.getItem(this.PREFIX + 'habitaciones') || '[]');
     const tipologias: Tipologia[] = JSON.parse(localStorage.getItem(this.PREFIX + 'tipologias') || '[]');
-    const reservas: Reserva[] = JSON.parse(localStorage.getItem(this.PREFIX + 'reservas') || '[]');
+    const reservas = this.getReservations();
 
     const colors: ('blue' | 'green' | 'orange' | 'purple')[] = ['purple', 'orange', 'green', 'blue'];
 
@@ -132,7 +132,7 @@ export class HostalService {
         id_huesped: huesped?.id_huesped ?? res.id_huesped,
         hasReservation: true,
         initials: huesped ? `${huesped.nombre[0]}${huesped.apellido[0]}`.toUpperCase() : 'NA',
-        guestName: huesped ? `${huesped.nombre} ${huesped.apellido.slice(0, 3)}...` : 'Desconocido',
+        guestName: huesped ? `${huesped.nombre} ${huesped.apellido}` : 'Desconocido',
         country: huesped?.nacionalidad || '',
         roomNumber: habitacion?.numero_habitacion || '',
         roomType: tipologia?.nombre_tipologia || '',
@@ -155,7 +155,7 @@ export class HostalService {
         id_huesped: huesped.id_huesped,
         hasReservation: false,
         initials: `${huesped.nombre[0]}${huesped.apellido[0]}`.toUpperCase(),
-        guestName: `${huesped.nombre} ${huesped.apellido.slice(0, 3)}...`,
+        guestName: `${huesped.nombre} ${huesped.apellido}`,
         country: huesped.nacionalidad,
         roomNumber: '',
         roomType: 'Sin habitación asignada',
@@ -178,6 +178,59 @@ export class HostalService {
 
   getGuests(): Huesped[] {
     return JSON.parse(localStorage.getItem(this.PREFIX + 'huespedes') || '[]') as Huesped[];
+  }
+
+  getReservations(): Reserva[] {
+    return JSON.parse(localStorage.getItem(this.PREFIX + 'reservas') || '[]') as Reserva[];
+  }
+
+  updateGuest(guestId: number, changes: Omit<Huesped, 'id_huesped'>): Huesped {
+    const guests = this.getGuests();
+    const existingGuest = guests.find((guest) => guest.id_huesped === guestId);
+    if (!existingGuest) {
+      throw new Error('El huésped ya no está registrado. Actualiza la lista e inténtalo otra vez.');
+    }
+
+    const updatedGuest: Huesped = {
+      ...existingGuest,
+      ...changes,
+      documento: changes.documento?.trim().toUpperCase(),
+      nombre: changes.nombre.trim(),
+      apellido: changes.apellido.trim(),
+      telefono: changes.telefono.trim(),
+      email: changes.email.trim(),
+      nacionalidad: changes.nacionalidad.trim(),
+    };
+    if (!updatedGuest.nombre || !updatedGuest.apellido ||
+      !updatedGuest.telefono || !updatedGuest.email || !updatedGuest.nacionalidad) {
+      throw new Error('Completa todos los datos del huésped.');
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(updatedGuest.email)) {
+      throw new Error('Ingresa un email válido.');
+    }
+    if (updatedGuest.documento && guests.some((guest) =>
+      guest.id_huesped !== guestId &&
+      this.normalizeDocument(guest.documento ?? '') === this.normalizeDocument(updatedGuest.documento ?? '')
+    )) {
+      throw new Error('Ya existe un huésped registrado con ese RUT o número de pasaporte.');
+    }
+
+    const updatedGuests = guests.map((guest) => guest.id_huesped === guestId ? updatedGuest : guest);
+    localStorage.setItem(this.PREFIX + 'huespedes', JSON.stringify(updatedGuests));
+    this.refreshView();
+    return updatedGuest;
+  }
+
+  deleteGuest(guestId: number): void {
+    const guests = this.getGuests();
+    if (!guests.some((guest) => guest.id_huesped === guestId)) {
+      throw new Error('El huésped ya no está registrado. Actualiza la lista e inténtalo otra vez.');
+    }
+
+    const reservations = this.getReservations().filter((reservation) => reservation.id_huesped !== guestId);
+    localStorage.setItem(this.PREFIX + 'huespedes', JSON.stringify(guests.filter((guest) => guest.id_huesped !== guestId)));
+    localStorage.setItem(this.PREFIX + 'reservas', JSON.stringify(reservations));
+    this.refreshView();
   }
 
   registerGuest(input: Omit<Huesped, 'id_huesped'>): Huesped {
@@ -213,7 +266,69 @@ export class HostalService {
     return guest;
   }
 
-  getAvailableRooms(arrivalDate: string, departureDate: string, personCount?: number): Habitacion[] {
+  updateReservation(
+    reservationId: number,
+    changes: Pick<Reserva, 'id_habitacion' | 'fecha_llegada' | 'fecha_salida' | 'hora_llegada' | 'cantidad_personas'>
+  ): Reserva {
+    const reservations = this.getReservations();
+    const existingReservation = reservations.find((reservation) => reservation.id_reserva === reservationId);
+    if (!existingReservation) {
+      throw new Error('La reserva ya no existe. Actualiza la lista e inténtalo otra vez.');
+    }
+    if (!Number.isInteger(changes.cantidad_personas) || (changes.cantidad_personas ?? 0) < 1) {
+      throw new Error('La cantidad de personas debe ser al menos 1.');
+    }
+    if (!this.isValidDate(changes.fecha_llegada) || !this.isValidDate(changes.fecha_salida) ||
+      changes.fecha_llegada >= changes.fecha_salida) {
+      throw new Error('La fecha de salida debe ser posterior a la fecha de llegada.');
+    }
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(changes.hora_llegada ?? '')) {
+      throw new Error('Ingresa un horario de llegada válido.');
+    }
+
+    const rooms: Habitacion[] = JSON.parse(localStorage.getItem(this.PREFIX + 'habitaciones') || '[]');
+    const room = rooms.find((item) => item.id_habitacion === changes.id_habitacion);
+    if (!room || !this.getAvailableRooms(
+      changes.fecha_llegada,
+      changes.fecha_salida,
+      undefined,
+      reservationId
+    ).some((available) => available.id_habitacion === changes.id_habitacion)) {
+      throw new Error('La habitación seleccionada no está disponible para esas fechas.');
+    }
+
+    const tipologias: Tipologia[] = JSON.parse(localStorage.getItem(this.PREFIX + 'tipologias') || '[]');
+    const roomCapacity = tipologias.find((tipologia) => tipologia.id_tipologia === room.id_tipologia)?.capacidad ?? 0;
+    if ((changes.cantidad_personas ?? 0) > roomCapacity) {
+      throw new Error('La cantidad de personas supera la capacidad de la habitación seleccionada.');
+    }
+
+    const updatedReservation: Reserva = { ...existingReservation, ...changes };
+    localStorage.setItem(this.PREFIX + 'reservas', JSON.stringify(
+      reservations.map((reservation) => reservation.id_reserva === reservationId ? updatedReservation : reservation)
+    ));
+    this.refreshView();
+    return updatedReservation;
+  }
+
+  cancelReservation(reservationId: number): void {
+    const reservations = this.getReservations();
+    if (!reservations.some((reservation) => reservation.id_reserva === reservationId)) {
+      throw new Error('La reserva ya no existe. Actualiza la lista e inténtalo otra vez.');
+    }
+
+    localStorage.setItem(this.PREFIX + 'reservas', JSON.stringify(
+      reservations.filter((reservation) => reservation.id_reserva !== reservationId)
+    ));
+    this.refreshView();
+  }
+
+  getAvailableRooms(
+    arrivalDate: string,
+    departureDate: string,
+    personCount?: number,
+    excludeReservationId?: number
+  ): Habitacion[] {
     if (!this.isValidDate(arrivalDate) || !this.isValidDate(departureDate) || arrivalDate >= departureDate) {
       return [];
     }
@@ -224,6 +339,7 @@ export class HostalService {
 
     return habitaciones.filter((habitacion) =>
       !reservas.some((reserva) =>
+        reserva.id_reserva !== excludeReservationId &&
         reserva.id_habitacion === habitacion.id_habitacion &&
         arrivalDate < reserva.fecha_salida &&
         departureDate > reserva.fecha_llegada
