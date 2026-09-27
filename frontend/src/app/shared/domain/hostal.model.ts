@@ -37,14 +37,16 @@ export interface Reserva {
 }
 
 export interface GuestCardView {
-  id_reserva: number;
+  id_reserva?: number;
+  id_huesped: number;
+  hasReservation: boolean;
   initials: string;
   guestName: string;
   country: string;
   roomNumber: string;
   roomType: string;
   dateRange: string;
-  status: 'hospedado' | 'checkin_hoy' | 'checkout_hoy' | 'confirmada';
+  status: 'hospedado' | 'checkin_hoy' | 'checkout_hoy' | 'confirmada' | 'inactivo';
   statusBadge: string;
   cardColor: 'blue' | 'green' | 'orange' | 'purple';
   metric1Label: string;

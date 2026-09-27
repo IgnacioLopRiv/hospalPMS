@@ -129,6 +129,8 @@ export class HostalService {
 
       return {
         id_reserva: res.id_reserva,
+        id_huesped: huesped?.id_huesped ?? res.id_huesped,
+        hasReservation: true,
         initials: huesped ? `${huesped.nombre[0]}${huesped.apellido[0]}`.toUpperCase() : 'NA',
         guestName: huesped ? `${huesped.nombre} ${huesped.apellido.slice(0, 3)}...` : 'Desconocido',
         country: huesped?.nacionalidad || '',
@@ -147,11 +149,68 @@ export class HostalService {
       };
     });
 
-    this.guestsViewSubject.next(joinedData);
+    const guestsWithoutReservations: GuestCardView[] = huespedes
+      .filter(huesped => !reservas.some(reserva => reserva.id_huesped === huesped.id_huesped))
+      .map((huesped, index) => ({
+        id_huesped: huesped.id_huesped,
+        hasReservation: false,
+        initials: `${huesped.nombre[0]}${huesped.apellido[0]}`.toUpperCase(),
+        guestName: `${huesped.nombre} ${huesped.apellido.slice(0, 3)}...`,
+        country: huesped.nacionalidad,
+        roomNumber: '',
+        roomType: 'Sin habitación asignada',
+        dateRange: 'Sin reserva asignada',
+        status: 'inactivo',
+        statusBadge: 'INACTIVO',
+        cardColor: colors[(joinedData.length + index) % colors.length],
+        metric1Label: 'Reserva',
+        metric1Value: 'No asignada',
+        metric2Label: 'Estado',
+        metric2Value: 'Inactivo',
+        recurrentNote: huesped.dias_ultimo_registro
+          ? `Recurrente · último hace ${huesped.dias_ultimo_registro} días`
+          : undefined,
+        isVip: huesped.es_recurrente
+      }));
+
+    this.guestsViewSubject.next([...joinedData, ...guestsWithoutReservations]);
   }
 
   getGuests(): Huesped[] {
     return JSON.parse(localStorage.getItem(this.PREFIX + 'huespedes') || '[]') as Huesped[];
+  }
+
+  registerGuest(input: Omit<Huesped, 'id_huesped'>): Huesped {
+    const document = input.documento?.trim().toUpperCase();
+    const guestDetails = {
+      ...input,
+      documento: document,
+      nombre: input.nombre.trim(),
+      apellido: input.apellido.trim(),
+      telefono: input.telefono.trim(),
+      email: input.email.trim(),
+      nacionalidad: input.nacionalidad.trim(),
+    };
+    if (!guestDetails.documento || !guestDetails.nombre || !guestDetails.apellido ||
+      !guestDetails.telefono || !guestDetails.email || !guestDetails.nacionalidad) {
+      throw new Error('Completa todos los datos del huésped antes de registrarlo.');
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestDetails.email)) {
+      throw new Error('Ingresa un email válido.');
+    }
+
+    const guests = this.getGuests();
+    if (guests.some((item) =>
+      this.normalizeDocument(item.documento ?? '') === this.normalizeDocument(guestDetails.documento ?? '')
+    )) {
+      throw new Error('Ya existe un huésped registrado con ese RUT o número de pasaporte.');
+    }
+
+    const nextGuestId = guests.reduce((max, item) => Math.max(max, item.id_huesped), 0) + 1;
+    const guest: Huesped = { ...guestDetails, id_huesped: nextGuestId };
+    localStorage.setItem(this.PREFIX + 'huespedes', JSON.stringify([...guests, guest]));
+    this.refreshView();
+    return guest;
   }
 
   getAvailableRooms(arrivalDate: string, departureDate: string, personCount?: number): Habitacion[] {

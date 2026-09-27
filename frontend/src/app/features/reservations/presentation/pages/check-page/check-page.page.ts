@@ -1,6 +1,7 @@
-import { Component, computed, inject, OnDestroy, Renderer2 } from '@angular/core';
+import { Component, computed, inject, OnDestroy, OnInit, Renderer2 } from '@angular/core';
 import { CommonModule, DOCUMENT } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
+import { Router } from '@angular/router';
 import { IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
@@ -24,7 +25,19 @@ import {
 import { SedeService } from '../../../../locations/application/sede.service';
 import { HostalService } from '../../../../guests/application/hostal.service';
 import { Huesped, Habitacion } from '../../../../../shared/domain/hostal.model';
-import { COUNTRY_OPTIONS } from './country-options';
+import { COUNTRY_OPTIONS } from '../../../../../shared/domain/country-options';
+import { CountryPickerComponent } from '../../../../../shared/presentation/country-picker/country-picker.component';
+
+interface GuestDraft {
+  documentType: 'rut' | 'passport';
+  documento: string;
+  nombre: string;
+  apellido: string;
+  telefono: string;
+  phoneCountry: string;
+  email: string;
+  nacionalidad: string;
+}
 
 export interface CheckItemPlaceholder {
   id: number;
@@ -50,13 +63,14 @@ export interface CheckItemPlaceholder {
   templateUrl: './check-page.page.html',
   styleUrls: ['./check-page.page.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, IonIcon],
+  imports: [CommonModule, FormsModule, IonIcon, CountryPickerComponent],
 })
-export class CheckPagePage implements OnDestroy {
+export class CheckPagePage implements OnInit, OnDestroy {
   private readonly sedeService = inject(SedeService);
   private readonly hostalService = inject(HostalService);
   private readonly renderer = inject(Renderer2);
   private readonly document = inject(DOCUMENT);
+  private readonly router = inject(Router);
 
   readonly sede = this.sedeService.selectedSede;
   availableGuests: Huesped[] = [];
@@ -66,10 +80,18 @@ export class CheckPagePage implements OnDestroy {
   entrySuccessMessage = '';
   guestMode: 'new' | 'existing' = 'new';
   selectedGuestId = '';
+  entryStep: 1 | 2 = 1;
   entryForm = this.createEmptyEntryForm();
   readonly countries = COUNTRY_OPTIONS;
 
   readonly currentDateFormatted = 'Martes, 16 de junio de 2026';
+
+  ngOnInit(): void {
+    const guestDraft = this.router.getCurrentNavigation()?.extras.state?.['guestDraft'];
+    if (this.isGuestDraft(guestDraft)) {
+      this.openNewEntryForm(guestDraft);
+    }
+  }
 
   get selectedGuest(): Huesped | undefined {
     return this.availableGuests.find((guest) => guest.id_huesped === Number(this.selectedGuestId));
@@ -209,11 +231,28 @@ export class CheckPagePage implements OnDestroy {
     });
   }
 
-  openNewEntryForm(): void {
+  openNewEntryForm(guestDraft?: GuestDraft): void {
     this.availableGuests.splice(0, this.availableGuests.length, ...this.hostalService.getGuests());
     this.entryForm = this.createEmptyEntryForm();
     this.guestMode = 'new';
     this.selectedGuestId = '';
+    this.entryStep = 1;
+    if (guestDraft) {
+      this.entryForm = {
+        ...this.entryForm,
+        ...guestDraft,
+      };
+      const normalizedDocument = this.normalizeDocument(guestDraft.documento);
+      const existingGuest = normalizedDocument
+        ? this.availableGuests.find((guest) =>
+          this.normalizeDocument(guest.documento ?? '') === normalizedDocument
+        )
+        : undefined;
+      if (existingGuest) {
+        this.guestMode = 'existing';
+        this.selectedGuestId = String(existingGuest.id_huesped);
+      }
+    }
     this.entryError = '';
     this.entrySuccessMessage = '';
     this.showNewEntryForm = true;
@@ -235,6 +274,50 @@ export class CheckPagePage implements OnDestroy {
     this.guestMode = mode;
     this.selectedGuestId = '';
     this.entryError = '';
+  }
+
+  isGuestStepValid(form: NgForm): boolean {
+    if (this.guestMode === 'existing') {
+      return form.valid === true && !!this.selectedGuest;
+    }
+
+    return this.isNewGuestDetailsValid(form);
+  }
+
+  private isNewGuestDetailsValid(form: NgForm): boolean {
+    return form.valid === true && this.areNewGuestFieldsValid();
+  }
+
+  private areNewGuestFieldsValid(): boolean {
+    return !!this.entryForm.documento.trim() &&
+      !!this.entryForm.nombre.trim() &&
+      !!this.entryForm.apellido.trim() &&
+      !!this.entryForm.telefono.trim() &&
+      !!this.entryForm.nacionalidad.trim() &&
+      this.isValidEmail(this.entryForm.email) &&
+      (this.entryForm.documentType !== 'rut' || this.isValidRut(this.entryForm.documento)) &&
+      !this.duplicateGuest;
+  }
+
+  goToReservationStep(form: NgForm): void {
+    if (!this.isGuestStepValid(form)) {
+      form.form.markAllAsTouched();
+      return;
+    }
+    this.entryError = '';
+    this.entryStep = 2;
+  }
+
+  returnToGuestStep(): void {
+    this.entryError = '';
+    this.entryStep = 1;
+  }
+
+  isEntryStepValid(form: NgForm): boolean {
+    const guestIsValid = this.guestMode === 'existing'
+      ? !!this.selectedGuest
+      : this.areNewGuestFieldsValid();
+    return form.valid === true && guestIsValid;
   }
 
   updateAvailableRooms(): void {
@@ -285,12 +368,6 @@ export class CheckPagePage implements OnDestroy {
     } catch (error) {
       this.entryError = error instanceof Error ? error.message : 'No se pudo registrar el ingreso. Inténtalo nuevamente.';
     }
-  }
-
-  getCountryFlag(countryCode: string): string {
-    return Array.from(countryCode.toUpperCase())
-      .map((letter) => String.fromCodePoint(letter.charCodeAt(0) + 127397))
-      .join('');
   }
 
   formatRut(value: string): void {
@@ -407,7 +484,7 @@ export class CheckPagePage implements OnDestroy {
       nombre: '',
       apellido: '',
       telefono: '',
-      phoneCountry: 'CL',
+      phoneCountry: 'cl',
       email: '',
       nacionalidad: '',
       arrivalDate: arrival,
@@ -416,6 +493,19 @@ export class CheckPagePage implements OnDestroy {
       personCount: 1,
       roomId: '',
     };
+  }
+
+  private isGuestDraft(value: unknown): value is GuestDraft {
+    if (!value || typeof value !== 'object') return false;
+    const draft = value as Partial<GuestDraft>;
+    return (draft.documentType === 'rut' || draft.documentType === 'passport') &&
+      typeof draft.documento === 'string' &&
+      typeof draft.nombre === 'string' &&
+      typeof draft.apellido === 'string' &&
+      typeof draft.telefono === 'string' &&
+      typeof draft.phoneCountry === 'string' &&
+      typeof draft.email === 'string' &&
+      typeof draft.nacionalidad === 'string';
   }
 
   private localDateString(date: Date): string {

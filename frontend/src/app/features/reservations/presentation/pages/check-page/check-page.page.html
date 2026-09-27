@@ -29,12 +29,25 @@
       <header class="entry-modal-header">
         <div>
           <h2 id="entry-modal-title">Nuevo ingreso</h2>
-          <p>Registra los datos del huésped y asigna una habitación disponible.</p>
+          <p>{{ entryStep === 1 ? 'Ingresa los datos del huésped para continuar.' : 'Completa los datos de estadía y asigna una habitación.' }}</p>
         </div>
       </header>
 
       <form class="entry-form" #entryFormRef="ngForm" (ngSubmit)="registerEntry()">
         <div class="entry-modal-body">
+        <nav class="entry-step-indicator" aria-label="Progreso del registro">
+          <div class="entry-step" [class.active]="entryStep === 1" [class.completed]="entryStep === 2">
+            <span>1</span>
+            <strong>Huésped</strong>
+          </div>
+          <div class="entry-step-connector" [class.completed]="entryStep === 2"></div>
+          <div class="entry-step" [class.active]="entryStep === 2">
+            <span>2</span>
+            <strong>Reserva</strong>
+          </div>
+        </nav>
+
+        @if (entryStep === 1) {
         <section class="entry-section">
           <h3>INFORMACIÓN DEL HUÉSPED</h3>
           <div class="guest-mode-switch" role="group" aria-label="Tipo de huésped">
@@ -103,11 +116,13 @@
             <label class="entry-field">
               <span>Teléfono</span>
               <div class="entry-phone-input">
-                <select name="phoneCountry" aria-label="Código telefónico del país" required [(ngModel)]="entryForm.phoneCountry">
-                  @for (country of countries; track country.code) {
-                  <option [value]="country.code">{{ getCountryFlag(country.code) }} {{ country.callingCode }}</option>
-                  }
-                </select>
+                <input type="hidden" name="phoneCountry" required [(ngModel)]="entryForm.phoneCountry">
+                <app-country-picker
+                  [countries]="countries"
+                  mode="callingCode"
+                  ariaLabel="Código telefónico del país"
+                  [(value)]="entryForm.phoneCountry">
+                </app-country-picker>
                 <input name="telefono" type="text" required autocomplete="tel-national" inputmode="numeric" placeholder="Número" maxlength="9" pattern="[0-9]{4,9}" [ngModel]="entryForm.telefono" (input)="handlePhoneInput($event)">
               </div>
             </label>
@@ -120,17 +135,20 @@
             </label>
             <label class="entry-field">
               <span>País de residencia</span>
-              <select name="nacionalidad" required autocomplete="country-name" [(ngModel)]="entryForm.nacionalidad">
-                <option value="" disabled>Selecciona un país</option>
-                @for (country of countries; track country.code) {
-                <option [value]="country.countryName">{{ getCountryFlag(country.code) }} {{ country.countryName }}</option>
-                }
-              </select>
+              <input type="hidden" name="nacionalidad" required [(ngModel)]="entryForm.nacionalidad">
+              <app-country-picker
+                [countries]="countries"
+                mode="countryName"
+                ariaLabel="País de residencia"
+                [(value)]="entryForm.nacionalidad">
+              </app-country-picker>
             </label>
           </div>
           }
         </section>
+        }
 
+        @if (entryStep === 2) {
         <section class="entry-section">
           <h3>ESTADÍA Y HABITACIÓN</h3>
           <div class="entry-fields-grid">
@@ -164,14 +182,26 @@
           <p class="entry-hint">No hay habitaciones con capacidad suficiente disponibles en ese rango de fechas.</p>
           }
         </section>
+        }
 
         @if (entryError) {
         <p class="entry-error" role="alert">{{ entryError }}</p>
         }
         </div>
         <footer class="entry-form-actions">
+          @if (entryStep === 1) {
           <button type="button" class="entry-cancel-button" (click)="closeNewEntryForm()">Cancelar</button>
-          <button type="submit" class="entry-submit-button" [disabled]="entryFormRef.invalid || (guestMode === 'new' && (!isValidEmail(entryForm.email) || (entryForm.documentType === 'rut' && !isValidRut(entryForm.documento))))">Registrar ingreso</button>
+          <button
+            type="button"
+            class="entry-submit-button"
+            [disabled]="!isGuestStepValid(entryFormRef)"
+            (click)="goToReservationStep(entryFormRef)">
+            Siguiente
+          </button>
+          } @else {
+          <button type="button" class="entry-cancel-button" (click)="returnToGuestStep()">Atrás</button>
+          <button type="submit" class="entry-submit-button" [disabled]="!isEntryStepValid(entryFormRef)">Registrar ingreso</button>
+          }
         </footer>
       </form>
     </section>

@@ -1,0 +1,33 @@
+<div class="country-picker">
+  <button
+    type="button"
+    class="country-picker-trigger"
+    [attr.aria-label]="ariaLabel"
+    aria-haspopup="listbox"
+    [attr.aria-expanded]="isOpen"
+    (click)="toggleOptions()">
+    @if (selectedCountry; as country) {
+    <img [src]="'https://flagcdn.com/24x18/' + country.code.toLowerCase() + '.png'" [alt]="country.countryName" class="flag-icon" />
+    <span>{{ mode === 'callingCode' ? country.callingCode : country.countryName }}</span>
+    } @else {
+    <span class="country-picker-placeholder">{{ placeholder }}</span>
+    }
+    <span class="country-picker-chevron" aria-hidden="true"></span>
+  </button>
+
+  @if (isOpen) {
+  <div class="country-picker-options" role="listbox" [attr.aria-label]="ariaLabel">
+    @for (country of countries; track country.code) {
+    <button
+      type="button"
+      class="country-picker-option"
+      role="option"
+      [attr.aria-selected]="mode === 'callingCode' ? value === country.code : value === country.countryName"
+      (click)="selectCountry(country)">
+      <img [src]="'https://flagcdn.com/24x18/' + country.code.toLowerCase() + '.png'" [alt]="country.countryName" class="flag-icon" />
+      <span>{{ mode === 'callingCode' ? country.callingCode : country.countryName }}</span>
+    </button>
+    }
+  </div>
+  }
+</div>

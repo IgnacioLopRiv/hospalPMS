@@ -97,7 +97,7 @@ const regionNames = new Intl.DisplayNames(['es'], { type: 'region' });
 
 export const COUNTRY_OPTIONS: CountryOption[] = countryData
   .map(([code, nationality, callingCode]) => ({
-    code,
+    code: code.toLowerCase(),
     nationality,
     countryName: regionNames.of(code) ?? nationality,
     callingCode,
