@@ -1,7 +1,8 @@
 ion-modal.edit-sede-banner {
-  --width: min(920px, 100%);
+  --width: min(920px, calc(100% - 1rem));
   --height: auto;
   --max-height: 90vh;
+  --max-height: 90dvh;
   --border-radius: 0 0 16px 16px;
   --box-shadow: 0 12px 32px #b4eaff;
   align-items: flex-start;
@@ -12,7 +13,10 @@ $blue-primary: #1e50d8;
 .banner {
   display: flex;
   flex-direction: column;
+  width: 100%;
+  min-height: 0;
   max-height: 90vh;
+  max-height: 90dvh;
   border-radius: 0 0 16px 16px;
   overflow: hidden;
   background-color: $blue-primary;
@@ -41,6 +45,8 @@ $blue-primary: #1e50d8;
 }
 
 .banner-body {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: auto;
   padding: 8px 16px 16px;
 }
@@ -104,9 +110,25 @@ $blue-primary: #1e50d8;
 }
 
 @media (max-width: 720px) {
+  ion-modal.edit-sede-banner {
+    --width: calc(100% - 1rem);
+  }
 
   .add-row,
   .room-fields {
     grid-template-columns: 1fr;
+  }
+
+  .banner-header,
+  .banner-actions {
+    padding: 10px 12px;
+  }
+
+  .banner-header h2 {
+    font-size: 1.1rem;
+  }
+
+  .banner-body {
+    padding: 8px 12px 12px;
   }
 }

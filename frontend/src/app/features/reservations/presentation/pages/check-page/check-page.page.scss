@@ -19,6 +19,8 @@ $orange-border: #fed7aa;
   padding: 2rem 2.5rem;
   box-sizing: border-box;
   width: 100%;
+  min-width: 0;
+  min-height: 100%;
   color: $text-dark;
 }
 
@@ -71,7 +73,7 @@ $orange-border: #fed7aa;
 /* ── Tarjetas KPI ─────────────────────────────────────────────────────────── */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1.2rem;
   margin-bottom: 2rem;
 
@@ -141,7 +143,7 @@ $orange-border: #fed7aa;
 /* ── Grilla de Columnas ──────────────────────────────────────────────────── */
 .check-columns-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.75rem;
   align-items: start;
 }
@@ -546,4 +548,14 @@ $orange-border: #fed7aa;
   .kpi-grid {
     grid-template-columns: 1fr;
   }
+
+  .check-page-container {
+    padding: 1rem 0.75rem;
+  }
+
+  .check-column {
+    min-width: 0;
+    padding: 1rem;
+  }
+
 }

@@ -21,7 +21,9 @@ $text-dark: #1f2937;
   top: 68px;
   right: 1.5rem;
   z-index: 1050;
-  min-width: 220px;
+  width: min(300px, calc(100vw - 2rem));
+  min-width: min(220px, calc(100vw - 2rem));
+  box-sizing: border-box;
   background: #ffffff;
   border-radius: 14px;
   border: 1px solid rgba(0, 0, 0, 0.08);
@@ -34,6 +36,13 @@ $text-dark: #1f2937;
     display: flex;
     flex-direction: column;
     gap: 3px;
+  }
+
+  @media (max-width: 480px) {
+    .config-dropdown-tab {
+      top: 60px;
+      right: 0.75rem;
+    }
   }
 
   .action-btn {

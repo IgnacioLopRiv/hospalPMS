@@ -18,7 +18,8 @@ $text-muted: #64748b;
 }
 
 .sedes-wrapper {
-  min-height: 100vh;
+  width: 100%;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -191,12 +192,14 @@ $text-muted: #64748b;
 
   .card-details {
     flex: 1;
+    min-width: 0;
 
     h2 {
       margin: 0;
       font-size: 1.05rem;
       font-weight: 700;
       color: $text-dark;
+      overflow-wrap: anywhere;
       transition: color 0.2s ease;
     }
 
@@ -295,5 +298,43 @@ $text-muted: #64748b;
     font-weight: 600;
     font-size: 0.85rem;
     cursor: pointer;
+  }
+}
+
+@media (max-width: 600px) {
+  .sedes-content {
+    align-items: flex-start;
+  }
+
+  .sedes-wrapper {
+    justify-content: flex-start;
+    padding: 1.5rem 0.75rem;
+  }
+
+  .sedes-header {
+    margin-bottom: 1.25rem;
+
+    h1 {
+      font-size: 1.6rem;
+    }
+  }
+
+  .sedes-card-box {
+    padding: 1rem;
+  }
+
+  .sedes-card-box .box-legend {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .sede-btn-card {
+    gap: 0.65rem;
+    padding: 0.85rem;
+
+    .card-action .action-label {
+      display: none;
+    }
   }
 }

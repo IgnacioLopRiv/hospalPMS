@@ -13,6 +13,7 @@ $text-muted: #64748b;
   padding: 2rem 2.5rem;
   box-sizing: border-box;
   width: 100%;
+  min-width: 0;
 }
 
 .top-bar {
@@ -56,7 +57,7 @@ $text-muted: #64748b;
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1.2rem;
   margin-bottom: 1.5rem;
 
@@ -120,6 +121,7 @@ $text-muted: #64748b;
   .tabs {
     display: flex;
     gap: 0.6rem;
+    min-width: 0;
 
     .tab-btn {
       background: #ffffff;
@@ -132,6 +134,7 @@ $text-muted: #64748b;
       display: flex;
       align-items: center;
       gap: 0.45rem;
+      white-space: nowrap;
 
       .badge {
         background: #f1f5f9;
@@ -157,6 +160,7 @@ $text-muted: #64748b;
   .filters {
     display: flex;
     gap: 0.6rem;
+    min-width: 0;
 
     .search-input {
       background: #ffffff;
@@ -169,6 +173,7 @@ $text-muted: #64748b;
       color: $text-muted;
 
       input {
+        min-width: 0;
         border: none;
         outline: none;
         font-size: 0.85rem;
@@ -193,12 +198,14 @@ $text-muted: #64748b;
 
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1.3rem;
+  min-width: 0;
 
   .guest-card {
     background: #ffffff;
     border-radius: 16px;
+    min-width: 0;
     padding: 1.25rem;
     border: 1px solid $border-color;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
@@ -229,6 +236,7 @@ $text-muted: #64748b;
 
       .header-details {
         flex: 1;
+        min-width: 0;
 
         .title-line {
           display: flex;
@@ -238,6 +246,7 @@ $text-muted: #64748b;
           h4 {
             margin: 0;
             font-size: 0.95rem;
+            overflow-wrap: anywhere;
             font-weight: 600;
             color: $text-dark;
           }
@@ -248,7 +257,7 @@ $text-muted: #64748b;
           }
         }
 
-        p {
+p {
           margin: 0.1rem 0 0 0;
           font-size: 0.75rem;
           color: $text-muted;
@@ -291,6 +300,7 @@ $text-muted: #64748b;
           background: #fff7ed;
           .dot { background: #ea580c; }
         }
+
       }
 
       .menu-icon {
@@ -372,6 +382,7 @@ $text-muted: #64748b;
         border-color: #fef3c7;
         .box-header, .recurrent-tag { color: #d97706; }
       }
+
     }
 
     .card-actions {
@@ -400,3 +411,67 @@ $text-muted: #64748b;
     }
   }
 }
+
+@media (max-width: 1100px) {
+          .guests-page-container {
+            padding: 1.5rem;
+          }
+
+          .kpi-grid,
+          .cards-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .toolbar {
+            align-items: stretch;
+            flex-direction: column;
+            gap: 0.8rem;
+
+            .tabs {
+              max-width: 100%;
+              overflow-x: auto;
+              padding-bottom: 0.2rem;
+            }
+          }
+        }
+
+@media (max-width: 600px) {
+          .guests-page-container {
+            padding: 1rem 0.75rem;
+          }
+
+          .top-bar {
+            align-items: flex-start;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+
+            .page-title {
+              font-size: 1.2rem;
+            }
+
+            .top-actions {
+              width: 100%;
+
+              .btn-primary {
+                justify-content: center;
+                width: 100%;
+              }
+            }
+          }
+
+          .kpi-grid,
+          .cards-grid {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 0.8rem;
+          }
+
+          .toolbar {
+            .filters {
+              width: 100%;
+
+              .search-input {
+                flex: 1;
+              }
+            }
+          }
+        }

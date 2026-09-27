@@ -2,20 +2,21 @@ $blue-primary: #1e50d8;
 
 :host {
   display: block;
+  flex: 0 0 64px;
   width: 100%;
   height: 64px;
 }
 
 .app-header {
-  height: 64px;
-  background: $blue-primary;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
   display: flex;
+  width: 100%;
+  height: 64px;
   align-items: center;
   justify-content: space-between;
   padding: 0 1.5rem;
   box-sizing: border-box;
-  width: 100%;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  background: $blue-primary;
 
   .header-left {
     display: flex;
@@ -23,8 +24,8 @@ $blue-primary: #1e50d8;
     gap: 2rem;
 
     .brand-box {
-      width: 180px;
       display: flex;
+      width: 180px;
       align-items: center;
       gap: 0.75rem;
       color: #ffffff;
@@ -44,31 +45,30 @@ $blue-primary: #1e50d8;
         }
 
         span {
+          display: block;
           font-size: 0.6rem;
           opacity: 0.8;
           letter-spacing: 0.5px;
-          display: block;
         }
       }
     }
 
-    /* Etiqueta de sede informativa */
     .sede-chip-info {
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
       padding: 0.45rem 1rem;
-      background: rgba(255, 255, 255, 0.12);
       border: 1px solid rgba(255, 255, 255, 0.22);
       border-radius: 8px;
+      background: rgba(255, 255, 255, 0.12);
       color: #ffffff;
       font-size: 0.85rem;
       font-weight: 600;
       user-select: none;
 
       .sede-icon {
-        font-size: 1.05rem;
         color: #93c5fd;
+        font-size: 1.05rem;
       }
 
       .sede-name {
@@ -84,23 +84,23 @@ $blue-primary: #1e50d8;
 
     .notif-btn,
     .config-btn {
-      background: rgba(255, 255, 255, 0.15);
-      border: 1px solid rgba(255, 255, 255, 0.25);
-      border-radius: 8px;
+      display: flex;
       width: 38px;
       height: 38px;
-      display: flex;
       align-items: center;
       justify-content: center;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 8px;
+      outline: none;
+      background: rgba(255, 255, 255, 0.15);
       color: #ffffff;
       cursor: pointer;
       font-size: 1.2rem;
       transition: all 0.2s ease;
-      outline: none;
 
       &:hover {
-        background: rgba(255, 255, 255, 0.3);
         border-color: #ffffff;
+        background: rgba(255, 255, 255, 0.3);
       }
 
       &.config-btn:hover {
@@ -108,9 +108,83 @@ $blue-primary: #1e50d8;
       }
 
       &.config-btn.active {
-        background: rgba(255, 255, 255, 0.35);
         border-color: #ffffff;
+        background: rgba(255, 255, 255, 0.35);
         transform: rotate(45deg);
+      }
+    }
+  }
+}
+
+@media (max-width: 720px) {
+  :host {
+    flex-basis: 56px;
+    height: 56px;
+  }
+
+  .app-header {
+    height: 56px;
+    padding: 0 0.75rem;
+
+    .header-left {
+      min-width: 0;
+      gap: 0.6rem;
+
+      .brand-box {
+        width: auto;
+        gap: 0.4rem;
+
+        .brand-icon {
+          width: 36px;
+          height: 36px;
+        }
+
+        .brand-text {
+          h2 {
+            font-size: 1rem;
+          }
+
+          span {
+            display: none;
+          }
+        }
+      }
+
+      .sede-chip-info {
+        min-width: 0;
+        max-width: min(42vw, 220px);
+        padding: 0.35rem 0.55rem;
+        font-size: 0.72rem;
+
+        .sede-name {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+      }
+    }
+
+    .header-right {
+      gap: 0.35rem;
+
+      .notif-btn,
+      .config-btn {
+        width: 34px;
+        height: 34px;
+      }
+    }
+  }
+}
+
+@media (max-width: 420px) {
+  .app-header {
+    padding: 0 0.5rem;
+
+    .header-left .sede-chip-info {
+      max-width: 34vw;
+
+      .sede-icon {
+        display: none;
       }
     }
   }

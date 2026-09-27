@@ -2,6 +2,16 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { Huesped, Habitacion, Tipologia, Reserva, GuestCardView } from '../../../shared/domain/hostal.model';
 
+export interface RegisterEntryInput {
+  guestId?: number;
+  newGuest?: Omit<Huesped, 'id_huesped'>;
+  roomId: number;
+  personCount: number;
+  arrivalDate: string;
+  departureDate: string;
+  arrivalTime: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -87,13 +97,19 @@ export class HostalService {
       const nochesTranscurridas = Math.max(0, Math.round((this.TODAY.getTime() - fLlegada.getTime()) / (1000 * 3600 * 24)));
       const nochesRestantes = Math.max(0, Math.round((fSalida.getTime() - this.TODAY.getTime()) / (1000 * 3600 * 24)));
 
-      let statusType: 'hospedado' | 'checkin_hoy' | 'checkout_hoy' = 'hospedado';
+      let statusType: 'hospedado' | 'checkin_hoy' | 'checkout_hoy' | 'confirmada' = 'hospedado';
       let m1Label = 'Lleva';
       let m1Value = `${nochesTranscurridas} ${nochesTranscurridas === 1 ? 'noche' : 'noches'}`;
       let m2Label = 'Sale en';
       let m2Value = `${nochesRestantes} ${nochesRestantes === 1 ? 'noche' : 'noches'}`;
 
-      if (res.estado_reserva === 'CHECK-IN HOY') {
+      if (res.estado_reserva === 'CONFIRMADA') {
+        statusType = 'confirmada';
+        m1Label = 'Llegada programada';
+        m1Value = `${String(fLlegada.getDate()).padStart(2, '0')}/${String(fLlegada.getMonth() + 1).padStart(2, '0')}`;
+        m2Label = 'Horario';
+        m2Value = res.hora_llegada ?? 'Por confirmar';
+      } else if (res.estado_reserva === 'CHECK-IN HOY') {
         statusType = 'checkin_hoy';
         m1Label = 'Duración';
         m1Value = `${totalNoches} noches`;
@@ -132,5 +148,124 @@ export class HostalService {
     });
 
     this.guestsViewSubject.next(joinedData);
+  }
+
+  getGuests(): Huesped[] {
+    return JSON.parse(localStorage.getItem(this.PREFIX + 'huespedes') || '[]') as Huesped[];
+  }
+
+  getAvailableRooms(arrivalDate: string, departureDate: string, personCount?: number): Habitacion[] {
+    if (!this.isValidDate(arrivalDate) || !this.isValidDate(departureDate) || arrivalDate >= departureDate) {
+      return [];
+    }
+
+    const habitaciones: Habitacion[] = JSON.parse(localStorage.getItem(this.PREFIX + 'habitaciones') || '[]');
+    const reservas: Reserva[] = JSON.parse(localStorage.getItem(this.PREFIX + 'reservas') || '[]');
+    const tipologias: Tipologia[] = JSON.parse(localStorage.getItem(this.PREFIX + 'tipologias') || '[]');
+
+    return habitaciones.filter((habitacion) =>
+      !reservas.some((reserva) =>
+        reserva.id_habitacion === habitacion.id_habitacion &&
+        arrivalDate < reserva.fecha_salida &&
+        departureDate > reserva.fecha_llegada
+      ) &&
+      (personCount === undefined ||
+        (tipologias.find((tipologia) => tipologia.id_tipologia === habitacion.id_tipologia)?.capacidad ?? 0) >= personCount)
+    );
+  }
+
+  registerEntry(input: RegisterEntryInput): { guest: Huesped; reservation: Reserva } {
+    if (!Number.isInteger(input.personCount) || input.personCount < 1) {
+      throw new Error('La cantidad de personas debe ser al menos 1.');
+    }
+    if (!this.isValidDate(input.arrivalDate) || !this.isValidDate(input.departureDate) ||
+      input.arrivalDate >= input.departureDate) {
+      throw new Error('La fecha de salida debe ser posterior a la fecha de llegada.');
+    }
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(input.arrivalTime)) {
+      throw new Error('Ingresa un horario de llegada válido.');
+    }
+
+    const guests = this.getGuests();
+    const rooms: Habitacion[] = JSON.parse(localStorage.getItem(this.PREFIX + 'habitaciones') || '[]');
+    const tipologias: Tipologia[] = JSON.parse(localStorage.getItem(this.PREFIX + 'tipologias') || '[]');
+    const reservations: Reserva[] = JSON.parse(localStorage.getItem(this.PREFIX + 'reservas') || '[]');
+    let guest: Huesped;
+    let updatedGuests = guests;
+
+    if (input.guestId !== undefined) {
+      const registeredGuest = guests.find((item) => item.id_huesped === input.guestId);
+      if (!registeredGuest) {
+        throw new Error('El huésped seleccionado ya no está registrado. Actualiza la lista e inténtalo otra vez.');
+      }
+      guest = registeredGuest;
+    } else if (input.newGuest) {
+      const document = input.newGuest.documento?.trim().toUpperCase();
+      const guestDetails = {
+        ...input.newGuest,
+        documento: document,
+        nombre: input.newGuest.nombre.trim(),
+        apellido: input.newGuest.apellido.trim(),
+        telefono: input.newGuest.telefono.trim(),
+        email: input.newGuest.email.trim(),
+        nacionalidad: input.newGuest.nacionalidad.trim(),
+      };
+      if (!guestDetails.documento || !guestDetails.nombre || !guestDetails.apellido ||
+        !guestDetails.telefono || !guestDetails.email || !guestDetails.nacionalidad) {
+        throw new Error('Completa todos los datos del huésped antes de registrar el ingreso.');
+      }
+      if (document && guests.some((item) =>
+        this.normalizeDocument(item.documento ?? '') === this.normalizeDocument(document)
+      )) {
+        throw new Error('Ya existe un huésped registrado con ese RUT o número de pasaporte.');
+      }
+      const nextGuestId = guests.reduce((max, item) => Math.max(max, item.id_huesped), 0) + 1;
+      guest = { ...guestDetails, id_huesped: nextGuestId };
+      updatedGuests = [...guests, guest];
+    } else {
+      throw new Error('Selecciona un huésped o ingresa sus datos.');
+    }
+
+    const room = rooms.find((item) => item.id_habitacion === input.roomId);
+    if (!room || !this.getAvailableRooms(input.arrivalDate, input.departureDate)
+      .some((available) => available.id_habitacion === input.roomId)) {
+      throw new Error('La habitación seleccionada no está disponible para esas fechas.');
+    }
+    const roomCapacity = tipologias.find((tipologia) => tipologia.id_tipologia === room.id_tipologia)?.capacidad ?? 0;
+    if (input.personCount > roomCapacity) {
+      throw new Error('La cantidad de personas supera la capacidad de la habitación seleccionada.');
+    }
+
+    const nextReservationId = reservations.reduce((max, item) => Math.max(max, item.id_reserva), 0) + 1;
+    const reservation: Reserva = {
+      id_reserva: nextReservationId,
+      id_huesped: guest.id_huesped,
+      id_habitacion: room.id_habitacion,
+      fecha_llegada: input.arrivalDate,
+      fecha_salida: input.departureDate,
+      hora_llegada: input.arrivalTime,
+      cantidad_personas: input.personCount,
+      estado_reserva: 'CONFIRMADA',
+    };
+
+    localStorage.setItem(this.PREFIX + 'huespedes', JSON.stringify(updatedGuests));
+    localStorage.setItem(this.PREFIX + 'reservas', JSON.stringify([...reservations, reservation]));
+    this.refreshView();
+
+    return { guest, reservation };
+  }
+
+  private isValidDate(value: string): boolean {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const date = new Date(`${value}T00:00:00`);
+    const [year, month, day] = value.split('-').map(Number);
+    return !Number.isNaN(date.getTime()) &&
+      date.getFullYear() === year &&
+      date.getMonth() + 1 === month &&
+      date.getDate() === day;
+  }
+
+  private normalizeDocument(value: string): string {
+    return value.replace(/[.\s-]/g, '').toUpperCase();
   }
 }

@@ -12,12 +12,171 @@
       </p>
     </div>
     <div class="top-actions">
-      <button type="button" class="btn-top-action">
+      <button type="button" class="btn-top-action" (click)="openNewEntryForm()">
         <ion-icon name="enter-outline"></ion-icon>
         <span>Nuevo Ingreso</span>
       </button>
     </div>
   </header>
+
+  @if (entrySuccessMessage) {
+  <div class="entry-success" role="status">{{ entrySuccessMessage }}</div>
+  }
+
+  @if (showNewEntryForm) {
+  <div class="entry-modal-backdrop" (click)="closeNewEntryForm()">
+    <section class="entry-modal" role="dialog" aria-modal="true" aria-labelledby="entry-modal-title" (click)="$event.stopPropagation()">
+      <header class="entry-modal-header">
+        <div>
+          <h2 id="entry-modal-title">Nuevo ingreso</h2>
+          <p>Registra los datos del huésped y asigna una habitación disponible.</p>
+        </div>
+      </header>
+
+      <form class="entry-form" #entryFormRef="ngForm" (ngSubmit)="registerEntry()">
+        <div class="entry-modal-body">
+        <section class="entry-section">
+          <h3>INFORMACIÓN DEL HUÉSPED</h3>
+          <div class="guest-mode-switch" role="group" aria-label="Tipo de huésped">
+            <button type="button" [class.active]="guestMode === 'new'" (click)="setGuestMode('new')">Nuevo huésped</button>
+            <button type="button" [class.active]="guestMode === 'existing'" (click)="setGuestMode('existing')">Huésped registrado</button>
+          </div>
+
+          @if (guestMode === 'existing') {
+          <label class="entry-field full-width">
+            <span>Seleccionar huésped</span>
+            <select name="selectedGuestId" required [(ngModel)]="selectedGuestId">
+              <option value="" disabled>Selecciona un huésped registrado</option>
+              @for (guest of availableGuests; track guest.id_huesped) {
+              <option [value]="guest.id_huesped">{{ guest.nombre }} {{ guest.apellido }}{{ guest.documento ? ' · ' + guest.documento : '' }}</option>
+              }
+            </select>
+          </label>
+          @if (availableGuests.length === 0) {
+          <p class="entry-hint">Aún no hay huéspedes registrados. Selecciona “Nuevo huésped” para crear uno.</p>
+          }
+          @if (selectedGuest; as guest) {
+          <div class="selected-guest-card">
+            <strong>{{ guest.nombre }} {{ guest.apellido }}</strong>
+            <span>{{ guest.documento || 'Sin documento' }} · {{ guest.nacionalidad }}</span>
+            <span>{{ guest.telefono }} · {{ guest.email }}</span>
+          </div>
+          }
+          } @else {
+          <div class="entry-fields-grid">
+            <label class="entry-field">
+              <span>Tipo de documento</span>
+              <select name="documentType" required [(ngModel)]="entryForm.documentType">
+                <option value="rut">RUT chileno</option>
+                <option value="passport">Pasaporte</option>
+              </select>
+            </label>
+            <label class="entry-field">
+              <span>{{ entryForm.documentType === 'rut' ? 'RUT' : 'Número de pasaporte' }}</span>
+              <input
+                #documentModel="ngModel"
+                name="documento"
+                type="text"
+                required
+                autocomplete="off"
+                [attr.inputmode]="entryForm.documentType === 'passport' ? 'numeric' : null"
+                [placeholder]="entryForm.documentType === 'rut' ? 'Ej. 12.345.678-5' : 'Ingresa el número de pasaporte'"
+                [ngModel]="entryForm.documento"
+                (input)="handleDocumentInput($event)">
+              @if (documentModel.touched && entryForm.documentType === 'rut' && entryForm.documento && !isValidRut(entryForm.documento)) {
+              <small class="entry-field-error" role="alert">Ingresa un RUT chileno válido.</small>
+              }
+              @if (duplicateGuest; as guest) {
+              <small class="entry-duplicate-guest" role="status">
+                Documento ya registrado: {{ guest.nombre }} {{ guest.apellido }} · RUT/ID: {{ guest.documento }}
+              </small>
+              }
+            </label>
+            <label class="entry-field">
+              <span>Nombre</span>
+              <input name="nombre" type="text" required autocomplete="given-name" [(ngModel)]="entryForm.nombre">
+            </label>
+            <label class="entry-field">
+              <span>Apellidos</span>
+              <input name="apellido" type="text" required autocomplete="family-name" [(ngModel)]="entryForm.apellido">
+            </label>
+            <label class="entry-field">
+              <span>Teléfono</span>
+              <div class="entry-phone-input">
+                <select name="phoneCountry" aria-label="Código telefónico del país" required [(ngModel)]="entryForm.phoneCountry">
+                  @for (country of countries; track country.code) {
+                  <option [value]="country.code">{{ getCountryFlag(country.code) }} {{ country.callingCode }}</option>
+                  }
+                </select>
+                <input name="telefono" type="text" required autocomplete="tel-national" inputmode="numeric" placeholder="Número" maxlength="9" pattern="[0-9]{4,9}" [ngModel]="entryForm.telefono" (input)="handlePhoneInput($event)">
+              </div>
+            </label>
+            <label class="entry-field">
+              <span>Email</span>
+              <input #emailModel="ngModel" name="email" type="email" required autocomplete="email" [(ngModel)]="entryForm.email">
+              @if (emailModel.touched && entryForm.email && !isValidEmail(entryForm.email)) {
+              <small class="entry-field-error" role="alert">Ingresa un email válido, por ejemplo nombre@dominio.com.</small>
+              }
+            </label>
+            <label class="entry-field">
+              <span>País de residencia</span>
+              <select name="nacionalidad" required autocomplete="country-name" [(ngModel)]="entryForm.nacionalidad">
+                <option value="" disabled>Selecciona un país</option>
+                @for (country of countries; track country.code) {
+                <option [value]="country.countryName">{{ getCountryFlag(country.code) }} {{ country.countryName }}</option>
+                }
+              </select>
+            </label>
+          </div>
+          }
+        </section>
+
+        <section class="entry-section">
+          <h3>ESTADÍA Y HABITACIÓN</h3>
+          <div class="entry-fields-grid">
+            <label class="entry-field">
+              <span>Fecha de llegada</span>
+              <input name="arrivalDate" type="date" required [(ngModel)]="entryForm.arrivalDate" (ngModelChange)="updateAvailableRooms()">
+            </label>
+            <label class="entry-field">
+              <span>Fecha de salida</span>
+              <input name="departureDate" type="date" required [(ngModel)]="entryForm.departureDate" (ngModelChange)="updateAvailableRooms()">
+            </label>
+            <label class="entry-field">
+              <span>Horario estimado de llegada</span>
+              <input name="arrivalTime" type="time" required [(ngModel)]="entryForm.arrivalTime">
+            </label>
+            <label class="entry-field">
+              <span>Cantidad de personas</span>
+              <input name="personCount" type="number" required min="1" step="1" [(ngModel)]="entryForm.personCount" (ngModelChange)="updateAvailableRooms()">
+            </label>
+            <label class="entry-field">
+              <span>Habitación disponible</span>
+              <select name="roomId" required [(ngModel)]="entryForm.roomId">
+                <option value="" disabled>Selecciona una habitación</option>
+                @for (room of availableRooms; track room.id_habitacion) {
+                <option [value]="room.id_habitacion">Hab. {{ room.numero_habitacion }}</option>
+                }
+              </select>
+            </label>
+          </div>
+          @if (availableRooms.length === 0) {
+          <p class="entry-hint">No hay habitaciones con capacidad suficiente disponibles en ese rango de fechas.</p>
+          }
+        </section>
+
+        @if (entryError) {
+        <p class="entry-error" role="alert">{{ entryError }}</p>
+        }
+        </div>
+        <footer class="entry-form-actions">
+          <button type="button" class="entry-cancel-button" (click)="closeNewEntryForm()">Cancelar</button>
+          <button type="submit" class="entry-submit-button" [disabled]="entryFormRef.invalid || (guestMode === 'new' && (!isValidEmail(entryForm.email) || (entryForm.documentType === 'rut' && !isValidRut(entryForm.documento))))">Registrar ingreso</button>
+        </footer>
+      </form>
+    </section>
+  </div>
+  }
 
   <!-- Tarjetas KPI / Resumen del día -->
   <section class="kpi-grid">

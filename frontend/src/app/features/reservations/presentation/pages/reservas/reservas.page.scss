@@ -13,6 +13,8 @@ $text-muted: #64748b;
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
+  min-width: 0;
   background-color: #ffffff;
   overflow: hidden;
 }
@@ -21,6 +23,8 @@ $text-muted: #64748b;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  flex: 0 0 auto;
   padding: 0.8rem 1.5rem;
   border-bottom: 1px solid $border-color;
   background-color: #ffffff;
@@ -139,7 +143,9 @@ $text-muted: #64748b;
 }
 
 .planner-grid-wrapper {
-  flex: 1;
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
   overflow: auto;
   display: flex;
   flex-direction: column;
@@ -169,6 +175,7 @@ $text-muted: #64748b;
     display: grid;
     grid-template-columns: repeat(14, minmax(64px, 1fr));
     flex: 1;
+    min-width: 896px;
 
     .day-cell {
       padding: 0.5rem 0.25rem;
@@ -193,7 +200,9 @@ $text-muted: #64748b;
 }
 
 .planner-body {
-  flex: 1;
+  flex: 0 0 auto;
+  width: max-content;
+  min-width: 100%;
 
   .category-header-row {
     display: flex;
@@ -240,6 +249,7 @@ $text-muted: #64748b;
 
     .days-columns-bg {
       flex: 1;
+      min-width: 896px;
       background: rgba(254, 243, 199, 0.25);
     }
   }
@@ -286,6 +296,7 @@ $text-muted: #64748b;
 
     .timeline-cells-container {
       flex: 1;
+      min-width: 896px;
       position: relative;
 
       .grid-columns-bg {
@@ -305,6 +316,7 @@ $text-muted: #64748b;
             background-color: rgba(30, 58, 138, 0.04);
           }
         }
+
       }
 
       .reservations-layer {
@@ -343,7 +355,54 @@ $text-muted: #64748b;
             border-style: dashed !important;
           }
         }
-      }
+
+}
     }
   }
 }
+
+@media (max-width: 900px) {
+          .scheduler-toolbar {
+            align-items: flex-start;
+            padding: 0.75rem 1rem;
+          }
+
+          .kpi-chips {
+            flex-wrap: wrap;
+          }
+
+          .categories-legend {
+            flex: 1 1 100%;
+            order: 3;
+          }
+
+          .date-navigator {
+            margin-left: auto;
+          }
+        }
+
+@media (max-width: 600px) {
+          .scheduler-toolbar {
+            gap: 0.65rem;
+            padding: 0.65rem 0.75rem;
+          }
+
+          .kpi-chips {
+            gap: 0.35rem;
+
+            .kpi-chip {
+              padding: 0.3rem 0.5rem;
+              font-size: 0.72rem;
+            }
+          }
+
+          .categories-legend {
+            gap: 0.5rem;
+          }
+
+          .date-navigator {
+            width: 100%;
+            justify-content: space-between;
+            margin-left: 0;
+          }
+        }

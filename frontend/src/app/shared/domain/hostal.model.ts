@@ -1,5 +1,6 @@
 export interface Huesped {
   id_huesped: number;
+  documento?: string;
   nombre: string;
   apellido: string;
   nacionalidad: string;
@@ -30,6 +31,8 @@ export interface Reserva {
   id_habitacion: number;
   fecha_llegada: string;
   fecha_salida: string;
+  hora_llegada?: string;
+  cantidad_personas?: number;
   estado_reserva: 'HOSPEDADO' | 'CHECK-IN HOY' | 'CHECK-OUT HOY' | 'CONFIRMADA';
 }
 
@@ -41,7 +44,7 @@ export interface GuestCardView {
   roomNumber: string;
   roomType: string;
   dateRange: string;
-  status: 'hospedado' | 'checkin_hoy' | 'checkout_hoy';
+  status: 'hospedado' | 'checkin_hoy' | 'checkout_hoy' | 'confirmada';
   statusBadge: string;
   cardColor: 'blue' | 'green' | 'orange' | 'purple';
   metric1Label: string;

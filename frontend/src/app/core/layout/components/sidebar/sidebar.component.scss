@@ -2,23 +2,24 @@ $blue-primary: #1e50d8;
 
 :host {
   display: block;
+  flex: 0 0 220px;
   height: 100%;
 }
 
 .sidebar-container {
+  display: flex;
   width: 220px;
   min-width: 220px;
   height: 100%;
-  background: $blue-primary;
-  color: #ffffff;
-  display: flex;
   flex-direction: column;
   padding: 1rem 0.8rem;
   box-sizing: border-box;
+  background: $blue-primary;
+  color: #ffffff;
 
   .nav-menu {
-    flex: 1;
     display: flex;
+    flex: 1;
     flex-direction: column;
     gap: 0.4rem;
 
@@ -51,6 +52,7 @@ $blue-primary: #1e50d8;
 
       &.logout-btn {
         margin-top: auto;
+
         &:hover {
           background: rgba(239, 68, 68, 0.25);
           color: #fca5a5;
@@ -65,13 +67,12 @@ $blue-primary: #1e50d8;
     gap: 0.6rem;
     padding: 0.65rem 0.8rem;
     margin-top: auto;
-    border-top: 1px solid rgba(255, 255, 255, 0.15);
     border: none;
+    border-radius: 8px;
     background: transparent;
     color: inherit;
     cursor: pointer;
     text-align: left;
-    border-radius: 8px;
     transition: all 0.2s ease;
     font-family: inherit;
 
@@ -80,44 +81,110 @@ $blue-primary: #1e50d8;
     }
 
     .avatar {
+      display: flex;
       width: 34px;
       height: 34px;
-      background: rgba(255, 255, 255, 0.25);
-      border-radius: 50%;
-      display: flex;
+      flex-shrink: 0;
       align-items: center;
       justify-content: center;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.25);
       font-size: 0.75rem;
       font-weight: bold;
-      flex-shrink: 0;
     }
 
     .user-info {
-      flex: 1;
       display: flex;
-      flex-direction: column;
       min-width: 0;
+      flex: 1;
+      flex-direction: column;
+
+      strong,
+      small {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
 
       strong {
         font-size: 0.8rem;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
       }
 
       small {
         font-size: 0.65rem;
         opacity: 0.7;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
       }
     }
 
     ion-icon {
-      font-size: 1rem;
       flex-shrink: 0;
+      font-size: 1rem;
       opacity: 0.7;
+    }
+  }
+}
+
+@media (max-width: 720px) {
+  :host {
+    width: 100%;
+    height: auto;
+    flex: 0 0 auto;
+  }
+
+  .sidebar-container {
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    flex-direction: row;
+    padding: 0.35rem 0.5rem;
+
+    .nav-menu {
+      min-width: 0;
+      flex: 1 1 auto;
+      flex-direction: row;
+      gap: 0.25rem;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scrollbar-width: thin;
+
+      .nav-item {
+        flex: 0 0 auto;
+        gap: 0.4rem;
+        padding: 0.6rem 0.7rem;
+        font-size: 0.78rem;
+        white-space: nowrap;
+
+        ion-icon {
+          font-size: 1rem;
+        }
+
+        &.logout-btn {
+          margin-top: 0;
+          margin-left: auto;
+        }
+      }
+    }
+
+    .sidebar-user {
+      flex: 0 0 auto;
+      margin: 0;
+      padding: 0.3rem;
+
+      .user-info {
+        display: none;
+      }
+    }
+  }
+}
+
+@media (max-width: 420px) {
+  .sidebar-container .nav-menu .nav-item {
+    justify-content: center;
+    gap: 0;
+    padding: 0.6rem;
+
+    span {
+      display: none;
     }
   }
 }

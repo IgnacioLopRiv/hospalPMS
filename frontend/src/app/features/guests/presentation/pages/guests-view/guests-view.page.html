@@ -102,8 +102,8 @@
 
       <div class="status-box" [ngClass]="guest.status">
         <div class="box-header">
-          <ion-icon [name]="guest.status === 'hospedado' ? 'bed-outline' : guest.status === 'checkin_hoy' ? 'enter-outline' : 'exit-outline'"></ion-icon>
-          <span>{{ guest.status === 'hospedado' ? 'ESTANCIA ACTUAL' : guest.status === 'checkin_hoy' ? 'INGRESA HOY' : 'SALE HOY' }}</span>
+          <ion-icon [name]="guest.status === 'hospedado' ? 'bed-outline' : guest.status === 'checkin_hoy' ? 'enter-outline' : guest.status === 'checkout_hoy' ? 'exit-outline' : 'calendar-outline'"></ion-icon>
+          <span>{{ guest.status === 'hospedado' ? 'ESTANCIA ACTUAL' : guest.status === 'checkin_hoy' ? 'INGRESA HOY' : guest.status === 'checkout_hoy' ? 'SALE HOY' : 'RESERVA CONFIRMADA' }}</span>
         </div>
         <div class="box-metrics">
           <div>
