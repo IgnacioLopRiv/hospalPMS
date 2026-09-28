@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { HostalService } from '../../../../guests/application/hostal.service';
 import { CheckPagePage } from './check-page.page';
 
 describe('CheckPagePage', () => {
@@ -6,18 +7,107 @@ describe('CheckPagePage', () => {
   let fixture: ComponentFixture<CheckPagePage>;
 
   beforeEach(() => {
+    ['huespedes', 'habitaciones', 'reservas', 'tipologias'].forEach((key) =>
+      localStorage.removeItem(`hospal_db_${key}`)
+    );
+    localStorage.setItem('hospal.sedes', JSON.stringify([{
+      id: 1,
+      nombre: 'Sede de prueba',
+      ciudad: 'Santiago',
+      tipologias: [{ id: 1, nombre: 'Doble', capacidad: 2 }],
+      habitaciones: [
+        { id: 1, numero: '101', tipo: 'Doble', tipologiaId: 1, tamanoM2: 20, disposicionMuebles: '' },
+        { id: 2, numero: '102', tipo: 'Doble', tipologiaId: 1, tamanoM2: 20, disposicionMuebles: '' },
+      ],
+    }]));
+    localStorage.setItem('hospal.selectedSede', JSON.stringify({ id: 1 }));
+    TestBed.configureTestingModule({});
     fixture = TestBed.createComponent(CheckPagePage);
     component = fixture.componentInstance;
     fixture.detectChanges();
+  });
+
+  afterEach(() => {
+    fixture.destroy();
+    ['huespedes', 'habitaciones', 'reservas', 'tipologias'].forEach((key) =>
+      localStorage.removeItem(`hospal_db_${key}`)
+    );
+    localStorage.removeItem('hospal.sedes');
+    localStorage.removeItem('hospal.selectedSede');
+    TestBed.resetTestingModule();
   });
 
   it('should create', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should have pending check-ins and check-outs initialized', () => {
-    expect(component.pendingCheckIns.length).toBeGreaterThan(0);
-    expect(component.pendingCheckOuts.length).toBeGreaterThan(0);
+  it('does not invent check-in or check-out entries when there are no stored reservations', () => {
+    expect(component.pendingCheckIns).toEqual([]);
+    expect(component.pendingCheckOuts).toEqual([]);
+  });
+
+  it('shows same-day arrivals and departures from saved reservations', () => {
+    const hostalService = TestBed.inject(HostalService);
+    const today = toLocalDateString(new Date());
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    hostalService.registerEntry({
+      newGuest: {
+        documento: 'TODAY-CHECKIN',
+        nombre: 'Ana',
+        apellido: 'Pérez',
+        nacionalidad: 'Chile',
+        telefono: '+56912345678',
+        email: 'ana@example.com',
+      },
+      roomId: 1,
+      personCount: 1,
+      arrivalDate: today,
+      departureDate: toLocalDateString(tomorrow),
+      arrivalTime: '15:30',
+    });
+    hostalService.registerEntry({
+      newGuest: {
+        documento: 'TODAY-CHECKOUT',
+        nombre: 'Luis',
+        apellido: 'Rojas',
+        nacionalidad: 'Argentina',
+        telefono: '+5491112345678',
+        email: 'luis@example.com',
+      },
+      roomId: 2,
+      personCount: 1,
+      arrivalDate: toLocalDateString(yesterday),
+      departureDate: today,
+      arrivalTime: '14:00',
+    });
+
+    expect(component.pendingCheckIns).toContain(jasmine.objectContaining({
+      guestName: 'Ana Pérez',
+      roomNumber: '101',
+      scheduledTime: '15:30',
+      statusBadge: 'CHECK-IN HOY',
+    }));
+    expect(component.pendingCheckOuts).toContain(jasmine.objectContaining({
+      guestName: 'Luis Rojas',
+      roomNumber: '102',
+      statusBadge: 'CHECK-OUT HOY',
+    }));
+  });
+
+  it('shows the current local date and a live 24-hour clock', () => {
+    const expectedDate = new Date().toLocaleDateString('es-CL', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+
+    expect(component.currentDateFormatted.toLocaleLowerCase()).toBe(expectedDate);
+    expect(component.currentTimeFormatted).toMatch(/^\d{2}:\d{2}:\d{2}$/);
   });
 
   it('validates Chilean RUT check digits', () => {
@@ -84,3 +174,10 @@ describe('CheckPagePage', () => {
     expect(component.countries.every((country) => country.code === country.code.toLowerCase())).toBeTrue();
   });
 });
+
+function toLocalDateString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}

@@ -18,7 +18,9 @@ import {
   callOutline,
   personOutline,
   createOutline,
-  trashOutline
+  trashOutline,
+  listOutline,
+  gridOutline
 } from 'ionicons/icons';
 
 import { HostalService } from '../../../application/hostal.service';
@@ -52,6 +54,7 @@ export class GuestsViewPage implements OnInit, OnDestroy {
   guests: GuestCardView[] = [];
   filteredGuests: GuestCardView[] = [];
   selectedFilter: string = 'todos';
+  viewMode: 'cards' | 'list' = 'cards';
   searchTerm: string = '';
   showNewGuestForm = false;
   guestError = '';
@@ -90,7 +93,9 @@ export class GuestsViewPage implements OnInit, OnDestroy {
       callOutline,
       personOutline,
       createOutline,
-      trashOutline
+      trashOutline,
+      listOutline,
+      gridOutline
     });
   }
 
@@ -104,6 +109,11 @@ export class GuestsViewPage implements OnInit, OnDestroy {
   setFilter(filter: string) {
     this.selectedFilter = filter;
     this.applyFilters();
+  }
+
+  toggleView(): void {
+    this.viewMode = this.viewMode === 'cards' ? 'list' : 'cards';
+    this.openMenuCardIndex = null;
   }
 
   applyFilters() {

@@ -20,6 +20,7 @@ export class HabitacionesPage {
 
   readonly sede = this.sedeService.selectedSede;
   readonly habitaciones = this.sedeService.habitaciones;
+  readonly tipologias = this.sedeService.tipologias;
   readonly isAdmin = computed(() => this.authService.currentUser()?.role === 'admin');
   readonly editHabitacionesOpen = signal(false);
 
@@ -36,5 +37,12 @@ export class HabitacionesPage {
 
   closeEditHabitaciones(): void {
     this.editHabitacionesOpen.set(false);
+  }
+
+  getManagedTypologyName(room: { tipo: string; tipologiaId?: number }): string {
+    return this.tipologias().find((typology) =>
+      typology.id === room.tipologiaId ||
+      typology.nombre.toLowerCase() === room.tipo.toLowerCase()
+    )?.nombre ?? 'Tipología no gestionada';
   }
 }
