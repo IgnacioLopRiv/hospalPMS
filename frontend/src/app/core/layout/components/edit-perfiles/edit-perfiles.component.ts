@@ -15,7 +15,7 @@ interface UserForm {
   email: string;
   password: string;
   role: UserRole;
-  /** Solo requerido cuando el rol es 'staff' */
+  /** Solo 'staff' */
   sedeId: number | null;
 }
 
@@ -65,7 +65,6 @@ export class EditPerfilesComponent {
   /** True cuando el rol seleccionado requiere elegir sede */
   readonly requiresSede = computed(() => this.form().role === 'staff');
 
-  /** Usuarios agrupados por rol */
   readonly admins = computed(() => this.auth.users().filter((u) => u.role === 'admin'));
   readonly staff = computed(() => this.auth.users().filter((u) => u.role === 'staff'));
 

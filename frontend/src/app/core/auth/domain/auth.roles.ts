@@ -7,7 +7,6 @@ export interface AuthUser {
   name: string;
   email: string;
   role: UserRole;
-  /** ID de la sede asignada. Solo relevante para usuarios con rol 'staff'. */
   sedeId?: number;
 }
 

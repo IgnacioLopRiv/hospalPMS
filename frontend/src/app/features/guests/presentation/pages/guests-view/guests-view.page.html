@@ -19,7 +19,8 @@
 
   @if (showNewGuestForm) {
   <div class="entry-modal-backdrop">
-    <section class="entry-modal" role="dialog" aria-modal="true" aria-labelledby="guest-modal-title" (click)="$event.stopPropagation()">
+    <section class="entry-modal" role="dialog" aria-modal="true" aria-labelledby="guest-modal-title"
+      (click)="$event.stopPropagation()">
       <header class="entry-modal-header">
         <div>
           <h2 id="guest-modal-title">Nuevo huésped</h2>
@@ -41,19 +42,13 @@
               </label>
               <label class="entry-field">
                 <span>{{ guestForm.documentType === 'rut' ? 'RUT' : 'Número de pasaporte' }}</span>
-                <input
-                  #documentModel="ngModel"
-                  name="documento"
-                  type="text"
-                  required
-                  autocomplete="off"
+                <input #documentModel="ngModel" name="documento" type="text" required autocomplete="off"
                   [attr.inputmode]="guestForm.documentType === 'passport' ? 'numeric' : null"
                   [placeholder]="guestForm.documentType === 'rut' ? 'Ej. 12.345.678-5' : 'Ingresa el número de pasaporte'"
-                  [ngModel]="guestForm.documento"
-                  (focus)="documentFieldFocused = true"
-                  (blur)="documentFieldFocused = false"
-                  (input)="handleDocumentInput($event)">
-                @if (documentModel.touched && !documentFieldFocused && guestForm.documentType === 'rut' && guestForm.documento && !isValidRut(guestForm.documento)) {
+                  [ngModel]="guestForm.documento" (focus)="documentFieldFocused = true"
+                  (blur)="documentFieldFocused = false" (input)="handleDocumentInput($event)">
+                @if (documentModel.touched && !documentFieldFocused && guestForm.documentType === 'rut' &&
+                guestForm.documento && !isValidRut(guestForm.documento)) {
                 <small class="entry-field-error" role="alert">Ingresa un RUT chileno válido.</small>
                 }
               </label>
@@ -69,29 +64,27 @@
                 <span>Teléfono</span>
                 <div class="entry-phone-input">
                   <input type="hidden" name="phoneCountry" required [(ngModel)]="guestForm.phoneCountry">
-                  <app-country-picker
-                    [countries]="countries"
-                    mode="callingCode"
-                    ariaLabel="Código telefónico del país"
+                  <app-country-picker [countries]="countries" mode="callingCode" ariaLabel="Código telefónico del país"
                     [(value)]="guestForm.phoneCountry">
                   </app-country-picker>
-                  <input name="telefono" type="text" required autocomplete="tel-national" inputmode="numeric" placeholder="Número" maxlength="9" pattern="[0-9]{4,9}" [ngModel]="guestForm.telefono" (input)="handlePhoneInput($event)">
+                  <input name="telefono" type="text" required autocomplete="tel-national" inputmode="numeric"
+                    placeholder="Número" maxlength="9" pattern="[0-9]{4,9}" [ngModel]="guestForm.telefono"
+                    (input)="handlePhoneInput($event)">
                 </div>
               </label>
               <label class="entry-field">
                 <span>Email</span>
-                <input #emailModel="ngModel" name="email" type="email" required autocomplete="email" [(ngModel)]="guestForm.email" (focus)="emailFieldFocused = true" (blur)="emailFieldFocused = false">
+                <input #emailModel="ngModel" name="email" type="email" required autocomplete="email"
+                  [(ngModel)]="guestForm.email" (focus)="emailFieldFocused = true" (blur)="emailFieldFocused = false">
                 @if (emailModel.touched && !emailFieldFocused && guestForm.email && !isValidEmail(guestForm.email)) {
-                <small class="entry-field-error" role="alert">Ingresa un email válido, por ejemplo nombre@dominio.com.</small>
+                <small class="entry-field-error" role="alert">Ingresa un email válido, por ejemplo
+                  nombre@dominio.com.</small>
                 }
               </label>
               <label class="entry-field">
                 <span>País de residencia</span>
                 <input type="hidden" name="nacionalidad" required [(ngModel)]="guestForm.nacionalidad">
-                <app-country-picker
-                  [countries]="countries"
-                  mode="countryName"
-                  ariaLabel="País de residencia"
+                <app-country-picker [countries]="countries" mode="countryName" ariaLabel="País de residencia"
                   [(value)]="guestForm.nacionalidad">
                 </app-country-picker>
               </label>
@@ -110,9 +103,7 @@
         </div>
         <footer class="entry-form-actions">
           <button type="button" class="entry-cancel-button" (click)="closeNewGuestForm()">Cancelar</button>
-          <button
-            type="submit"
-            class="entry-submit-button"
+          <button type="submit" class="entry-submit-button"
             [disabled]="guestFormRef.invalid || !isValidEmail(guestForm.email) || (guestForm.documentType === 'rut' && !isValidRut(guestForm.documento))">
             Registrar huésped
           </button>
@@ -160,19 +151,26 @@
       <button type="button" class="tab-btn" [class.active]="selectedFilter === 'todos'" (click)="setFilter('todos')">
         <ion-icon name="people-outline"></ion-icon> Todos <span class="badge">{{ getCount() }}</span>
       </button>
-      <button type="button" class="tab-btn" [class.active]="selectedFilter === 'hospedados'" (click)="setFilter('hospedados')">
+      <button type="button" class="tab-btn" [class.active]="selectedFilter === 'hospedados'"
+        (click)="setFilter('hospedados')">
         <ion-icon name="bed-outline"></ion-icon> Hospedados <span class="badge">{{ getCount('hospedado') }}</span>
       </button>
-      <button type="button" class="tab-btn" [class.active]="selectedFilter === 'checkin'" (click)="setFilter('checkin')">
+      <button type="button" class="tab-btn" [class.active]="selectedFilter === 'checkin'"
+        (click)="setFilter('checkin')">
         <ion-icon name="enter-outline"></ion-icon> Check-in hoy <span class="badge">{{ getCount('checkin_hoy') }}</span>
       </button>
-      <button type="button" class="tab-btn" [class.active]="selectedFilter === 'checkout'" (click)="setFilter('checkout')">
-        <ion-icon name="exit-outline"></ion-icon> Check-out hoy <span class="badge">{{ getCount('checkout_hoy') }}</span>
+      <button type="button" class="tab-btn" [class.active]="selectedFilter === 'checkout'"
+        (click)="setFilter('checkout')">
+        <ion-icon name="exit-outline"></ion-icon> Check-out hoy <span class="badge">{{ getCount('checkout_hoy')
+          }}</span>
       </button>
-      <button type="button" class="tab-btn" [class.active]="selectedFilter === 'activos'" (click)="setFilter('activos')">
-        <ion-icon name="checkmark-circle-outline"></ion-icon> Activos <span class="badge">{{ getCount('activos') }}</span>
+      <button type="button" class="tab-btn" [class.active]="selectedFilter === 'activos'"
+        (click)="setFilter('activos')">
+        <ion-icon name="checkmark-circle-outline"></ion-icon> Activos <span class="badge">{{ getCount('activos')
+          }}</span>
       </button>
-      <button type="button" class="tab-btn" [class.active]="selectedFilter === 'inactivos'" (click)="setFilter('inactivos')">
+      <button type="button" class="tab-btn" [class.active]="selectedFilter === 'inactivos'"
+        (click)="setFilter('inactivos')">
         <ion-icon name="person-outline"></ion-icon> Inactivos <span class="badge">{{ getCount('inactivos') }}</span>
       </button>
     </div>
@@ -198,12 +196,8 @@
           <p>{{ guest.country }} · Hab. {{ guest.roomNumber }}</p>
         </div>
 
-        <button
-          type="button"
-          class="menu-icon"
-          [attr.aria-label]="'Opciones para ' + guest.guestName"
-          [attr.aria-expanded]="openMenuCardIndex === cardIndex"
-          (click)="toggleGuestMenu($event, cardIndex)">
+        <button type="button" class="menu-icon" [attr.aria-label]="'Opciones para ' + guest.guestName"
+          [attr.aria-expanded]="openMenuCardIndex === cardIndex" (click)="toggleGuestMenu($event, cardIndex)">
           <ion-icon name="ellipsis-vertical-outline"></ion-icon>
         </button>
         @if (openMenuCardIndex === cardIndex) {
@@ -233,8 +227,11 @@
 
       <div class="status-box" [ngClass]="guest.status">
         <div class="box-header">
-          <ion-icon [name]="guest.status === 'hospedado' ? 'bed-outline' : guest.status === 'checkin_hoy' ? 'enter-outline' : guest.status === 'checkout_hoy' ? 'exit-outline' : 'calendar-outline'"></ion-icon>
-          <span>{{ guest.status === 'inactivo' ? 'SIN RESERVA ASIGNADA' : guest.status === 'hospedado' ? 'ESTANCIA ACTUAL' : guest.status === 'checkin_hoy' ? 'INGRESA HOY' : guest.status === 'checkout_hoy' ? 'SALE HOY' : 'RESERVA CONFIRMADA' }}</span>
+          <ion-icon
+            [name]="guest.status === 'hospedado' ? 'bed-outline' : guest.status === 'checkin_hoy' ? 'enter-outline' : guest.status === 'checkout_hoy' ? 'exit-outline' : 'calendar-outline'"></ion-icon>
+          <span>{{ guest.status === 'inactivo' ? 'SIN RESERVA ASIGNADA' : guest.status === 'hospedado' ? 'ESTANCIA
+            ACTUAL' : guest.status === 'checkin_hoy' ? 'INGRESA HOY' : guest.status === 'checkout_hoy' ? 'SALE HOY' :
+            'RESERVA CONFIRMADA' }}</span>
         </div>
         <div class="box-metrics">
           <div>
@@ -259,8 +256,10 @@
   </section>
 
   @if (editingGuestId !== null) {
-  <dialog #guestEditDialog class="entry-modal-backdrop guest-edit-dialog" (click)="onGuestEditDialogBackdropClick($event)" (cancel)="onGuestEditDialogCancel($event)">
-    <section class="entry-modal guest-edit-modal" role="dialog" aria-modal="true" aria-labelledby="edit-guest-title" (click)="$event.stopPropagation()">
+  <dialog #guestEditDialog class="entry-modal-backdrop guest-edit-dialog"
+    (click)="onGuestEditDialogBackdropClick($event)" (cancel)="onGuestEditDialogCancel($event)">
+    <section class="entry-modal guest-edit-modal" role="dialog" aria-modal="true" aria-labelledby="edit-guest-title"
+      (click)="$event.stopPropagation()">
       <header class="entry-modal-header">
         <div>
           <h2 id="edit-guest-title">Modificar huésped</h2>
@@ -309,8 +308,10 @@
   }
 
   @if (editingReservationId !== null) {
-  <dialog #reservationEditDialog class="entry-modal-backdrop guest-edit-dialog" (click)="onReservationEditDialogBackdropClick($event)" (cancel)="onReservationEditDialogCancel($event)">
-    <section class="entry-modal guest-edit-modal" role="dialog" aria-modal="true" aria-labelledby="edit-reservation-title" (click)="$event.stopPropagation()">
+  <dialog #reservationEditDialog class="entry-modal-backdrop guest-edit-dialog"
+    (click)="onReservationEditDialogBackdropClick($event)" (cancel)="onReservationEditDialogCancel($event)">
+    <section class="entry-modal guest-edit-modal" role="dialog" aria-modal="true"
+      aria-labelledby="edit-reservation-title" (click)="$event.stopPropagation()">
       <header class="entry-modal-header">
         <div>
           <h2 id="edit-reservation-title">Modificar reserva</h2>
@@ -322,11 +323,13 @@
           <div class="entry-fields-grid">
             <label class="entry-field">
               <span>Fecha de llegada</span>
-              <input name="editArrivalDate" type="date" required [(ngModel)]="editReservationForm.fecha_llegada" (ngModelChange)="refreshAvailableReservationRooms()">
+              <input name="editArrivalDate" type="date" required [(ngModel)]="editReservationForm.fecha_llegada"
+                (ngModelChange)="refreshAvailableReservationRooms()">
             </label>
             <label class="entry-field">
               <span>Fecha de salida</span>
-              <input name="editDepartureDate" type="date" required [(ngModel)]="editReservationForm.fecha_salida" (ngModelChange)="refreshAvailableReservationRooms()">
+              <input name="editDepartureDate" type="date" required [(ngModel)]="editReservationForm.fecha_salida"
+                (ngModelChange)="refreshAvailableReservationRooms()">
             </label>
             <label class="entry-field">
               <span>Horario estimado de llegada</span>
@@ -334,7 +337,9 @@
             </label>
             <label class="entry-field">
               <span>Cantidad de personas</span>
-              <input name="editPersonCount" type="number" required min="1" step="1" [(ngModel)]="editReservationForm.cantidad_personas" (ngModelChange)="refreshAvailableReservationRooms()">
+              <input name="editPersonCount" type="number" required min="1" step="1"
+                [(ngModel)]="editReservationForm.cantidad_personas"
+                (ngModelChange)="refreshAvailableReservationRooms()">
             </label>
             <label class="entry-field">
               <span>Habitación disponible</span>
@@ -354,11 +359,10 @@
           }
         </div>
         <footer class="entry-form-actions">
-          <button type="button" class="guest-delete-confirm-button" (click)="cancelReservation()">Cancelar reserva</button>
+          <button type="button" class="guest-delete-confirm-button" (click)="cancelReservation()">Cancelar
+            reserva</button>
           <button type="button" class="entry-cancel-button" (click)="closeReservationEditor()">Cancelar</button>
-          <button
-            type="submit"
-            class="entry-submit-button"
+          <button type="submit" class="entry-submit-button"
             [disabled]="editReservationRef.invalid || !isReservationRoomAvailable">
             Guardar cambios
           </button>
@@ -369,16 +373,21 @@
   }
 
   @if (deletingGuestId !== null) {
-  <dialog #guestDeleteDialog class="entry-modal-backdrop guest-edit-dialog" (click)="onGuestDeleteDialogBackdropClick($event)" (cancel)="onGuestDeleteDialogCancel($event)">
-    <section class="entry-modal guest-delete-modal" role="alertdialog" aria-modal="true" aria-labelledby="delete-guest-title" (click)="$event.stopPropagation()">
+  <dialog #guestDeleteDialog class="entry-modal-backdrop guest-edit-dialog"
+    (click)="onGuestDeleteDialogBackdropClick($event)" (cancel)="onGuestDeleteDialogCancel($event)">
+    <section class="entry-modal guest-delete-modal" role="alertdialog" aria-modal="true"
+      aria-labelledby="delete-guest-title" (click)="$event.stopPropagation()">
       <header class="entry-modal-header">
         <div>
           <h2 id="delete-guest-title">Eliminar huésped</h2>
-          <p>¿Confirmas que quieres eliminar este huésped y todas sus reservas asignadas? Esta acción no se puede deshacer.</p>
+          <p>¿Confirmas que quieres eliminar este huésped y todas sus reservas asignadas? Esta acción no se puede
+            deshacer.</p>
         </div>
       </header>
       @if (guestError) {
-      <div class="entry-modal-body"><p class="entry-error" role="alert">{{ guestError }}</p></div>
+      <div class="entry-modal-body">
+        <p class="entry-error" role="alert">{{ guestError }}</p>
+      </div>
       }
       <footer class="entry-form-actions">
         <button type="button" class="entry-cancel-button" (click)="cancelGuestDeletion()">Cancelar</button>

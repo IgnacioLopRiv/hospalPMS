@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, DOCUMENT, ElementRef, OnDestroy, OnInit, Renderer2, ViewChild, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DOCUMENT, ElementRef, OnDestroy, OnInit, Renderer2, ViewChild, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -22,6 +22,7 @@ import {
 } from 'ionicons/icons';
 
 import { HostalService } from '../../../application/hostal.service';
+import { SedeService } from '../../../../locations/application/sede.service';
 import { GuestCardView, Habitacion, Huesped } from '../../../../../shared/domain/hostal.model';
 import { COUNTRY_OPTIONS } from '../../../../../shared/domain/country-options';
 import { CountryPickerComponent } from '../../../../../shared/presentation/country-picker/country-picker.component';
@@ -62,7 +63,7 @@ export class GuestsViewPage implements OnInit, OnDestroy {
   readonly countries = COUNTRY_OPTIONS;
   openMenuCardIndex: number | null = null;
   editingGuestId: number | null = null;
-  editGuestForm: Omit<Huesped, 'id_huesped'> = this.createEmptyEditGuestForm();
+  editGuestForm: Omit<Huesped, 'id_huesped' | 'id_sede'> = this.createEmptyEditGuestForm();
   deletingGuestId: number | null = null;
   editingReservationId: number | null = null;
   reservationError = '';
@@ -74,6 +75,8 @@ export class GuestsViewPage implements OnInit, OnDestroy {
     cantidad_personas: 1,
     id_habitacion: '',
   };
+
+  private readonly sedeService = inject(SedeService);
 
   constructor(private hostalService: HostalService) {
     addIcons({
@@ -91,6 +94,14 @@ export class GuestsViewPage implements OnInit, OnDestroy {
       personOutline,
       createOutline,
       trashOutline
+    });
+
+    // React to sede changes — refresh guest data when the user switches sede
+    effect(() => {
+      const sede = this.sedeService.selectedSede();
+      if (sede) {
+        this.hostalService.onSedeChanged();
+      }
     });
   }
 
@@ -110,11 +121,11 @@ export class GuestsViewPage implements OnInit, OnDestroy {
     this.filteredGuests = this.guests.filter((guest) => {
       const matchesFilter =
         this.selectedFilter === 'todos' ? true :
-        this.selectedFilter === 'hospedados' ? guest.status === 'hospedado' :
-        this.selectedFilter === 'checkin' ? guest.status === 'checkin_hoy' :
-        this.selectedFilter === 'checkout' ? guest.status === 'checkout_hoy' :
-        this.selectedFilter === 'activos' ? guest.hasReservation :
-        this.selectedFilter === 'inactivos' ? !guest.hasReservation : true;
+          this.selectedFilter === 'hospedados' ? guest.status === 'hospedado' :
+            this.selectedFilter === 'checkin' ? guest.status === 'checkin_hoy' :
+              this.selectedFilter === 'checkout' ? guest.status === 'checkout_hoy' :
+                this.selectedFilter === 'activos' ? guest.hasReservation :
+                  this.selectedFilter === 'inactivos' ? !guest.hasReservation : true;
 
       const matchesSearch =
         guest.guestName.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
@@ -483,7 +494,7 @@ export class GuestsViewPage implements OnInit, OnDestroy {
     };
   }
 
-  private createEmptyEditGuestForm(): Omit<Huesped, 'id_huesped'> {
+  private createEmptyEditGuestForm(): Omit<Huesped, 'id_huesped' | 'id_sede'> {
     return {
       documento: '',
       nombre: '',
