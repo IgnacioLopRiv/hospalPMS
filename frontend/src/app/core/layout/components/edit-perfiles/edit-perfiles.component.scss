@@ -405,3 +405,52 @@ ion-modal.edit-perfiles-banner {
     grid-template-columns: 1fr;
   }
 }
+
+// ── Sede picker ───────────────────────────────────────────────────────────────
+.sede-picker-item {
+  --background: rgba(30, 80, 216, 0.04);
+  --border-radius: 8px;
+  border: 1px solid rgba(30, 80, 216, 0.18);
+  border-radius: 8px;
+  margin-top: 4px;
+  animation: slideDown 0.2s ease;
+
+  ion-select {
+    width: 100%;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// ── Sede badge en tarjeta de staff ────────────────────────────────────────────
+.user-sede {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+  padding: 2px 8px;
+  background: rgba(30, 80, 216, 0.08);
+  border: 1px solid rgba(30, 80, 216, 0.15);
+  border-radius: 20px;
+  font-size: 0.72rem;
+  color: $blue-primary;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+
+  ion-icon {
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+}

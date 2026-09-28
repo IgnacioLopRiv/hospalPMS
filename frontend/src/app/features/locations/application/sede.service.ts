@@ -5,10 +5,22 @@ import {
   Sede,
   SedeHabitacion as Habitacion,
   SedeTipologia,
+  EstadoHabitacion,
 } from '../../../shared/domain/hostal.model';
 
 export { ROOM_TYPES, RoomType } from '../../../shared/domain/hostal.model';
-export type { Sede, SedeHabitacion as Habitacion, SedeTipologia } from '../../../shared/domain/hostal.model';
+export type { Sede, SedeHabitacion as Habitacion, SedeTipologia, EstadoHabitacion } from '../../../shared/domain/hostal.model';
+
+const DEFAULT_HABITACIONES_SEDE_1: Habitacion[] = [
+  { id: 1, numero: '101', tipo: 'Individual Estándar', tipologiaId: 1, tamanoM2: 18, disposicionMuebles: '1 Cama 1 Plaza', estado: 'libre' },
+  { id: 2, numero: '102', tipo: 'Doble Superior', tipologiaId: 2, tamanoM2: 24, disposicionMuebles: '1 Cama Matrimonial', estado: 'libre' },
+  { id: 3, numero: '104', tipo: 'Doble Superior', tipologiaId: 2, tamanoM2: 24, disposicionMuebles: '1 Cama Matrimonial', estado: 'libre' },
+  { id: 4, numero: '204', tipo: 'Suite Ejecutiva', tipologiaId: 3, tamanoM2: 35, disposicionMuebles: '1 Cama King + Sala', estado: 'libre' },
+  { id: 5, numero: '205', tipo: 'Suite Ejecutiva', tipologiaId: 3, tamanoM2: 35, disposicionMuebles: '1 Cama King + Sala', estado: 'libre' },
+  { id: 6, numero: '207', tipo: 'Familiar Confort', tipologiaId: 4, tamanoM2: 42, disposicionMuebles: '1 Cama Matrimonial + 2 Camas', estado: 'libre' },
+  { id: 7, numero: '306', tipo: 'Doble Superior', tipologiaId: 2, tamanoM2: 24, disposicionMuebles: '2 Camas Individuales', estado: 'libre' },
+  { id: 8, numero: '308', tipo: 'Doble Superior', tipologiaId: 2, tamanoM2: 24, disposicionMuebles: '2 Camas Individuales', estado: 'libre' },
+];
 
 const DEFAULT_TIPOLOGIAS: Record<number, SedeTipologia[]> = {
   1: [
@@ -30,7 +42,7 @@ const DEFAULT_TIPOLOGIAS: Record<number, SedeTipologia[]> = {
 };
 
 const INITIAL_SEDES: Sede[] = [
-  { id: 1, nombre: 'Hotel Centro', ciudad: 'Santiago', tipologias: DEFAULT_TIPOLOGIAS[1], habitaciones: [] },
+  { id: 1, nombre: 'Hotel Centro', ciudad: 'Santiago', tipologias: DEFAULT_TIPOLOGIAS[1], habitaciones: DEFAULT_HABITACIONES_SEDE_1 },
   { id: 2, nombre: 'Hotel Playa', ciudad: 'Viña del Mar', tipologias: DEFAULT_TIPOLOGIAS[2], habitaciones: [] },
   { id: 3, nombre: 'Hotel Montaña', ciudad: 'Pucón', tipologias: DEFAULT_TIPOLOGIAS[3], habitaciones: [] },
 ];
@@ -277,28 +289,123 @@ export class SedeService {
     return this.nextHabitacionId++;
   }
 
+  /**
+   * Actualiza el estado de una habitación por su número o ID
+   */
+  updateHabitacionEstado(
+    numeroOrId: string | number,
+    estado: EstadoHabitacion,
+    extra?: { huesped?: string; aseoIniciado?: number }
+  ): void {
+    const current = this.selectedSede();
+    if (!current) return;
+
+    const strTarget = String(numeroOrId).trim();
+    let updatedAny = false;
+
+    const nextHabitaciones = current.habitaciones.map((h) => {
+      if (String(h.numero).trim() === strTarget || String(h.id) === strTarget) {
+        updatedAny = true;
+        return {
+          ...h,
+          estado,
+          huespedActual: estado === 'ocupada' ? (extra?.huesped || h.huespedActual || 'Huésped activo') : undefined,
+          aseoIniciado: estado === 'en aseo' ? (extra?.aseoIniciado ?? Date.now()) : undefined,
+        };
+      }
+      return h;
+    });
+
+    if (updatedAny) {
+      this.updateSede({
+        ...current,
+        habitaciones: nextHabitaciones,
+      });
+    }
+  }
+
+  marcarOcupada(numeroOrId: string | number, huesped?: string): void {
+    this.updateHabitacionEstado(numeroOrId, 'ocupada', { huesped });
+  }
+
+  marcarEnAseo(numeroOrId: string | number): void {
+    this.updateHabitacionEstado(numeroOrId, 'en aseo', { aseoIniciado: Date.now() });
+  }
+
+  marcarLibre(numeroOrId: string | number): void {
+    this.updateHabitacionEstado(numeroOrId, 'libre');
+  }
+
+  /**
+   * Revisa automáticamente habitaciones en aseo y las libera si ya transcurrió el tiempo de aseo.
+   * @param maxMinutos Duración del aseo antes de volver a libre (por defecto 30 min)
+   */
+  autoLiberarAseo(maxMinutos = 30): void {
+    const current = this.selectedSede();
+    if (!current) return;
+
+    const ahora = Date.now();
+    const tiempoLimiteMs = maxMinutos * 60 * 1000;
+    let huboCambios = false;
+
+    const nextHabitaciones = current.habitaciones.map((h) => {
+      if (h.estado === 'en aseo' && h.aseoIniciado) {
+        if (ahora - h.aseoIniciado >= tiempoLimiteMs) {
+          huboCambios = true;
+          return {
+            ...h,
+            estado: 'libre' as EstadoHabitacion,
+            aseoIniciado: undefined,
+          };
+        }
+      }
+      return h;
+    });
+
+    if (huboCambios) {
+      this.updateSede({
+        ...current,
+        habitaciones: nextHabitaciones,
+      });
+    }
+  }
+
   private readSavedSedes(): Sede[] {
     try {
       const raw = localStorage.getItem(SEDES_STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map((sede: Sede) => ({
-            ...sede,
-            tipologias: sede.tipologias && sede.tipologias.length > 0
-              ? sede.tipologias
-              : (DEFAULT_TIPOLOGIAS[sede.id] ?? [
-                  { id: 1, nombre: 'Individual', capacidad: 1, precioBase: 30000 },
-                  { id: 2, nombre: 'Doble', capacidad: 2, precioBase: 50000 },
-                  { id: 3, nombre: 'Suite', capacidad: 2, precioBase: 80000 },
-                ]),
-          }));
+          return parsed.map((sede: Sede) => {
+            const defaultHabs = sede.id === 1 ? DEFAULT_HABITACIONES_SEDE_1 : [];
+            const habs = sede.habitaciones && sede.habitaciones.length > 0
+              ? sede.habitaciones.map((h) => ({
+                  ...h,
+                  estado: (h.estado as EstadoHabitacion) || 'libre',
+                }))
+              : defaultHabs;
+
+            return {
+              ...sede,
+              habitaciones: habs,
+              tipologias: sede.tipologias && sede.tipologias.length > 0
+                ? sede.tipologias
+                : (DEFAULT_TIPOLOGIAS[sede.id] ?? [
+                    { id: 1, nombre: 'Individual', capacidad: 1, precioBase: 30000 },
+                    { id: 2, nombre: 'Doble', capacidad: 2, precioBase: 50000 },
+                    { id: 3, nombre: 'Suite', capacidad: 2, precioBase: 80000 },
+                  ]),
+            };
+          });
         }
       }
     } catch {
       // Usar sedes iniciales si falla lectura
     }
-    return INITIAL_SEDES.map((sede) => ({ ...sede, habitaciones: [] }));
+    return INITIAL_SEDES.map((sede) => ({
+      ...sede,
+      habitaciones: sede.id === 1 ? [...DEFAULT_HABITACIONES_SEDE_1] : [],
+    }));
   }
 
   private readInitialSede(): Sede | null {

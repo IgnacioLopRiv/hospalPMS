@@ -1,5 +1,6 @@
 export interface Huesped {
   id_huesped: number;
+  id_sede: number;
   documento?: string;
   nombre: string;
   apellido: string;
@@ -68,6 +69,8 @@ export interface SedeTipologia {
   descripcion?: string;
 }
 
+export type EstadoHabitacion = 'libre' | 'ocupada' | 'en aseo';
+
 export interface SedeHabitacion {
   id: number;
   numero: string;
@@ -75,6 +78,9 @@ export interface SedeHabitacion {
   tipologiaId?: number;
   tamanoM2: number | null;
   disposicionMuebles: string;
+  estado?: EstadoHabitacion;
+  huespedActual?: string;
+  aseoIniciado?: number;
 }
 
 export interface Sede {

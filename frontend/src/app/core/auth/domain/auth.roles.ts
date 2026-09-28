@@ -7,6 +7,7 @@ export interface AuthUser {
   name: string;
   email: string;
   role: UserRole;
+  sedeId?: number;
 }
 
 export interface StoredUser extends AuthUser {

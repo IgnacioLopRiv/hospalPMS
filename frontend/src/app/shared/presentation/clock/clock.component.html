@@ -1,0 +1,13 @@
+<div class="clock-chip" aria-label="Fecha y hora actual">
+  <div class="clock-item clock-date-item">
+    <ion-icon name="calendar-outline" class="clock-icon" aria-hidden="true"></ion-icon>
+    <span class="clock-text clock-date">{{ formattedDate() }}</span>
+  </div>
+
+  <span class="clock-separator" aria-hidden="true"></span>
+
+  <div class="clock-item clock-time-item">
+    <ion-icon name="time-outline" class="clock-icon" aria-hidden="true"></ion-icon>
+    <span class="clock-text clock-time">{{ formattedTime() }}</span>
+  </div>
+</div>

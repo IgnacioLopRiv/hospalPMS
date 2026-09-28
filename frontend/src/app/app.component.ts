@@ -5,6 +5,7 @@ import { filter } from 'rxjs/operators';
 import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
 import { HeaderComponent } from './core/layout/components/header/header.component';
 import { SidebarComponent } from './core/layout/components/sidebar/sidebar.component';
+import { HostalService } from './features/guests/application/hostal.service';
 
 @Component({
   selector: 'app-root',
@@ -21,6 +22,7 @@ import { SidebarComponent } from './core/layout/components/sidebar/sidebar.compo
 })
 export class AppComponent {
   private readonly router = inject(Router);
+  private readonly hostalService = inject(HostalService);
 
   private readonly excludedRoutes = [
     '/home',
@@ -39,5 +41,8 @@ export class AppComponent {
         );
         this.showLayout.set(!isExcluded);
       });
+
+    // One-time cleanup of legacy (non-sede-scoped) storage keys
+    this.hostalService.clearLegacyData();
   }
 }
