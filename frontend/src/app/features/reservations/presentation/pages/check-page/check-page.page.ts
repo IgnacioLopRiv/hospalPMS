@@ -1,9 +1,8 @@
-import { Component, inject, OnDestroy, OnInit, Renderer2 } from '@angular/core';
+import { Component, computed, inject, OnDestroy, OnInit, Renderer2 } from '@angular/core';
 import { CommonModule, DOCUMENT } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { Router } from '@angular/router';
 import { IonIcon } from '@ionic/angular/standalone';
-import { Subscription } from 'rxjs';
 import { addIcons } from 'ionicons';
 import {
   enterOutline,
@@ -86,19 +85,9 @@ export class CheckPagePage implements OnInit, OnDestroy {
   entryForm = this.createEmptyEntryForm();
   readonly countries = COUNTRY_OPTIONS;
 
-  currentDateFormatted = '';
-  currentTimeFormatted = '';
-  private clockInterval?: ReturnType<typeof setInterval>;
-  private reservationSubscription?: Subscription;
-  private currentDateKey = '';
+  readonly currentDateFormatted = 'Martes, 16 de junio de 2026';
 
   ngOnInit(): void {
-    this.updateCurrentDateTime();
-    this.reservationSubscription = this.hostalService.guestsView$.subscribe(() => {
-      this.refreshPendingChecks();
-    });
-    this.clockInterval = setInterval(() => this.updateCurrentDateTime(), 1000);
-
     const guestDraft = this.router.getCurrentNavigation()?.extras.state?.['guestDraft'];
     if (this.isGuestDraft(guestDraft)) {
       this.openNewEntryForm(guestDraft);
@@ -120,15 +109,107 @@ export class CheckPagePage implements OnInit, OnDestroy {
     );
   }
 
-  readonly pendingCheckIns: CheckItemPlaceholder[] = [];
-  readonly pendingCheckOuts: CheckItemPlaceholder[] = [];
+  /** Check-ins pendientes para hoy (placeholder de diseño) */
+  readonly pendingCheckIns: CheckItemPlaceholder[] = [
+    {
+      id: 1,
+      guestName: 'Marco Diaz',
+      initials: 'MD',
+      country: 'Colombia',
+      phone: '+57 300 123 4567',
+      email: 'm.diaz@email.com',
+      roomNumber: '101',
+      roomType: 'Habitación Privada',
+      dateRange: '16/06 → 20/06',
+      nights: 4,
+      scheduledTime: '14:30 hrs',
+      timeWindowLabel: 'Llegada estimada',
+      statusBadge: 'Pendiente',
+      avatarColor: 'green',
+      notes: 'Solicitó check-in anticipado',
+      isVip: true,
+    },
+    {
+      id: 2,
+      guestName: 'Priya Nair',
+      initials: 'PN',
+      country: 'India',
+      phone: '+91 980 000 1122',
+      email: 'p.nair@email.com',
+      roomNumber: '102',
+      roomType: 'Habitación Privada',
+      dateRange: '16/06 → 18/06',
+      nights: 2,
+      scheduledTime: '16:00 hrs',
+      timeWindowLabel: 'Llegada estimada',
+      statusBadge: 'Confirmado',
+      avatarColor: 'purple',
+      notes: 'Huésped recurrente',
+    },
+    {
+      id: 3,
+      guestName: 'Ethan Brown',
+      initials: 'EB',
+      country: 'EE.UU.',
+      phone: '+1 555 234 5678',
+      email: 'e.brown@email.com',
+      roomNumber: '104',
+      roomType: 'Habitación Privada',
+      dateRange: '16/06 → 21/06',
+      nights: 5,
+      scheduledTime: '18:15 hrs',
+      timeWindowLabel: 'Llegada estimada',
+      statusBadge: 'En camino',
+      avatarColor: 'blue',
+      notes: 'Vuelo con retraso estimado 30 min',
+    },
+  ];
 
-  get totalRoomsInvolved(): number {
+  /** Check-outs pendientes para hoy (placeholder de diseño) */
+  readonly pendingCheckOuts: CheckItemPlaceholder[] = [
+    {
+      id: 4,
+      guestName: 'Alejandro Schmidt',
+      initials: 'AS',
+      country: 'Alemania',
+      phone: '+49 150 789 0123',
+      email: 'a.schmidt@email.com',
+      roomNumber: '308',
+      roomType: 'Dorm 2-camas',
+      dateRange: '12/06 → 16/06',
+      nights: 4,
+      scheduledTime: '11:00 hrs',
+      timeWindowLabel: 'Salida límite',
+      statusBadge: 'Por salir',
+      avatarColor: 'orange',
+      notes: 'Debe entregar llaves en recepción',
+      isVip: true,
+    },
+    {
+      id: 5,
+      guestName: 'James Okonkwo',
+      initials: 'JO',
+      country: 'Nigeria',
+      phone: '+234 800 456 7890',
+      email: 'j.okonkwo@email.com',
+      roomNumber: '207',
+      roomType: 'Dorm 4-camas',
+      dateRange: '13/06 → 16/06',
+      nights: 3,
+      scheduledTime: '12:00 hrs',
+      timeWindowLabel: 'Late check-out',
+      statusBadge: 'Autorizado',
+      avatarColor: 'purple',
+      notes: 'Late check-out acordado con recepción',
+    },
+  ];
+
+  readonly totalRoomsInvolved = computed(() => {
     const rooms = new Set<string>();
     this.pendingCheckIns.forEach((c) => rooms.add(c.roomNumber));
     this.pendingCheckOuts.forEach((c) => rooms.add(c.roomNumber));
     return rooms.size;
-  }
+  });
 
   constructor() {
     addIcons({
@@ -189,35 +270,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.reservationSubscription?.unsubscribe();
-    if (this.clockInterval !== undefined) {
-      clearInterval(this.clockInterval);
-    }
     this.setPageScrollLocked(false);
-  }
-
-  refreshPendingChecks(): void {
-    const today = this.localDateString(new Date());
-    const reservationsById = new Map(
-      this.hostalService.getReservations().map((reservation) => [reservation.id_reserva, reservation])
-    );
-    const calendarEntries = this.hostalService.getReservationCalendarData();
-    const checkIns = calendarEntries.filter((entry) =>
-      entry.arrivalDate === today &&
-      reservationsById.get(entry.id)?.estado_reserva !== 'HOSPEDADO'
-    );
-    const checkOuts = calendarEntries.filter((entry) => entry.departureDate === today);
-
-    this.pendingCheckIns.splice(
-      0,
-      this.pendingCheckIns.length,
-      ...checkIns.map((entry, index) => this.toCheckItem(entry, 'checkin', index))
-    );
-    this.pendingCheckOuts.splice(
-      0,
-      this.pendingCheckOuts.length,
-      ...checkOuts.map((entry, index) => this.toCheckItem(entry, 'checkout', index))
-    );
   }
 
   setGuestMode(mode: 'new' | 'existing'): void {
@@ -490,73 +543,5 @@ export class CheckPagePage implements OnInit, OnDestroy {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
-  }
-
-  private updateCurrentDateTime(): void {
-    const now = new Date();
-    const dateKey = this.localDateString(now);
-    const dateLabel = now.toLocaleDateString('es-CL', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-    this.currentDateFormatted = `${dateLabel.charAt(0).toLocaleUpperCase()}${dateLabel.slice(1)}`;
-    this.currentTimeFormatted = [
-      String(now.getHours()).padStart(2, '0'),
-      String(now.getMinutes()).padStart(2, '0'),
-      String(now.getSeconds()).padStart(2, '0'),
-    ].join(':');
-
-    if (dateKey !== this.currentDateKey) {
-      this.currentDateKey = dateKey;
-      this.refreshPendingChecks();
-    }
-  }
-
-  private toCheckItem(
-    entry: ReturnType<HostalService['getReservationCalendarData']>[number],
-    type: 'checkin' | 'checkout',
-    index: number
-  ): CheckItemPlaceholder {
-    const nights = this.getNights(entry.arrivalDate, entry.departureDate);
-    const colors: CheckItemPlaceholder['avatarColor'][] = ['green', 'orange', 'blue', 'purple'];
-    const initials = entry.guestName
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part.charAt(0))
-      .join('')
-      .toUpperCase();
-
-    return {
-      id: entry.id,
-      guestName: entry.guestName,
-      initials,
-      country: entry.country,
-      phone: entry.phone,
-      email: entry.email,
-      roomNumber: entry.roomNumber,
-      roomType: entry.roomType,
-      dateRange: `${this.formatDate(entry.arrivalDate)} → ${this.formatDate(entry.departureDate)}`,
-      nights,
-      scheduledTime: type === 'checkin' ? entry.arrivalTime || 'Por confirmar' : 'Por confirmar',
-      timeWindowLabel: type === 'checkin' ? 'Hora de llegada' : 'Hora de salida',
-      statusBadge: type === 'checkin' ? 'CHECK-IN HOY' : 'CHECK-OUT HOY',
-      avatarColor: colors[index % colors.length],
-      isVip: entry.isVip,
-      notes: entry.isVip ? 'Huésped recurrente' : undefined,
-    };
-  }
-
-  private getNights(arrivalDate: string, departureDate: string): number {
-    const arrival = Date.parse(`${arrivalDate}T00:00:00Z`);
-    const departure = Date.parse(`${departureDate}T00:00:00Z`);
-    return Math.round((departure - arrival) / (24 * 60 * 60 * 1000));
-  }
-
-  private formatDate(dateKey: string): string {
-    const [, month, day] = dateKey.split('-');
-    return `${day}/${month}`;
   }
 }

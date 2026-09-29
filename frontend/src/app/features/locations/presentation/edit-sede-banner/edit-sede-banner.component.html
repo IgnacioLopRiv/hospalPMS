@@ -25,15 +25,12 @@
             <ion-item lines="none">
               <ion-select label="Tipología" labelPlacement="stacked" [value]="tipoNuevo()"
                 (ionChange)="tipoNuevo.set($any($event.detail.value))">
-                @if (tipologias().length === 0) {
-                <ion-select-option value="" disabled>Gestiona una tipología primero</ion-select-option>
-                }
                 @for (t of tipologias(); track t.id) {
                 <ion-select-option [value]="t.nombre">{{ t.nombre }} ({{ t.capacidad }}p)</ion-select-option>
                 }
               </ion-select>
             </ion-item>
-            <ion-button [disabled]="tipologias().length === 0" (click)="addHabitaciones()">Agregar</ion-button>
+            <ion-button (click)="addHabitaciones()">Agregar</ion-button>
           </div>
 
           @if (habitaciones().length === 0) {
@@ -58,9 +55,6 @@
                 <ion-item lines="none">
                   <ion-select label="Tipología" labelPlacement="stacked" [value]="habitacion.tipo"
                     (ionChange)="updateHabitacionTipo(habitacion.id, $any($event.detail.value))">
-                    @if (tipologias().length === 0) {
-                    <ion-select-option [value]="habitacion.tipo" disabled>Sin tipologías gestionadas</ion-select-option>
-                    }
                     @for (t of tipologias(); track t.id) {
                     <ion-select-option [value]="t.nombre">{{ t.nombre }}</ion-select-option>
                     }

@@ -5,9 +5,9 @@
       <h1 class="page-title">Check-in & Check-out</h1>
       <p class="current-date">
         @if (sede(); as currentSede) {
-        <span>{{ currentSede.nombre }} · {{ currentDateFormatted }} · <time aria-live="off">{{ currentTimeFormatted }}</time></span>
+        <span>{{ currentSede.nombre }} · {{ currentDateFormatted }}</span>
         } @else {
-        <span>{{ currentDateFormatted }} · <time aria-live="off">{{ currentTimeFormatted }}</time></span>
+        <span>{{ currentDateFormatted }}</span>
         }
       </p>
     </div>
@@ -237,7 +237,7 @@
       <div class="kpi-icon"><ion-icon name="bed-outline"></ion-icon></div>
       <div class="kpi-data">
         <span>HABITACIONES INVOLUCRADAS</span>
-        <h3>{{ totalRoomsInvolved }}</h3>
+        <h3>{{ totalRoomsInvolved() }}</h3>
       </div>
     </div>
   </section>

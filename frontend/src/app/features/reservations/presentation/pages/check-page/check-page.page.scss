@@ -233,11 +233,6 @@ $orange-border: #fed7aa;
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    max-height: calc(75vh - 9rem);
-    min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    padding: 0 0.35rem 0.25rem 0;
   }
 }
 

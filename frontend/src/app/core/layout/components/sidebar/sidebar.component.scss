@@ -145,6 +145,7 @@ $blue-primary: #1e50d8;
       gap: 0.25rem;
       overflow-x: auto;
       overscroll-behavior-x: contain;
+      scrollbar-width: thin;
 
       .nav-item {
         flex: 0 0 auto;
