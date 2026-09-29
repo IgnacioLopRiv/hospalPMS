@@ -68,12 +68,10 @@
                 <span class="status-dot"></span>
                 <span class="status-name">{{ getEstadoLabel(habitacion.estado) }}</span>
 
-                @if (habitacion.estado === 'ocupada' && habitacion.huespedActual) {
-                  <span class="status-extra">· {{ habitacion.huespedActual }}</span>
-                }
-                @if (habitacion.estado === 'en aseo') {
-                  <span class="status-extra">· {{ getTiempoEnAseo(habitacion) }}</span>
-                }
+            <dl>
+              <div>
+                <dt>Tipo</dt>
+                <dd class="badge-tipo">{{ getManagedTypologyName(habitacion) }}</dd>
               </div>
 
               <!-- Acciones reactivas en la pestaña -->

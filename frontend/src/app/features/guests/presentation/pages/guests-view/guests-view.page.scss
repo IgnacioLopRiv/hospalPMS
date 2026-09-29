@@ -163,6 +163,8 @@ $text-muted: #64748b;
 
   .filters {
     display: flex;
+    align-items: center;
+    gap: 0.6rem;
     min-width: 0;
     align-self: flex-start;
 
@@ -186,6 +188,7 @@ $text-muted: #64748b;
         background: transparent;
       }
     }
+
   }
 }
 
@@ -224,6 +227,7 @@ $text-muted: #64748b;
   min-width: 0;
 
   .guest-card {
+    position: relative;
     background: #ffffff;
     border-radius: 16px;
     min-width: 0;
@@ -233,6 +237,47 @@ $text-muted: #64748b;
     display: flex;
     flex-direction: column;
     gap: 0.95rem;
+
+    .guest-status-line {
+      position: absolute;
+      top: 0;
+      right: 0;
+      left: 0;
+      height: 4px;
+      border-radius: 16px 16px 0 0;
+      background: var(--guest-status-color);
+
+    }
+
+    &.status-confirmada {
+      --guest-status-color: #2563eb;
+      --guest-status-bg: #f0f4ff;
+      --guest-status-border: #dbeafe;
+    }
+
+    &.status-checkin_hoy {
+      --guest-status-color: #16a34a;
+      --guest-status-bg: #f0fdf4;
+      --guest-status-border: #dcfce7;
+    }
+
+    &.status-checkout_hoy {
+      --guest-status-color: #d97706;
+      --guest-status-bg: #fffbeb;
+      --guest-status-border: #fef3c7;
+    }
+
+    &.status-hospedado {
+      --guest-status-color: #7c3aed;
+      --guest-status-bg: #faf5ff;
+      --guest-status-border: #f3e8ff;
+    }
+
+    &.status-inactivo {
+      --guest-status-color: #64748b;
+      --guest-status-bg: #f8fafc;
+      --guest-status-border: #e2e8f0;
+    }
 
     .card-header {
       position: relative;
@@ -286,52 +331,6 @@ p {
         }
       }
 
-      .status-pill {
-        font-size: 0.6rem;
-        font-weight: 700;
-        padding: 0.2rem 0.5rem;
-        border-radius: 20px;
-        display: flex;
-        align-items: center;
-        gap: 0.3rem;
-        border: 1px solid transparent;
-
-        .dot {
-          width: 5px;
-          height: 5px;
-          border-radius: 50%;
-        }
-
-        &.hospedado {
-          border-color: #bfdbfe;
-          color: #2563eb;
-          background: #eff6ff;
-          .dot { background: #2563eb; }
-        }
-
-        &.checkin_hoy {
-          border-color: #bbf7d0;
-          color: #16a34a;
-          background: #f0fdf4;
-          .dot { background: #16a34a; }
-        }
-
-        &.checkout_hoy {
-          border-color: #fed7aa;
-          color: #ea580c;
-          background: #fff7ed;
-          .dot { background: #ea580c; }
-        }
-
-        &.inactivo {
-          border-color: #cbd5e1;
-          color: #475569;
-          background: #f8fafc;
-          .dot { background: #64748b; }
-        }
-
-      }
-
       .menu-icon {
         display: flex;
         width: 2rem;
@@ -348,7 +347,7 @@ p {
 
         &:hover,
         &[aria-expanded='true'] {
-          background: #f1f5f9;
+          background: transparent;
           color: $text-dark;
         }
       }
@@ -413,7 +412,8 @@ p {
     .status-box {
       border-radius: 10px;
       padding: 0.85rem;
-      border: 1px solid transparent;
+      background: var(--guest-status-bg);
+      border: 1px solid var(--guest-status-border);
 
       .box-header {
         display: flex;
@@ -422,6 +422,7 @@ p {
         font-size: 0.7rem;
         font-weight: 700;
         margin-bottom: 0.5rem;
+        color: var(--guest-status-color);
       }
 
       .box-metrics {
@@ -451,30 +452,7 @@ p {
         align-items: center;
         gap: 0.3rem;
         font-weight: 600;
-      }
-
-      &.hospedado {
-        background: #f0f7ff;
-        border-color: #dbeafe;
-        .box-header { color: #2563eb; }
-      }
-
-      &.checkin_hoy {
-        background: #f2fbf6;
-        border-color: #dcfce7;
-        .box-header, .recurrent-tag { color: #16a34a; }
-      }
-
-      &.checkout_hoy {
-        background: #fffdf5;
-        border-color: #fef3c7;
-        .box-header, .recurrent-tag { color: #d97706; }
-      }
-
-      &.inactivo {
-        background: #f8fafc;
-        border-color: #e2e8f0;
-        .box-header { color: #475569; }
+        color: var(--guest-status-color);
       }
 
     }

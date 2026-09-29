@@ -58,13 +58,11 @@ export interface GuestCardView {
   isVip?: boolean;
 }
 
-export const ROOM_TYPES = ['Individual', 'Doble', 'Triple', 'Suite', 'Familiar'] as const;
-export type RoomType = (typeof ROOM_TYPES)[number] | string;
-
 export interface SedeTipologia {
   id: number;
   nombre: string;
   capacidad: number;
+  color?: string;
   precioBase?: number;
   descripcion?: string;
 }

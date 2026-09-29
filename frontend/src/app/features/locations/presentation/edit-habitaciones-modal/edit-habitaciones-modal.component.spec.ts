@@ -8,45 +8,58 @@ describe('EditHabitacionesModalComponent', () => {
   let sedeService: SedeService;
 
   beforeEach(waitForAsync(() => {
+    localStorage.removeItem('hospal.sedes');
+    localStorage.removeItem('hospal.selectedSede');
     TestBed.configureTestingModule({
       imports: [EditHabitacionesModalComponent],
       providers: [SedeService],
     }).compileComponents();
+  }));
 
+  beforeEach(() => {
     fixture = TestBed.createComponent(EditHabitacionesModalComponent);
     component = fixture.componentInstance;
     sedeService = TestBed.inject(SedeService);
+    sedeService.addTipologia({ nombre: 'Tipología administrada', capacidad: 2 });
+    component.cargarHabitacionesActuales();
     fixture.detectChanges();
-  }));
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
   });
 
-  it('should add habitaciones with addHabitaciones()', () => {
-    component.cantidadNueva.set(2);
-    component.tipoNuevo.set('Individual');
-    component.addHabitaciones();
-
-    expect(component.habitaciones().length).toBe(2);
-    expect(component.habitaciones()[0].tipo).toBe('Individual');
+  afterEach(() => {
+    localStorage.removeItem('hospal.sedes');
+    localStorage.removeItem('hospal.selectedSede');
+    TestBed.resetTestingModule();
   });
 
-  it('should remove a habitacion by id', () => {
-    component.cantidadNueva.set(1);
-    component.addHabitaciones();
-    const createdId = component.habitaciones()[0].id;
+  it('creates rooms using a typology configured in the manager', () => {
+    component.cantidad = 2;
+    component.agregarHabitaciones();
 
-    component.removeHabitacion(createdId);
-    expect(component.habitaciones().length).toBe(0);
+    expect(component.tempHabitaciones.length).toBe(2);
+    expect(component.tempHabitaciones[0].tipo).toBe('Tipología administrada');
+    expect(component.tempHabitaciones[0].tipologiaId).toBe(1);
   });
 
-  it('should show error message when saving invalid habitacion data', () => {
-    component.cantidadNueva.set(1);
-    component.addHabitaciones();
-    // tamanoM2 and disposicionMuebles are empty by default
-    component.save();
+  it('removes a room by its list index', () => {
+    component.agregarHabitaciones();
 
-    expect(component.errorMessage()).toContain('Completa número, tamaño y disposición');
+    component.eliminarHabitacion(0);
+
+    expect(component.tempHabitaciones.length).toBe(0);
+  });
+
+  it('requires existing rooms to use a managed typology before saving', () => {
+    component.tempHabitaciones = [{
+      id: 99,
+      numero: '999',
+      tipo: 'Tipología antigua',
+      tamanoM2: null,
+      disposicionMuebles: '',
+    }];
+
+    component.guardarCambios();
+
+    expect(component.validationMessage).toContain('Asigna una tipología gestionada');
+    expect(sedeService.habitaciones()).toEqual([]);
   });
 });

@@ -13,11 +13,28 @@ export interface RegisterEntryInput {
   arrivalTime: string;
 }
 
+export interface ReservationCalendarEntry {
+  id: number;
+  guestId: number;
+  guestName: string;
+  country: string;
+  phone: string;
+  email: string;
+  isVip: boolean;
+  roomNumber: string;
+  roomType: string;
+  roomCapacity: number;
+  arrivalDate: string;
+  departureDate: string;
+  arrivalTime: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class HostalService {
-  private readonly BASE_PREFIX = 'hospal_db_';
+  private readonly PREFIX = 'hospal_db_';
+  private readonly sedeService = inject(SedeService);
   private guestsViewSubject = new BehaviorSubject<GuestCardView[]>([]);
   public guestsView$: Observable<GuestCardView[]> = this.guestsViewSubject.asObservable();
 
@@ -46,70 +63,15 @@ export class HostalService {
   // ── Initialization ─────────────────────────────────────────────────────────
 
   private initDatabase(): void {
-    this.ensureSedeStorage();
-    this.refreshView();
-  }
-
-  /**
-   * Ensures the current sede has its storage entries initialized.
-   * Called when sede changes to set up empty collections if needed.
-   */
-  ensureSedeStorage(): void {
-    const sede = this.sedeService.selectedSede();
-    if (!sede) return;
-
-    const key = `${this.BASE_PREFIX}sede_${sede.id}_huespedes`;
-    if (!localStorage.getItem(key)) {
-      const tipologias: Tipologia[] = [
-        { id_tipologia: 1, nombre_tipologia: 'Habitación Privada', capacidad: 2 },
-        { id_tipologia: 2, nombre_tipologia: 'Dorm 4-camas', capacidad: 4 },
-        { id_tipologia: 3, nombre_tipologia: 'Dorm 6-camas', capacidad: 6 },
-        { id_tipologia: 4, nombre_tipologia: 'Dorm 8-camas', capacidad: 8 },
-      ];
-
-      const habitaciones: Habitacion[] = [
-        { id_habitacion: 1, numero_habitacion: '101', id_hostal: sede.id, id_tipologia: 1 },
-        { id_habitacion: 2, numero_habitacion: '102', id_hostal: sede.id, id_tipologia: 1 },
-        { id_habitacion: 3, numero_habitacion: '104', id_hostal: sede.id, id_tipologia: 1 },
-        { id_habitacion: 4, numero_habitacion: '204', id_hostal: sede.id, id_tipologia: 3 },
-        { id_habitacion: 5, numero_habitacion: '205', id_hostal: sede.id, id_tipologia: 3 },
-        { id_habitacion: 6, numero_habitacion: '207', id_hostal: sede.id, id_tipologia: 4 },
-        { id_habitacion: 7, numero_habitacion: '306', id_hostal: sede.id, id_tipologia: 2 },
-        { id_habitacion: 8, numero_habitacion: '308', id_hostal: sede.id, id_tipologia: 2 },
-      ];
-
-      // Start clean — no test guests or reservations
-      const huespedes: Huesped[] = [];
-      const reservas: Reserva[] = [];
-
-      localStorage.setItem(`${this.BASE_PREFIX}sede_${sede.id}_tipologias`, JSON.stringify(tipologias));
-      localStorage.setItem(`${this.BASE_PREFIX}sede_${sede.id}_habitaciones`, JSON.stringify(habitaciones));
-      localStorage.setItem(`${this.BASE_PREFIX}sede_${sede.id}_huespedes`, JSON.stringify(huespedes));
-      localStorage.setItem(`${this.BASE_PREFIX}sede_${sede.id}_reservas`, JSON.stringify(reservas));
-    }
-  }
-
-  /**
-   * Called when the selected sede changes so the view
-   * refreshes with the new sede's data.
-   */
-  onSedeChanged(): void {
-    this.ensureSedeStorage();
     this.refreshView();
   }
 
   // ── View projection ────────────────────────────────────────────────────────
 
   public refreshView(): void {
-    const sede = this.sedeService.selectedSede();
-    if (!sede) {
-      this.guestsViewSubject.next([]);
-      return;
-    }
-
-    const huespedes = this.getGuests();
-    const habitaciones: Habitacion[] = JSON.parse(localStorage.getItem(this.storageKey('habitaciones')) || '[]');
-    const tipologias: Tipologia[] = JSON.parse(localStorage.getItem(this.storageKey('tipologias')) || '[]');
+    const huespedes: Huesped[] = JSON.parse(localStorage.getItem(this.PREFIX + 'huespedes') || '[]');
+    const habitaciones = this.getManagedRooms();
+    const tipologias = this.getManagedTypologies();
     const reservas = this.getReservations();
 
     const colors: ('blue' | 'green' | 'orange' | 'purple')[] = ['purple', 'orange', 'green', 'blue'];
@@ -215,7 +177,43 @@ export class HostalService {
     return JSON.parse(localStorage.getItem(this.storageKey('reservas')) || '[]') as Reserva[];
   }
 
-  updateGuest(guestId: number, changes: Omit<Huesped, 'id_huesped' | 'id_sede'>): Huesped {
+  getReservationCalendarData(): ReservationCalendarEntry[] {
+    const guests = this.getGuests();
+    const rooms = this.getManagedRooms();
+    const tipologias = this.getManagedTypologies();
+
+    const entries: ReservationCalendarEntry[] = [];
+    this.getReservations().forEach((reservation) => {
+      const guest = guests.find((item) => item.id_huesped === reservation.id_huesped);
+      const room = rooms.find((item) => item.id_habitacion === reservation.id_habitacion);
+      if (!guest || !room || !this.isValidDate(reservation.fecha_llegada) ||
+        !this.isValidDate(reservation.fecha_salida) ||
+        reservation.fecha_llegada >= reservation.fecha_salida) {
+        return;
+      }
+
+      const roomType = tipologias.find((item) => item.id_tipologia === room.id_tipologia);
+      entries.push({
+        id: reservation.id_reserva,
+        guestId: guest.id_huesped,
+        guestName: `${guest.nombre} ${guest.apellido}`,
+        country: guest.nacionalidad,
+        phone: guest.telefono,
+        email: guest.email,
+        isVip: guest.es_recurrente ?? false,
+        roomNumber: room.numero_habitacion,
+        roomType: roomType?.nombre_tipologia ?? '',
+        roomCapacity: roomType?.capacidad ?? 0,
+        arrivalDate: reservation.fecha_llegada,
+        departureDate: reservation.fecha_salida,
+        arrivalTime: reservation.hora_llegada ?? '',
+      });
+    });
+
+    return entries;
+  }
+
+  updateGuest(guestId: number, changes: Omit<Huesped, 'id_huesped'>): Huesped {
     const guests = this.getGuests();
     const existingGuest = guests.find((guest) => guest.id_huesped === guestId);
     if (!existingGuest) {
@@ -320,7 +318,7 @@ export class HostalService {
       throw new Error('Ingresa un horario de llegada válido.');
     }
 
-    const rooms: Habitacion[] = JSON.parse(localStorage.getItem(this.storageKey('habitaciones')) || '[]');
+    const rooms = this.getManagedRooms();
     const room = rooms.find((item) => item.id_habitacion === changes.id_habitacion);
     if (!room || !this.getAvailableRooms(
       changes.fecha_llegada,
@@ -331,7 +329,7 @@ export class HostalService {
       throw new Error('La habitación seleccionada no está disponible para esas fechas.');
     }
 
-    const tipologias: Tipologia[] = JSON.parse(localStorage.getItem(this.storageKey('tipologias')) || '[]');
+    const tipologias = this.getManagedTypologies();
     const roomCapacity = tipologias.find((tipologia) => tipologia.id_tipologia === room.id_tipologia)?.capacidad ?? 0;
     if ((changes.cantidad_personas ?? 0) > roomCapacity) {
       throw new Error('La cantidad de personas supera la capacidad de la habitación seleccionada.');
@@ -367,9 +365,9 @@ export class HostalService {
       return [];
     }
 
-    const habitaciones: Habitacion[] = JSON.parse(localStorage.getItem(this.storageKey('habitaciones')) || '[]');
-    const reservas: Reserva[] = JSON.parse(localStorage.getItem(this.storageKey('reservas')) || '[]');
-    const tipologias: Tipologia[] = JSON.parse(localStorage.getItem(this.storageKey('tipologias')) || '[]');
+    const habitaciones = this.getManagedRooms();
+    const reservas: Reserva[] = JSON.parse(localStorage.getItem(this.PREFIX + 'reservas') || '[]');
+    const tipologias = this.getManagedTypologies();
 
     return habitaciones.filter((habitacion) =>
       !reservas.some((reserva) =>
@@ -396,9 +394,9 @@ export class HostalService {
     }
 
     const guests = this.getGuests();
-    const rooms: Habitacion[] = JSON.parse(localStorage.getItem(this.storageKey('habitaciones')) || '[]');
-    const tipologias: Tipologia[] = JSON.parse(localStorage.getItem(this.storageKey('tipologias')) || '[]');
-    const reservations: Reserva[] = JSON.parse(localStorage.getItem(this.storageKey('reservas')) || '[]');
+    const rooms = this.getManagedRooms();
+    const tipologias = this.getManagedTypologies();
+    const reservations: Reserva[] = JSON.parse(localStorage.getItem(this.PREFIX + 'reservas') || '[]');
     let guest: Huesped;
     let updatedGuests = guests;
 
@@ -489,5 +487,38 @@ export class HostalService {
 
   private normalizeDocument(value: string): string {
     return value.replace(/[.\s-]/g, '').toUpperCase();
+  }
+
+  private getManagedTypologies(): Tipologia[] {
+    return this.sedeService.tipologias().map((typology) => ({
+      id_tipologia: typology.id,
+      nombre_tipologia: typology.nombre,
+      capacidad: typology.capacidad,
+      precio_noche: typology.precioBase,
+    }));
+  }
+
+  private getManagedRooms(): Habitacion[] {
+    const sede = this.sedeService.selectedSede();
+    if (!sede) return [];
+
+    const typologies = this.getManagedTypologies();
+    const managedRooms: Habitacion[] = [];
+    this.sedeService.habitaciones().forEach((room) => {
+      const typologyId = room.tipologiaId ??
+        typologies.find((typology) => typology.nombre_tipologia.toLocaleLowerCase() === room.tipo.toLocaleLowerCase())
+          ?.id_tipologia;
+      if (typologyId === undefined || !typologies.some((typology) => typology.id_tipologia === typologyId)) {
+        return;
+      }
+
+      managedRooms.push({
+        id_habitacion: room.id,
+        numero_habitacion: room.numero,
+        id_hostal: sede.id,
+        id_tipologia: typologyId,
+      });
+    });
+    return managedRooms;
   }
 }
