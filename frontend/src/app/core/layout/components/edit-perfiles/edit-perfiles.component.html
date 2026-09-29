@@ -96,6 +96,24 @@
                   }
                 </ion-select>
               </ion-item>
+
+              @if (requiresSede()) {
+                <ion-item lines="none" class="sede-picker-item">
+                  <ion-select
+                    label="Sede asignada"
+                    labelPlacement="stacked"
+                    placeholder="Selecciona una sede"
+                    [value]="form().sedeId"
+                    (ionChange)="patchForm('sedeId', $any($event.detail.value))"
+                  >
+                    @for (sede of sedes(); track sede.id) {
+                      <ion-select-option [value]="sede.id">
+                        {{ sede.nombre }} — {{ sede.ciudad }}
+                      </ion-select-option>
+                    }
+                  </ion-select>
+                </ion-item>
+              }
             </div>
 
             @if (errorMessage()) {
@@ -202,6 +220,12 @@
                       }
                     </strong>
                     <span class="user-email">{{ user.email }}</span>
+                    @if (user.sedeId) {
+                      <span class="user-sede">
+                        <ion-icon name="business-outline"></ion-icon>
+                        {{ getSedeNombre(user.sedeId) }}
+                      </span>
+                    }
                   </div>
 
                   @if (deleteConfirmId() === user.id) {

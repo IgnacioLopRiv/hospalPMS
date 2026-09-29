@@ -3,9 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonButton, IonIcon, IonInput, IonItem, IonModal, IonSelect, IonSelectOption } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { addOutline, briefcaseOutline, closeOutline, createOutline, peopleOutline, shieldCheckmarkOutline, trashOutline } from 'ionicons/icons';
+import { addOutline, briefcaseOutline, businessOutline, closeOutline, createOutline, peopleOutline, shieldCheckmarkOutline, trashOutline } from 'ionicons/icons';
 import { AuthService } from '../../../auth/application/auth.service';
 import { StoredUser, UserRole } from '../../../auth/domain/auth.roles';
+import { SedeService } from '../../../../features/locations/application/sede.service';
 
 type FormMode = 'add' | 'edit' | null;
 
@@ -14,6 +15,8 @@ interface UserForm {
   email: string;
   password: string;
   role: UserRole;
+  /** Solo 'staff' */
+  sedeId: number | null;
 }
 
 @Component({
@@ -35,6 +38,7 @@ interface UserForm {
 })
 export class EditPerfilesComponent {
   private readonly auth = inject(AuthService);
+  private readonly sedeService = inject(SedeService);
 
   readonly isOpen = input(false);
   readonly closed = output<void>();
@@ -52,15 +56,22 @@ export class EditPerfilesComponent {
     email: '',
     password: '',
     role: 'staff',
+    sedeId: null,
   });
 
-  /** Usuarios agrupados por rol */
+  /** Lista de sedes disponibles para asignar al staff */
+  readonly sedes = this.sedeService.sedes;
+
+  /** True cuando el rol seleccionado requiere elegir sede */
+  readonly requiresSede = computed(() => this.form().role === 'staff');
+
   readonly admins = computed(() => this.auth.users().filter((u) => u.role === 'admin'));
   readonly staff = computed(() => this.auth.users().filter((u) => u.role === 'staff'));
 
   constructor() {
     addIcons({
       addOutline,
+      businessOutline,
       closeOutline,
       createOutline,
       trashOutline,
@@ -81,7 +92,7 @@ export class EditPerfilesComponent {
   // ── Formulario ────────────────────────────────────────────────────────────
 
   openAdd(): void {
-    this.form.set({ name: '', email: '', password: '', role: 'staff' });
+    this.form.set({ name: '', email: '', password: '', role: 'staff', sedeId: null });
     this.editingId.set(null);
     this.formMode.set('add');
     this.errorMessage.set('');
@@ -94,6 +105,7 @@ export class EditPerfilesComponent {
       email: user.email,
       password: user.password,
       role: user.role,
+      sedeId: user.sedeId ?? null,
     });
     this.editingId.set(user.id);
     this.formMode.set('edit');
@@ -133,12 +145,18 @@ export class EditPerfilesComponent {
       this.errorMessage.set('La contraseña debe tener al menos 6 caracteres.');
       return;
     }
+    if (f.role === 'staff' && !f.sedeId) {
+      this.errorMessage.set('Debes asignar una sede al personal (staff).');
+      return;
+    }
+
+    const sedeId = f.role === 'staff' ? f.sedeId ?? undefined : undefined;
 
     if (this.formMode() === 'add') {
-      this.auth.addUser({ name, email, password, role: f.role });
+      this.auth.addUser({ name, email, password, role: f.role, sedeId });
       this.showSuccess('Usuario agregado correctamente.');
     } else {
-      const patch: Partial<StoredUser> = { name, email, role: f.role };
+      const patch: Partial<StoredUser> = { name, email, role: f.role, sedeId };
       if (password) patch['password'] = password;
       this.auth.updateUser(this.editingId()!, patch);
       this.showSuccess('Usuario actualizado correctamente.');
@@ -147,8 +165,15 @@ export class EditPerfilesComponent {
     this.cancelForm();
   }
 
-  patchForm(field: keyof UserForm, value: string): void {
-    this.form.update((f) => ({ ...f, [field]: value }));
+  patchForm(field: keyof UserForm, value: string | number | null): void {
+    this.form.update((f) => {
+      const updated = { ...f, [field]: value };
+      // Si cambia el rol a admin, limpiar la sede asignada
+      if (field === 'role' && value === 'admin') {
+        updated.sedeId = null;
+      }
+      return updated;
+    });
   }
 
   // ── Eliminación ───────────────────────────────────────────────────────────
@@ -184,6 +209,12 @@ export class EditPerfilesComponent {
 
   isCurrentUser(id: number): boolean {
     return this.auth.currentUser()?.id === id;
+  }
+
+  /** Devuelve el nombre de la sede asignada, o un texto de fallback */
+  getSedeNombre(sedeId: number): string {
+    const sede = this.sedes().find((s) => s.id === sedeId);
+    return sede ? `${sede.nombre} — ${sede.ciudad}` : 'Sede desconocida';
   }
 
   private resetState(): void {

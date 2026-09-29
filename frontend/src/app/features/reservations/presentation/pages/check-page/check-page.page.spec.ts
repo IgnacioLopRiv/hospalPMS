@@ -157,6 +157,7 @@ describe('CheckPagePage', () => {
   it('finds a registered guest by a formatted or unformatted document', () => {
     component.availableGuests = [{
       id_huesped: 10,
+      id_sede: 1,
       documento: '12.345.678-5',
       nombre: 'Ana',
       apellido: 'Pérez',

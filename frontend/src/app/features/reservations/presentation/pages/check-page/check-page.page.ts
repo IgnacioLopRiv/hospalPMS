@@ -297,27 +297,54 @@ export class CheckPagePage implements OnInit, OnDestroy {
         ...(this.guestMode === 'existing'
           ? { guestId: Number(this.selectedGuestId) }
           : {
-              newGuest: {
-                documento: this.entryForm.documento.trim(),
-                nombre: this.entryForm.nombre.trim(),
-                apellido: this.entryForm.apellido.trim(),
-                telefono: `${this.phoneCountry.callingCode} ${this.entryForm.telefono.trim()}`,
-                email: this.entryForm.email.trim(),
-                nacionalidad: this.entryForm.nacionalidad.trim(),
-              },
-            }),
+            newGuest: {
+              documento: this.entryForm.documento.trim(),
+              nombre: this.entryForm.nombre.trim(),
+              apellido: this.entryForm.apellido.trim(),
+              telefono: `${this.phoneCountry.callingCode} ${this.entryForm.telefono.trim()}`,
+              email: this.entryForm.email.trim(),
+              nacionalidad: this.entryForm.nacionalidad.trim(),
+            },
+          }),
         roomId: Number(this.entryForm.roomId),
         personCount: this.entryForm.personCount,
         arrivalDate: this.entryForm.arrivalDate,
         departureDate: this.entryForm.departureDate,
         arrivalTime: this.entryForm.arrivalTime,
       });
-      this.entrySuccessMessage = `Ingreso registrado para ${registered.guest.nombre} ${registered.guest.apellido} en la habitación ${this.availableRooms.find((room) => room.id_habitacion === registered.reservation.id_habitacion)?.numero_habitacion ?? ''}.`;
+      const roomAssigned = this.availableRooms.find((room) => room.id_habitacion === registered.reservation.id_habitacion);
+      const roomNum = roomAssigned?.numero_habitacion ?? '';
+      if (roomNum) {
+        this.sedeService.marcarOcupada(roomNum, `${registered.guest.nombre} ${registered.guest.apellido}`);
+      }
+      this.entrySuccessMessage = `Ingreso registrado para ${registered.guest.nombre} ${registered.guest.apellido} en la habitación ${roomNum}. La habitación ahora está OCUPADA.`;
       this.showNewEntryForm = false;
       this.setPageScrollLocked(false);
     } catch (error) {
       this.entryError = error instanceof Error ? error.message : 'No se pudo registrar el ingreso. Inténtalo nuevamente.';
     }
+  }
+
+  realizarCheckIn(item: CheckItemPlaceholder): void {
+    this.sedeService.marcarOcupada(item.roomNumber, item.guestName);
+    item.statusBadge = 'Ingresado';
+    this.entrySuccessMessage = `Check-in completado para ${item.guestName}. La habitación ${item.roomNumber} ahora está OCUPADA.`;
+  }
+
+  realizarCheckOut(item: CheckItemPlaceholder): void {
+    this.sedeService.marcarEnAseo(item.roomNumber);
+    item.statusBadge = 'En Aseo';
+    this.entrySuccessMessage = `Check-out procesado para ${item.guestName}. La habitación ${item.roomNumber} pasa a estado EN ASEO.`;
+  }
+
+  isRoomOcupada(roomNumber: string): boolean {
+    const room = this.sedeService.habitaciones().find((h) => String(h.numero).trim() === String(roomNumber).trim());
+    return room?.estado === 'ocupada';
+  }
+
+  isRoomEnAseo(roomNumber: string): boolean {
+    const room = this.sedeService.habitaciones().find((h) => String(h.numero).trim() === String(roomNumber).trim());
+    return room?.estado === 'en aseo';
   }
 
   formatRut(value: string): void {

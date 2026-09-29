@@ -2,21 +2,41 @@
   <main class="page-content">
     <!-- Banner de Encabezado Institucional -->
     <header class="habitaciones-banner-header">
-      <div class="header-main-info">
-        <h1>Habitaciones</h1>
-        @if (sede(); as currentSede) {
-          <p class="sede-description">
-            <ion-icon name="business-outline"></ion-icon>
-            Habitaciones registradas de <strong>{{ currentSede.nombre }}</strong> en {{ currentSede.ciudad }}
-          </p>
-        }
+      <div class="banner-top-row">
+        <div class="header-main-info">
+          <h1>Habitaciones</h1>
+          @if (sede(); as currentSede) {
+            <p class="sede-description">
+              <ion-icon name="business-outline"></ion-icon>
+              Habitaciones registradas de <strong>{{ currentSede.nombre }}</strong> en {{ currentSede.ciudad }}
+            </p>
+          }
+        </div>
+
+        <!-- Reloj en vivo integrado en la cabecera -->
+        <div class="header-clock-box">
+          <app-clock></app-clock>
+        </div>
       </div>
 
-      <!-- Barra divisoria con conteo y ÚNICO botón de gestión -->
+      <!-- Barra divisoria con resumen de estados y botón de gestión -->
       <div class="box-legend">
         <div class="legend-info">
-          <span class="legend-badge">HABITACIONES DISPONIBLES</span>
-          <span class="legend-count">{{ habitaciones().length }} registradas</span>
+          <span class="legend-badge">ESTADO EN VIVO</span>
+          <div class="status-summary-pills">
+            <span class="status-summary-pill pill-libre" title="Habitaciones listas para recibir huéspedes">
+              <span class="dot"></span>
+              <strong>{{ totalLibres() }}</strong> Libres
+            </span>
+            <span class="status-summary-pill pill-ocupada" title="Habitaciones con huéspedes hospedados">
+              <span class="dot"></span>
+              <strong>{{ totalOcupadas() }}</strong> Ocupadas
+            </span>
+            <span class="status-summary-pill pill-aseo" title="Habitaciones en proceso de aseo y desinfección">
+              <span class="dot"></span>
+              <strong>{{ totalEnAseo() }}</strong> En Aseo
+            </span>
+          </div>
         </div>
 
         @if (isAdmin()) {
@@ -28,40 +48,92 @@
       </div>
     </header>
 
-    <!-- Estado vacío (sin botón redundante) -->
+    <!-- Estado vacío -->
     @if (habitaciones().length === 0) {
       <div class="sin_habitacion">
         <div class="empty-icon-circle">
           <ion-icon name="bed-outline"></ion-icon>
         </div>
         <p>No hay habitaciones registradas para esta sede.</p>
+        <span class="empty-hint">Utiliza el botón superior <strong>Gestionar habitaciones</strong> para dar de alta nuevas habitaciones.</span>
       </div>
     } @else {
       <!-- Grilla de Tarjetas -->
       <section class="rooms-grid">
         @for (habitacion of habitaciones(); track habitacion.id) {
-          <article class="room-summary">
-            <div class="room-card-header">
-              <div class="room-icon-tag">
-                <ion-icon name="bed-outline"></ion-icon>
-              </div>
-              <h2>Habitación {{ habitacion.numero }}</h2>
-            </div>
+          <article class="room-summary" [ngClass]="'card-estado-' + (habitacion.estado || 'libre')">
+            <!-- Pestaña superior que indica el estado actual con color distintivo -->
+            <header class="room-status-tab" [ngClass]="'tab-' + (habitacion.estado || 'libre')">
+              <div class="status-tab-info">
+                <span class="status-dot"></span>
+                <span class="status-name">{{ getEstadoLabel(habitacion.estado) }}</span>
 
             <dl>
               <div>
                 <dt>Tipo</dt>
                 <dd class="badge-tipo">{{ getManagedTypologyName(habitacion) }}</dd>
               </div>
-              <div>
-                <dt>Tamaño</dt>
-                <dd>{{ habitacion.tamanoM2 }} m²</dd>
+
+              <!-- Acciones reactivas en la pestaña -->
+              <div class="status-tab-actions">
+                @if (habitacion.estado === 'en aseo') {
+                  <button
+                    type="button"
+                    class="btn-tab-action btn-finish-cleaning"
+                    (click)="marcarLibre(habitacion, $event)"
+                    title="Terminar aseo y dejar la habitación Libre">
+                    <ion-icon name="checkmark-outline"></ion-icon>
+                    <span>Terminar aseo</span>
+                  </button>
+                } @else if (habitacion.estado === 'ocupada') {
+                  <button
+                    type="button"
+                    class="btn-tab-action btn-send-cleaning"
+                    (click)="marcarEnAseo(habitacion, $event)"
+                    title="Procesar check-out / Pasar habitación a aseo">
+                    <ion-icon name="sparkles-outline"></ion-icon>
+                    <span>Pasar a aseo</span>
+                  </button>
+                } @else {
+                  <button
+                    type="button"
+                    class="btn-tab-action btn-mark-occupied"
+                    (click)="marcarOcupada(habitacion, $event)"
+                    title="Registrar check-in / Ocupar habitación">
+                    <ion-icon name="log-in-outline"></ion-icon>
+                    <span>Ocupar</span>
+                  </button>
+                }
               </div>
-              <div class="full">
-                <dt>Disposición de muebles</dt>
-                <dd>{{ habitacion.disposicionMuebles }}</dd>
+            </header>
+
+            <!-- Contenido principal de la tarjeta -->
+            <div class="room-body">
+              <div class="room-card-header">
+                <div class="room-icon-tag" [ngClass]="'tag-' + (habitacion.estado || 'libre')">
+                  <ion-icon name="bed-outline"></ion-icon>
+                </div>
+                <div>
+                  <h2>Habitación {{ habitacion.numero }}</h2>
+                  <span class="room-subtitle">{{ habitacion.tipo }}</span>
+                </div>
               </div>
-            </dl>
+
+              <dl>
+                <div>
+                  <dt>Tipo</dt>
+                  <dd class="badge-tipo">{{ habitacion.tipo }}</dd>
+                </div>
+                <div>
+                  <dt>Tamaño</dt>
+                  <dd>{{ habitacion.tamanoM2 ? habitacion.tamanoM2 + ' m²' : 'N/A' }}</dd>
+                </div>
+                <div class="full">
+                  <dt>Disposición de muebles</dt>
+                  <dd>{{ habitacion.disposicionMuebles || 'Estándar' }}</dd>
+                </div>
+              </dl>
+            </div>
           </article>
         }
       </section>

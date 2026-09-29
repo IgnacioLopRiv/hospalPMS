@@ -3,6 +3,7 @@ import {
   Sede,
   SedeHabitacion as Habitacion,
   SedeTipologia,
+  EstadoHabitacion,
 } from '../../../shared/domain/hostal.model';
 
 export type { Sede, SedeHabitacion as Habitacion, SedeTipologia } from '../../../shared/domain/hostal.model';
@@ -282,6 +283,87 @@ export class SedeService {
 
   createHabitacionId(): number {
     return this.nextHabitacionId++;
+  }
+
+  /**
+   * Actualiza el estado de una habitación por su número o ID
+   */
+  updateHabitacionEstado(
+    numeroOrId: string | number,
+    estado: EstadoHabitacion,
+    extra?: { huesped?: string; aseoIniciado?: number }
+  ): void {
+    const current = this.selectedSede();
+    if (!current) return;
+
+    const strTarget = String(numeroOrId).trim();
+    let updatedAny = false;
+
+    const nextHabitaciones = current.habitaciones.map((h) => {
+      if (String(h.numero).trim() === strTarget || String(h.id) === strTarget) {
+        updatedAny = true;
+        return {
+          ...h,
+          estado,
+          huespedActual: estado === 'ocupada' ? (extra?.huesped || h.huespedActual || 'Huésped activo') : undefined,
+          aseoIniciado: estado === 'en aseo' ? (extra?.aseoIniciado ?? Date.now()) : undefined,
+        };
+      }
+      return h;
+    });
+
+    if (updatedAny) {
+      this.updateSede({
+        ...current,
+        habitaciones: nextHabitaciones,
+      });
+    }
+  }
+
+  marcarOcupada(numeroOrId: string | number, huesped?: string): void {
+    this.updateHabitacionEstado(numeroOrId, 'ocupada', { huesped });
+  }
+
+  marcarEnAseo(numeroOrId: string | number): void {
+    this.updateHabitacionEstado(numeroOrId, 'en aseo', { aseoIniciado: Date.now() });
+  }
+
+  marcarLibre(numeroOrId: string | number): void {
+    this.updateHabitacionEstado(numeroOrId, 'libre');
+  }
+
+  /**
+   * Revisa automáticamente habitaciones en aseo y las libera si ya transcurrió el tiempo de aseo.
+   * @param maxMinutos Duración del aseo antes de volver a libre (por defecto 30 min)
+   */
+  autoLiberarAseo(maxMinutos = 30): void {
+    const current = this.selectedSede();
+    if (!current) return;
+
+    const ahora = Date.now();
+    const tiempoLimiteMs = maxMinutos * 60 * 1000;
+    let huboCambios = false;
+
+    const nextHabitaciones = current.habitaciones.map((h) => {
+      if (h.estado === 'en aseo' && h.aseoIniciado) {
+        if (ahora - h.aseoIniciado >= tiempoLimiteMs) {
+          huboCambios = true;
+          return {
+            ...h,
+            estado: 'libre' as EstadoHabitacion,
+            aseoIniciado: undefined,
+          };
+        }
+      }
+      return h;
+    });
+
+    if (huboCambios) {
+      this.updateSede({
+        ...current,
+        habitaciones: nextHabitaciones,
+      });
+    }
   }
 
   private readSavedSedes(): Sede[] {

@@ -13,6 +13,7 @@ import { SedeService } from '../../../../features/locations/application/sede.ser
 import { ConfigOptionsComponent } from '../../../../features/locations/presentation/config-options/config-options.component';
 import { EditPerfilesComponent } from '../edit-perfiles/edit-perfiles.component';
 import { EditTipologiasComponent } from '../../../../features/locations/presentation/edit-tipologias/edit-tipologias.component';
+import { ClockComponent } from '../../../../shared/presentation/clock/clock.component';
 
 @Component({
   selector: 'app-header',
@@ -25,6 +26,7 @@ import { EditTipologiasComponent } from '../../../../features/locations/presenta
     ConfigOptionsComponent,
     EditPerfilesComponent,
     EditTipologiasComponent,
+    ClockComponent,
   ],
 })
 export class HeaderComponent {

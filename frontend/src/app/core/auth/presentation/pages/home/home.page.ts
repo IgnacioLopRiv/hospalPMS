@@ -11,6 +11,7 @@ import {
   mailOutline,
 } from 'ionicons/icons';
 import { AuthService } from '../../../application/auth.service';
+import { SedeService } from '../../../../../features/locations/application/sede.service';
 
 @Component({
   selector: 'app-home',
@@ -25,6 +26,7 @@ import { AuthService } from '../../../application/auth.service';
 export class HomePage {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
+  private readonly sedeService = inject(SedeService);
 
   email = '';
   password = '';
@@ -58,6 +60,17 @@ export class HomePage {
       this.errorMessage = result.message ?? 'No se pudo iniciar sesión.';
       this.showRecover = result.error === 'email' || result.error === 'password';
       return;
+    }
+
+    // Si el usuario es staff con sede asignada, ir directo a la sede
+    const loggedUser = this.auth.currentUser();
+    if (loggedUser?.role === 'staff' && loggedUser.sedeId) {
+      const sede = this.sedeService.sedes().find((s) => s.id === loggedUser.sedeId);
+      if (sede) {
+        this.sedeService.selectSede(sede);
+        this.router.navigate(['/guests-view']);
+        return;
+      }
     }
 
     this.router.navigate(['/sedes']);

@@ -89,6 +89,7 @@ export class EditHabitacionesModalComponent implements OnChanges {
         tipologiaId: tipologiaId,
         tamanoM2: tamano,
         disposicionMuebles: muebles,
+        estado: 'libre',
       });
     }
   }
