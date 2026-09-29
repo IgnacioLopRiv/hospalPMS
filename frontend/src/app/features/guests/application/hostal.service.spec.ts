@@ -1,3 +1,4 @@
+import { TestBed } from '@angular/core/testing';
 import { HostalService } from './hostal.service';
 import { GuestCardView, Huesped } from '../../../shared/domain/hostal.model';
 import { SedeService } from '../../locations/application/sede.service';
@@ -67,9 +68,13 @@ describe('HostalService (sede-scoped)', () => {
       }),
     };
 
-    service = new HostalService();
-    // Override the injected SedeService with our mock
-    (service as any).sedeService = mockSedeService;
+    TestBed.configureTestingModule({
+      providers: [
+        HostalService,
+        { provide: SedeService, useValue: mockSedeService },
+      ],
+    });
+    service = TestBed.inject(HostalService);
 
     // Seed test data for the scoped sede
     seedTestData();
@@ -78,6 +83,7 @@ describe('HostalService (sede-scoped)', () => {
 
   afterEach(() => {
     clearTestStorage();
+    TestBed.resetTestingModule();
   });
 
   it('starts with an empty sede when no data is seeded', () => {

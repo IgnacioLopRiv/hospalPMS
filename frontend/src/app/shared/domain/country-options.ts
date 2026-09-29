@@ -5,14 +5,6 @@ export interface CountryOption {
   callingCode: string;
 }
 
-declare global {
-  namespace Intl {
-    class DisplayNames {
-      constructor(locales: string | string[], options: { type: 'region' });
-      of(code: string): string | undefined;
-    }
-  }
-}
 
 const countryData: Array<[string, string, string]> = [
   ['AF', 'Afgana', '+93'], ['AL', 'Albanesa', '+355'], ['DE', 'Alemana', '+49'],
