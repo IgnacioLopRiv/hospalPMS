@@ -214,6 +214,14 @@ $text-muted: #64748b;
       gap: 0.6rem;
       padding-right: 0.25rem;
 
+      &::-webkit-scrollbar {
+        width: 6px;
+      }
+      &::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.25);
+        border-radius: 10px;
+      }
+
       .room-edit-item {
         display: flex;
         align-items: center;

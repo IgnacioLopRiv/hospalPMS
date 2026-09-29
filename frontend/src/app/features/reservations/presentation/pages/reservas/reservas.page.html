@@ -2,18 +2,22 @@
   <header class="scheduler-toolbar">
     <div class="kpi-chips">
       <div class="kpi-chip">
-        <strong class="count">{{ reservationCount() }}</strong>
-        <span class="label">Reservas</span>
+        <strong class="count">15</strong>
+        <span class="label">Total</span>
+      </div>
+      <div class="kpi-chip highlight-blue">
+        <strong class="count">11</strong>
+        <span class="label">Ocupadas</span>
       </div>
       <div class="kpi-chip highlight-green">
         <ion-icon name="log-in-outline"></ion-icon>
-        <strong class="count">{{ arrivalCount() }}</strong>
-        <span class="label">Llegadas</span>
+        <strong class="count">2</strong>
+        <span class="label">Check-in</span>
       </div>
       <div class="kpi-chip highlight-orange">
         <ion-icon name="log-out-outline"></ion-icon>
-        <strong class="count">{{ departureCount() }}</strong>
-        <span class="label">Salidas</span>
+        <strong class="count">2</strong>
+        <span class="label">Check-out</span>
       </div>
     </div>
 
@@ -25,98 +29,24 @@
           {{ category.name }}
         </span>
       }
+      <span class="legend-item">
+        <span class="dot dot-pendiente"></span> Pendiente
+      </span>
     </div>
 
     <div class="date-navigator">
       <div class="nav-controls">
-        <button class="nav-btn" aria-label="Semana anterior" (click)="goToPreviousWeek()">
+        <button class="nav-btn" aria-label="Semana anterior">
           <ion-icon name="chevron-back-outline"></ion-icon>
         </button>
-        <button class="today-btn" (click)="goToToday()">Hoy</button>
-        <button class="nav-btn" aria-label="Semana siguiente" (click)="goToNextWeek()">
+        <button class="today-btn">Hoy</button>
+        <button class="nav-btn" aria-label="Semana siguiente">
           <ion-icon name="chevron-forward-outline"></ion-icon>
         </button>
       </div>
-      <div class="date-picker-container">
-        <button
-          type="button"
-          class="date-range-badge"
-          aria-haspopup="dialog"
-          [attr.aria-expanded]="datePickerOpen()"
-          (click)="toggleDatePicker()"
-        >
-          <ion-icon name="calendar-outline"></ion-icon>
-          <span>{{ dateRangeLabel() }}</span>
-          <ion-icon name="chevron-down-outline" class="date-picker-chevron"></ion-icon>
-        </button>
-
-        @if (datePickerOpen()) {
-          <section class="mini-calendar" role="dialog" aria-label="Seleccionar fecha del calendario">
-            <header class="mini-calendar-header">
-              <button
-                type="button"
-                class="mini-calendar-nav"
-                aria-label="Mes anterior"
-                (click)="movePickerMonth(-1)"
-              >
-                <ion-icon name="chevron-back-outline"></ion-icon>
-              </button>
-              <div class="mini-calendar-month-selectors">
-                <select
-                  aria-label="Mes"
-                  [value]="pickerMonth().getMonth()"
-                  (change)="changePickerMonth($any($event.target).value)"
-                >
-                  @for (month of calendarMonths; track $index) {
-                    <option [value]="$index">{{ month }}</option>
-                  }
-                </select>
-                <select
-                  aria-label="Año"
-                  [value]="pickerMonth().getFullYear()"
-                  (change)="changePickerYear($any($event.target).value)"
-                >
-                  @for (year of calendarYears; track year) {
-                    <option [value]="year">{{ year }}</option>
-                  }
-                </select>
-              </div>
-              <button
-                type="button"
-                class="mini-calendar-nav"
-                aria-label="Mes siguiente"
-                (click)="movePickerMonth(1)"
-              >
-                <ion-icon name="chevron-forward-outline"></ion-icon>
-              </button>
-            </header>
-
-            <div class="mini-calendar-grid mini-calendar-weekdays" aria-hidden="true">
-              @for (weekday of ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']; track weekday) {
-                <span>{{ weekday }}</span>
-              }
-            </div>
-            <div class="mini-calendar-grid mini-calendar-dates">
-              @for (day of miniCalendarDays(); track day.dateKey) {
-                <button
-                  type="button"
-                  class="mini-calendar-day"
-                  [class.outside-month]="!day.inCurrentMonth"
-                  [class.today]="isToday(day.dateKey)"
-                  [class.selected]="selectedDate() === day.dateKey"
-                  [attr.aria-pressed]="selectedDate() === day.dateKey"
-                  [attr.aria-label]="day.dateKey"
-                  (click)="selectPickerDate(day.dateKey)"
-                >
-                  {{ day.dayNumber }}
-                </button>
-              }
-            </div>
-            <button type="button" class="mini-calendar-today" (click)="goToToday(); closeDatePicker()">
-              Ir a hoy
-            </button>
-          </section>
-        }
+      <div class="date-range-badge">
+        <ion-icon name="calendar-outline"></ion-icon>
+        <span>9 Jun — 22 Jun 2026</span>
       </div>
     </div>
   </header>
@@ -125,36 +55,26 @@
     <div class="planner-header">
       <div class="room-col-header">HABITACIÓN</div>
       <div class="days-columns">
-        @for (day of days(); track day.dateKey) {
-          <button
-            type="button"
-            class="day-cell"
-            [class.current-day]="day.isCurrent"
-            [class.selected-day]="selectedDate() === day.dateKey"
-            [attr.aria-label]="day.dayName + ' ' + day.dayNumber + ' ' + day.monthName"
-            [attr.aria-pressed]="selectedDate() === day.dateKey"
-            (click)="selectDay(day.dateKey)"
-          >
+        @for (day of days; track day.dayNumber) {
+          <div class="day-cell" [class.current-day]="day.isCurrent">
             <span class="day-name">{{ day.dayName }}</span>
             <span class="day-number">{{ day.dayNumber }}</span>
             <span class="day-month">{{ day.monthName }}</span>
-          </button>
+          </div>
         }
       </div>
     </div>
 
     <div class="planner-body">
-      @if (categories().length === 0) {
-        <div class="empty-state">No hay huéspedes con reservas en este período.</div>
-      }
       @for (category of categories(); track category.name) {
-        <div
-          class="category-header-row"
+        <!-- Cabecera de Categoría Dinámica -->
+        <div 
+          class="category-header-row" 
           (click)="toggleCategory(category.name)"
           [class.collapsed]="isCategoryCollapsed(category.name)"
         >
           <div class="room-col-category">
-            <ion-icon
+            <ion-icon 
               name="chevron-down-outline" 
               class="collapse-arrow"
               [class.rotated]="isCategoryCollapsed(category.name)"
@@ -176,30 +96,29 @@
                 </div>
                 <small class="room-beds">
                   <ion-icon name="bed-outline"></ion-icon>
-                  {{ room.capacity }} plazas
+                  {{ room.beds }} camas
                 </small>
               </div>
 
               <div class="timeline-cells-container">
                 <div class="grid-columns-bg">
-                  @for (day of days(); track day.dateKey) {
-                    <div
-                      class="grid-cell"
-                      [class.current-cell]="day.isCurrent"
-                      [class.selected-cell]="selectedDate() === day.dateKey"
-                    ></div>
+                  @for (day of days; track day.dayNumber) {
+                    <div class="grid-cell" [class.current-cell]="day.isCurrent"></div>
                   }
                 </div>
 
+                <!-- Bloques con colores automáticos calculados -->
                 <div class="reservations-layer">
                   @for (res of getReservationsForRoom(room.numero); track res.id) {
+                    @let theme = getThemeForName(res.categoryName || category.name);
                     <div
                       class="reservation-card"
-                      [style.grid-column-start]="getGridColumnStart(res)"
-                      [style.grid-column-end]="'span ' + getGridColumnSpan(res)"
-                      [style.background-color]="category.theme.background"
-                      [style.border-color]="category.theme.border"
-                      [style.color]="category.theme.text"
+                      [class.pending]="res.isPending"
+                      [style.grid-column-start]="getGridColumnStart(res.startDay)"
+                      [style.grid-column-end]="'span ' + res.durationDays"
+                      [style.background-color]="res.isPending ? '#ffffff' : theme.background"
+                      [style.border-color]="theme.border"
+                      [style.color]="theme.text"
                     >
                       <span class="guest-name">{{ res.guestName }}</span>
                     </div>

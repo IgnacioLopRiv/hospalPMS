@@ -34,7 +34,6 @@ export class HabitacionesPage implements OnInit, OnDestroy {
 
   readonly sede = this.sedeService.selectedSede;
   readonly habitaciones = this.sedeService.habitaciones;
-  readonly tipologias = this.sedeService.tipologias;
   readonly isAdmin = computed(() => this.authService.currentUser()?.role === 'admin');
   readonly editHabitacionesOpen = signal(false);
 
@@ -98,10 +97,39 @@ export class HabitacionesPage implements OnInit, OnDestroy {
     this.editHabitacionesOpen.set(false);
   }
 
-  getManagedTypologyName(room: { tipo: string; tipologiaId?: number }): string {
-    return this.tipologias().find((typology) =>
-      typology.id === room.tipologiaId ||
-      typology.nombre.toLowerCase() === room.tipo.toLowerCase()
-    )?.nombre ?? 'Tipología no gestionada';
+  getEstadoLabel(estado?: EstadoHabitacion): string {
+    switch (estado) {
+      case 'ocupada':
+        return 'Ocupada';
+      case 'en aseo':
+        return 'En Aseo';
+      case 'libre':
+      default:
+        return 'Libre';
+    }
+  }
+
+  getTiempoEnAseo(habitacion: Habitacion): string {
+    this.liveTick(); // Suscripción reactiva al tick en vivo
+    if (!habitacion.aseoIniciado) {
+      return 'En curso';
+    }
+    const diffMin = Math.floor((Date.now() - habitacion.aseoIniciado) / (60 * 1000));
+    return diffMin <= 0 ? 'Recién iniciado' : `Hace ${diffMin} min`;
+  }
+
+  marcarLibre(habitacion: Habitacion, event?: Event): void {
+    event?.stopPropagation();
+    this.sedeService.marcarLibre(habitacion.numero);
+  }
+
+  marcarEnAseo(habitacion: Habitacion, event?: Event): void {
+    event?.stopPropagation();
+    this.sedeService.marcarEnAseo(habitacion.numero);
+  }
+
+  marcarOcupada(habitacion: Habitacion, event?: Event): void {
+    event?.stopPropagation();
+    this.sedeService.marcarOcupada(habitacion.numero, 'Check-in manual');
   }
 }

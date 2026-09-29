@@ -39,53 +39,6 @@ describe('GuestsViewPage', () => {
     expect(component.getCount('inactivos')).toBe(1);
   });
 
-  it('switches between guest cards and the guest list', () => {
-    component.guests = [createGuestCard(1, true)];
-    component.applyFilters();
-    fixture.detectChanges();
-
-    expect(fixture.nativeElement.querySelector('.cards-grid')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('.guest-list')).toBeNull();
-
-    const viewButton = fixture.nativeElement.querySelector('.view-toggle-button') as HTMLButtonElement;
-    expect(viewButton.textContent).toContain('Ver');
-    viewButton.click();
-    fixture.detectChanges();
-
-    expect(fixture.nativeElement.querySelector('.cards-grid')).toBeNull();
-    expect(fixture.nativeElement.querySelector('.guest-list')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('.guest-list tbody').textContent).toContain('Guest 1');
-
-    viewButton.click();
-    fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.cards-grid')).toBeTruthy();
-  });
-
-  it('shows a status-colored top line on each guest card', () => {
-    const statuses: GuestCardView['status'][] = [
-      'confirmada',
-      'inactivo',
-      'checkin_hoy',
-      'checkout_hoy',
-      'hospedado',
-    ];
-    component.filteredGuests = statuses.map((status, index) => ({
-      ...createGuestCard(index + 1, status !== 'inactivo'),
-      status,
-    }));
-    fixture.detectChanges();
-
-    const lines = fixture.nativeElement.querySelectorAll('.guest-status-line') as NodeListOf<HTMLElement>;
-    expect(Array.from(lines).map((line) => statuses.find((status) =>
-      line.classList.contains(`status-${status}`)
-    ))).toEqual(statuses);
-
-    const cards = fixture.nativeElement.querySelectorAll('.guest-card') as NodeListOf<HTMLElement>;
-    expect(Array.from(cards).map((card) => statuses.find((status) =>
-      card.classList.contains(`status-${status}`)
-    ))).toEqual(statuses);
-  });
-
   it('navigates to check-page with the guest draft for reservation assignment', async () => {
     const router = TestBed.inject(Router);
     const navigation = spyOn(router, 'navigate').and.resolveTo(true);

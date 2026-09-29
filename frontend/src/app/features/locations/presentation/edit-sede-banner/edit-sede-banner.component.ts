@@ -10,6 +10,8 @@ import {
 } from '@ionic/angular/standalone';
 import {
   Habitacion,
+  ROOM_TYPES,
+  RoomType,
   SedeService,
 } from '../../application/sede.service';
 
@@ -38,7 +40,7 @@ export class EditSedeBannerComponent {
   readonly nombre = signal('');
   readonly habitaciones = signal<Habitacion[]>([]);
   readonly cantidadNueva = signal(1);
-  readonly tipoNuevo = signal('');
+  readonly tipoNuevo = signal<string>('Doble');
   readonly errorMessage = signal('');
 
   constructor() {
@@ -55,7 +57,7 @@ export class EditSedeBannerComponent {
     this.habitaciones.set((sede?.habitaciones ?? []).map((habitacion) => ({ ...habitacion })));
     this.cantidadNueva.set(1);
     const available = this.tipologias();
-    this.tipoNuevo.set(available[0]?.nombre ?? '');
+    this.tipoNuevo.set(available.length > 0 ? available[0].nombre : 'Doble');
     this.errorMessage.set('');
   }
 
@@ -69,15 +71,12 @@ export class EditSedeBannerComponent {
     const current = this.habitaciones();
     const nextNumero = this.nextRoomNumber(current);
     const matched = this.tipologias().find((t) => t.nombre === tipo);
-    if (!matched) {
-      return;
-    }
 
     const created: Habitacion[] = Array.from({ length: cantidad }, (_, index) => ({
       id: this.sedeService.createHabitacionId(),
       numero: String(nextNumero + index),
       tipo,
-      tipologiaId: matched.id,
+      tipologiaId: matched?.id,
       tamanoM2: null,
       disposicionMuebles: '',
     }));
