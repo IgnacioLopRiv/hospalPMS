@@ -50,35 +50,27 @@ $blue-primary: #1e50d8;
         font-weight: 600;
       }
 
-      &.logout-btn {
-        margin-top: auto;
-
-        &:hover {
-          background: rgba(239, 68, 68, 0.25);
-          color: #fca5a5;
-        }
-      }
     }
+  }
+
+  .sidebar-account {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    margin-top: auto;
+    padding: 0.85rem 0.25rem 0.1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
   }
 
   .sidebar-user {
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    padding: 0.65rem 0.8rem;
-    margin-top: auto;
-    border: none;
-    border-radius: 8px;
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
+    padding: 0.25rem 0.5rem 0.45rem;
+    min-width: 0;
+    color: #ffffff;
     text-align: left;
-    transition: all 0.2s ease;
     font-family: inherit;
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.12);
-    }
 
     .avatar {
       display: flex;
@@ -88,9 +80,11 @@ $blue-primary: #1e50d8;
       align-items: center;
       justify-content: center;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.25);
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #ffffff;
       font-size: 0.75rem;
-      font-weight: bold;
+      font-weight: 700;
     }
 
     .user-info {
@@ -107,19 +101,44 @@ $blue-primary: #1e50d8;
       }
 
       strong {
+        color: #ffffff;
         font-size: 0.8rem;
+        font-weight: 600;
       }
 
       small {
-        font-size: 0.65rem;
-        opacity: 0.7;
+        color: rgba(255, 255, 255, 0.75);
+        font-size: 0.75rem;
       }
     }
+  }
+
+  .logout-btn {
+    display: flex;
+    min-height: 36px;
+    box-sizing: border-box;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.45rem 0.65rem;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 8px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.85);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 
     ion-icon {
-      flex-shrink: 0;
-      font-size: 1rem;
-      opacity: 0.7;
+      font-size: 1.1rem;
+    }
+
+    &:hover,
+    &:focus-visible {
+      border-color: rgba(239, 68, 68, 0.4);
+      background: rgba(239, 68, 68, 0.25);
+      color: #fca5a5;
     }
   }
 }
@@ -165,14 +184,29 @@ $blue-primary: #1e50d8;
       }
     }
 
-    .sidebar-user {
+    .sidebar-account {
       flex: 0 0 auto;
+      flex-direction: row;
+      align-items: center;
+      gap: 0.35rem;
       margin: 0;
-      padding: 0.3rem;
+      padding: 0 0 0 0.5rem;
+      border-top: 0;
+      border-left: 1px solid rgba(255, 255, 255, 0.15);
+    }
 
-      .user-info {
-        display: none;
-      }
+    .sidebar-user {
+      flex: 0 1 auto;
+      padding: 0.2rem;
+      .user-info { display: none; }
+    }
+
+    .logout-btn {
+      min-height: 34px;
+      gap: 0.25rem;
+      padding: 0.35rem 0.45rem;
+      border-radius: 8px;
+      font-size: 0.72rem;
     }
   }
 }
@@ -182,6 +216,15 @@ $blue-primary: #1e50d8;
     justify-content: center;
     gap: 0;
     padding: 0.6rem;
+
+    span {
+      display: none;
+    }
+  }
+
+  .sidebar-account .logout-btn {
+    gap: 0;
+    padding: 0.45rem;
 
     span {
       display: none;

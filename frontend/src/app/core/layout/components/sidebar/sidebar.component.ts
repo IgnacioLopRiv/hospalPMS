@@ -1,7 +1,7 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { IonIcon } from '@ionic/angular/standalone';
+import { AlertController, IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
   businessOutline,
@@ -11,12 +11,10 @@ import {
   swapHorizontalOutline,
   barChartOutline,
   logOutOutline,
-  chevronDownOutline,
 } from 'ionicons/icons';
 
 import { AuthService } from '../../../auth/application/auth.service';
 import { SedeService } from '../../../../features/locations/application/sede.service';
-import { UserMenuConfigComponent } from '../userMenuConfig/components.component';
 
 @Component({
   selector: 'app-sidebar',
@@ -28,17 +26,16 @@ import { UserMenuConfigComponent } from '../userMenuConfig/components.component'
     RouterLink,
     RouterLinkActive,
     IonIcon,
-    UserMenuConfigComponent,
   ],
 })
 export class SidebarComponent {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
   private readonly sedeService = inject(SedeService);
+  private readonly alertController = inject(AlertController);
 
   readonly currentUser = this.auth.currentUser;
   readonly canViewReports = this.auth.canViewReports;
-  readonly userMenuOpen = signal(false);
 
   constructor() {
     addIcons({
@@ -49,16 +46,7 @@ export class SidebarComponent {
       swapHorizontalOutline,
       barChartOutline,
       logOutOutline,
-      chevronDownOutline,
     });
-  }
-
-  openUserMenu(): void {
-    this.userMenuOpen.set(true);
-  }
-
-  closeUserMenu(): void {
-    this.userMenuOpen.set(false);
   }
 
   getUserInitials(): string {
@@ -77,7 +65,28 @@ export class SidebarComponent {
     return user?.role === 'admin' ? 'Administrador' : 'Personal';
   }
 
-  logout(): void {
+  async confirmLogout(): Promise<void> {
+    const alert = await this.alertController.create({
+      header: 'Confirmar salida',
+      message: '¿Estás seguro de que deseas salir?',
+      cssClass: 'logout-confirmation-alert',
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel',
+        },
+        {
+          text: 'Salir',
+          role: 'destructive',
+          handler: () => this.logout(),
+        },
+      ],
+    });
+
+    await alert.present();
+  }
+
+  private logout(): void {
     this.auth.logout();
     this.sedeService.clearSede();
     this.router.navigate(['/home']);

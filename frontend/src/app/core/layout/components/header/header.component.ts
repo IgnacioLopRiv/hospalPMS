@@ -1,12 +1,14 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
   settingsOutline,
   businessOutline,
   notificationsOutline,
-  personCircleOutline
+  personCircleOutline,
+  chevronDownOutline,
 } from 'ionicons/icons';
 
 import { SedeService } from '../../../../features/locations/application/sede.service';
@@ -31,8 +33,10 @@ import { ClockComponent } from '../../../../shared/presentation/clock/clock.comp
 })
 export class HeaderComponent {
   private readonly sedeService = inject(SedeService);
+  private readonly router = inject(Router);
 
   readonly configOptionsOpen = signal(false);
+  readonly sedeOptionsOpen = signal(false);
   readonly editPerfilesOpen = signal(false);
   readonly editTipologiasOpen = signal(false);
 
@@ -47,8 +51,22 @@ export class HeaderComponent {
       settingsOutline,
       businessOutline,
       notificationsOutline,
-      personCircleOutline
+      personCircleOutline,
+      chevronDownOutline,
     });
+  }
+
+  changeSede(): void {
+    this.sedeOptionsOpen.set(false);
+    void this.router.navigate(['/sedes']);
+  }
+
+  toggleSedeOptions(): void {
+    this.sedeOptionsOpen.update((open) => !open);
+  }
+
+  closeSedeOptions(): void {
+    this.sedeOptionsOpen.set(false);
   }
 
   // ── Config options ────────────────────────────────────────────────────────

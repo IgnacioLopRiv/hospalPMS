@@ -184,6 +184,84 @@ body.entry-modal-open .app-main-viewport .ion-page {
   }
 }
 
+.logout-confirmation-alert {
+  --backdrop-opacity: 0.55;
+  --background: #ffffff;
+  --border-radius: 20px;
+
+  &::part(alert-wrapper) {
+    overflow: hidden;
+    border-radius: 20px !important;
+  }
+
+  &::part(alert-button) {
+    border-radius: 8px;
+  }
+
+  .alert-wrapper {
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    background: #ffffff !important;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+  }
+
+  .alert-head {
+    padding: 1.4rem 1.4rem 0.5rem;
+  }
+
+  .alert-title {
+    color: #0f172a !important;
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+
+  .alert-message {
+    padding: 0.4rem 1.4rem 1rem;
+    color: #64748b !important;
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+
+  .alert-button-group {
+    justify-content: flex-end;
+    gap: 0.65rem;
+    padding: 0.5rem 1.1rem 1.1rem;
+
+    .alert-button {
+      min-height: 34px;
+      padding: 0.35rem 0.85rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: none;
+      transition: background 0.18s ease, border-color 0.18s ease;
+
+      &.alert-button-role-cancel {
+        background: #ffffff;
+        color: #334155 !important;
+
+        &:hover {
+          background: #f1f5f9;
+        }
+      }
+
+      &.alert-button-role-destructive {
+        border-color: #dc2626;
+        background: #dc2626;
+        color: #ffffff !important;
+
+        &:hover {
+          border-color: #b91c1c;
+          background: #b91c1c;
+        }
+      }
+    }
+  }
+}
+
 /* Menú Contextual Action Sheet (...) */
 .hospal-custom-action-sheet {
   .action-sheet-container {

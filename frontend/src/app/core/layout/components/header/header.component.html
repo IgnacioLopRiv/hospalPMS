@@ -9,11 +9,14 @@
       </div>
     </div>
 
-    <!-- Etiqueta informativa fija (sin acción de click ni edición) -->
-    <div class="sede-chip-info">
+    <button type="button" class="sede-chip-info" (click)="toggleSedeOptions()"
+      [attr.aria-expanded]="sedeOptionsOpen()"
+      aria-haspopup="menu"
+      [attr.aria-label]="sedeInfoLabel() + '. Cambiar sede'">
       <ion-icon name="business-outline" class="sede-icon"></ion-icon>
       <span class="sede-name">{{ sedeInfoLabel() }}</span>
-    </div>
+      <ion-icon name="chevron-down-outline" class="sede-chevron" aria-hidden="true"></ion-icon>
+    </button>
 
     <!-- Reloj y fecha en vivo -->
     <app-clock></app-clock>
@@ -31,6 +34,18 @@
     </button>
   </div>
 </header>
+
+@if (sedeOptionsOpen()) {
+  <div class="sede-dropdown-backdrop" (click)="closeSedeOptions()"></div>
+  <aside class="sede-dropdown-tab" role="menu" aria-label="Opciones de sede">
+    <button type="button" class="sede-action-btn" role="menuitem" (click)="changeSede()">
+      <div class="sede-action-icon">
+        <ion-icon name="business-outline"></ion-icon>
+      </div>
+      <span>Cambiar sede</span>
+    </button>
+  </aside>
+}
 
 @if (configOptionsOpen()) {
   <app-config-options

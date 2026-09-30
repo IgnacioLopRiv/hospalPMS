@@ -26,26 +26,26 @@
     </a>
 
     @if (canViewReports()) {
-    <a class="nav-item" routerLink="/reportes" routerLinkActive="active">
-      <ion-icon name="bar-chart-outline"></ion-icon>
-      <span>Reportes</span>
-    </a>
+      <a class="nav-item" routerLink="/reportes" routerLinkActive="active">
+        <ion-icon name="bar-chart-outline"></ion-icon>
+        <span>Reportes</span>
+      </a>
     }
+  </nav>
 
-    <a class="nav-item logout-btn" (click)="logout()">
+  <div class="sidebar-account">
+    <div class="sidebar-user" *ngIf="currentUser() as user">
+      <div class="avatar">{{ getUserInitials() }}</div>
+      <div class="user-info">
+        <strong>{{ user.name }}</strong>
+        <small>{{ getUserRoleLabel() }}</small>
+      </div>
+    </div>
+
+    <a class="logout-btn" role="button" tabindex="0" (click)="confirmLogout()"
+      (keydown.enter)="confirmLogout()" (keydown.space)="confirmLogout(); $event.preventDefault()">
       <ion-icon name="log-out-outline"></ion-icon>
       <span>Salir</span>
     </a>
-  </nav>
-
-  <button class="sidebar-user" type="button" (click)="openUserMenu()" *ngIf="currentUser() as user">
-    <div class="avatar">{{ getUserInitials() }}</div>
-    <div class="user-info">
-      <strong>{{ user.name }}</strong>
-      <small>{{ getUserRoleLabel() }}</small>
-    </div>
-    <ion-icon name="chevron-down-outline"></ion-icon>
-  </button>
-
-  <app-user-menu-config [isOpen]="userMenuOpen()" (closed)="closeUserMenu()"></app-user-menu-config>
+  </div>
 </aside>

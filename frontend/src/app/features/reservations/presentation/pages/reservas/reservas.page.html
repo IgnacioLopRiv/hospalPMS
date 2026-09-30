@@ -119,9 +119,19 @@
     </div>
 
     <div class="planner-body">
-      @if (categories().length === 0) {
-        <div class="empty-state">Primero agrega tipologías y habitaciones desde sus secciones de gestión.</div>
-      }
+      @if (roomTypes().length === 0 && savedRooms().length === 0) {
+        <div class="calendar-empty-state" role="status">
+          <div class="calendar-empty-card">
+            <span class="calendar-empty-icon">
+              <ion-icon name="calendar-outline" aria-hidden="true"></ion-icon>
+            </span>
+            <h2>Aún no hay nada que mostrar</h2>
+            <p>
+              Crea tipologías y habitaciones para empezar a visualizar tus reservas en este calendario.
+            </p>
+          </div>
+        </div>
+      } @else {
       @for (category of categories(); track category.name) {
         <div
           class="category-header-row"
@@ -177,6 +187,7 @@
             </div>
           }
         }
+      }
       }
     </div>
   </div>
