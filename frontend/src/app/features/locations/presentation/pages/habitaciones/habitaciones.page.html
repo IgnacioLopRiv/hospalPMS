@@ -117,14 +117,14 @@
                 </div>
                 <div>
                   <h2>Habitación {{ habitacion.numero }}</h2>
-                  <span class="room-subtitle">{{ habitacion.tipo }}</span>
+                  <span class="room-subtitle">{{ getManagedTypologyName(habitacion) }}</span>
                 </div>
               </div>
 
               <dl>
                 <div>
                   <dt>Tipo</dt>
-                  <dd class="badge-tipo">{{ habitacion.tipo }}</dd>
+                  <dd class="badge-tipo">{{ getManagedTypologyName(habitacion) }}</dd>
                 </div>
                 <div>
                   <dt>Tamaño</dt>

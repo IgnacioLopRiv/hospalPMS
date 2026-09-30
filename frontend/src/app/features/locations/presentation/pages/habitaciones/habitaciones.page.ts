@@ -34,6 +34,7 @@ export class HabitacionesPage implements OnInit, OnDestroy {
 
   readonly sede = this.sedeService.selectedSede;
   readonly habitaciones = this.sedeService.habitaciones;
+  readonly tipologias = this.sedeService.tipologias;
   readonly isAdmin = computed(() => this.authService.currentUser()?.role === 'admin');
   readonly editHabitacionesOpen = signal(false);
 
@@ -95,6 +96,13 @@ export class HabitacionesPage implements OnInit, OnDestroy {
 
   closeEditHabitaciones(): void {
     this.editHabitacionesOpen.set(false);
+  }
+
+  getManagedTypologyName(room: Habitacion): string {
+    return this.tipologias().find((typology) =>
+      typology.id === room.tipologiaId ||
+      typology.nombre.toLocaleLowerCase() === room.tipo.toLocaleLowerCase()
+    )?.nombre ?? 'Tipología no gestionada';
   }
 
   getEstadoLabel(estado?: EstadoHabitacion): string {

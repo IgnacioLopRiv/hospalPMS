@@ -55,6 +55,12 @@
             <span>Esta sede no tiene tipologías configuradas. Ve a la configuración de la sede para agregar tipologías primero.</span>
           </div>
         }
+        @if (validationMessage) {
+          <div class="empty-notice warning" role="alert">
+            <ion-icon name="alert-circle-outline"></ion-icon>
+            <span>{{ validationMessage }}</span>
+          </div>
+        }
 
         <!-- Listado de habitaciones cargadas -->
         <div class="rooms-management-list">
@@ -75,12 +81,12 @@
 
                   <div class="room-field">
                     <label>Tipología</label>
-                    <select [ngModel]="hab.tipo" (ngModelChange)="onTipoChange(hab, $event)">
+                    <select [ngModel]="getManagedTypologyName(hab)" (ngModelChange)="onTipoChange(hab, $event)">
+                      @if (!getManagedTypologyName(hab)) {
+                        <option value="" disabled>Selecciona tipología gestionada</option>
+                      }
                       @for (t of tipologias(); track t.id) {
                         <option [value]="t.nombre">{{ t.nombre }}</option>
-                      }
-                      @if (isCustomOrLegacyType(hab.tipo)) {
-                        <option [value]="hab.tipo">{{ hab.tipo }} (Legacy)</option>
                       }
                     </select>
                   </div>

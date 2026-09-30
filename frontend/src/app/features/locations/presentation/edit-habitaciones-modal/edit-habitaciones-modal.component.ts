@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { bedOutline, trashOutline, alertCircleOutline } from 'ionicons/icons';
-import { Habitacion, SedeService, SedeTipologia } from '../../application/sede.service';
+import { Habitacion, SedeService } from '../../application/sede.service';
 
 @Component({
   selector: 'app-edit-habitaciones-modal',
@@ -25,6 +25,7 @@ export class EditHabitacionesModalComponent implements OnChanges {
   cantidad = 1;
   tipoSeleccionado = '';
   tempHabitaciones: Habitacion[] = [];
+  validationMessage = '';
 
   constructor() {
     addIcons({ bedOutline, trashOutline, alertCircleOutline });
@@ -42,7 +43,8 @@ export class EditHabitacionesModalComponent implements OnChanges {
     this.cantidad = 1;
 
     const available = this.tipologias();
-    this.tipoSeleccionado = available.length > 0 ? available[0].nombre : 'General';
+    this.tipoSeleccionado = available[0]?.nombre ?? '';
+    this.validationMessage = '';
   }
 
   agregarHabitaciones(): void {
@@ -52,10 +54,15 @@ export class EditHabitacionesModalComponent implements OnChanges {
       : 101;
 
     const available = this.tipologias();
-    const matchedTipologia = available.find((t) => t.nombre === this.tipoSeleccionado) ?? available[0];
-    const tipoFinal = matchedTipologia ? matchedTipologia.nombre : this.tipoSeleccionado || 'General';
-    const tipologiaId = matchedTipologia?.id;
-    const capacidad = matchedTipologia?.capacidad ?? 2;
+    const matchedTipologia = available.find((t) => t.nombre === this.tipoSeleccionado);
+    if (!matchedTipologia) {
+      this.validationMessage = 'Selecciona una tipología gestionada antes de agregar habitaciones.';
+      return;
+    }
+    this.validationMessage = '';
+    const tipoFinal = matchedTipologia.nombre;
+    const tipologiaId = matchedTipologia.id;
+    const capacidad = matchedTipologia.capacidad;
 
     for (let i = 0; i < cant; i++) {
       const nuevoNumero = startNum + i;
@@ -92,12 +99,15 @@ export class EditHabitacionesModalComponent implements OnChanges {
     const matched = this.tipologias().find((t) => t.nombre === nuevoTipo);
     if (matched) {
       hab.tipologiaId = matched.id;
+      this.validationMessage = '';
     }
   }
 
-  isCustomOrLegacyType(tipo: string): boolean {
-    if (!tipo) return false;
-    return !this.tipologias().some((t) => t.nombre.toLowerCase() === tipo.toLowerCase());
+  getManagedTypologyName(room: Habitacion): string {
+    return this.tipologias().find((typology) =>
+      typology.id === room.tipologiaId ||
+      typology.nombre.toLocaleLowerCase() === room.tipo.toLocaleLowerCase()
+    )?.nombre ?? '';
   }
 
   eliminarHabitacion(index: number): void {
@@ -107,9 +117,22 @@ export class EditHabitacionesModalComponent implements OnChanges {
   guardarCambios(): void {
     const sedeActual = this.sedeService.selectedSede();
     if (sedeActual) {
+      const rooms: Habitacion[] = [];
+      for (const room of this.tempHabitaciones) {
+        const typology = this.tipologias().find((item) =>
+          item.id === room.tipologiaId ||
+          item.nombre.toLocaleLowerCase() === room.tipo.toLocaleLowerCase()
+        );
+        if (!typology) {
+          this.validationMessage = 'Asigna una tipología gestionada o elimina las habitaciones sin tipología antes de guardar.';
+          return;
+        }
+        rooms.push({ ...room, tipo: typology.nombre, tipologiaId: typology.id });
+      }
+      this.validationMessage = '';
       this.sedeService.updateSelectedSede({
         nombre: sedeActual.nombre,
-        habitaciones: this.tempHabitaciones,
+        habitaciones: rooms,
       });
     }
     this.dismiss();

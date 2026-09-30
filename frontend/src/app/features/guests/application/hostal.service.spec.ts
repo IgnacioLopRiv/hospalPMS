@@ -1,6 +1,7 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { HostalService } from './hostal.service';
-import { GuestCardView, Huesped } from '../../../shared/domain/hostal.model';
+import { GuestCardView, Huesped, Sede, SedeHabitacion, SedeTipologia } from '../../../shared/domain/hostal.model';
 import { SedeService } from '../../locations/application/sede.service';
 
 /**
@@ -15,28 +16,33 @@ const TEST_SEDE_ID = 99;
 const STORAGE_PREFIX = `hospal_db_sede_${TEST_SEDE_ID}_`;
 
 function clearTestStorage(): void {
-  ['huespedes', 'habitaciones', 'reservas', 'tipologias'].forEach((key) =>
+  ['huespedes', 'reservas'].forEach((key) =>
     localStorage.removeItem(`${STORAGE_PREFIX}${key}`)
   );
 }
 
-function seedTestData(): void {
-  const tipologias = [
-    { id_tipologia: 1, nombre_tipologia: 'Habitación Privada', capacidad: 2 },
-    { id_tipologia: 2, nombre_tipologia: 'Dorm 4-camas', capacidad: 4 },
-    { id_tipologia: 3, nombre_tipologia: 'Dorm 6-camas', capacidad: 6 },
-    { id_tipologia: 4, nombre_tipologia: 'Dorm 8-camas', capacidad: 8 },
+function seedManagedInventory(): { typologies: SedeTipologia[]; rooms: SedeHabitacion[] } {
+  const typologies: SedeTipologia[] = [
+    { id: 1, nombre: 'Tipología 1', capacidad: 2, color: '#2156A7' },
+    { id: 2, nombre: 'Tipología 2', capacidad: 4, color: '#1A9C5B' },
+    { id: 3, nombre: 'Tipología 3', capacidad: 6, color: '#D07825' },
+    { id: 4, nombre: 'Tipología 4', capacidad: 8, color: '#7736A6' },
   ];
-  const habitaciones = [
-    { id_habitacion: 1, numero_habitacion: '101', id_hostal: TEST_SEDE_ID, id_tipologia: 1 },
-    { id_habitacion: 2, numero_habitacion: '102', id_hostal: TEST_SEDE_ID, id_tipologia: 1 },
-    { id_habitacion: 3, numero_habitacion: '104', id_hostal: TEST_SEDE_ID, id_tipologia: 1 },
-    { id_habitacion: 4, numero_habitacion: '204', id_hostal: TEST_SEDE_ID, id_tipologia: 3 },
-    { id_habitacion: 5, numero_habitacion: '205', id_hostal: TEST_SEDE_ID, id_tipologia: 3 },
-    { id_habitacion: 6, numero_habitacion: '207', id_hostal: TEST_SEDE_ID, id_tipologia: 4 },
-    { id_habitacion: 7, numero_habitacion: '306', id_hostal: TEST_SEDE_ID, id_tipologia: 2 },
-    { id_habitacion: 8, numero_habitacion: '308', id_hostal: TEST_SEDE_ID, id_tipologia: 2 },
-  ];
+  const rooms: SedeHabitacion[] = [
+    ['101', 1], ['102', 1], ['104', 1], ['204', 3],
+    ['205', 3], ['207', 4], ['306', 2], ['308', 2],
+  ].map(([number, typeId], index) => ({
+    id: index + 1,
+    numero: String(number),
+    tipo: typologies.find((typology) => typology.id === typeId)!.nombre,
+    tipologiaId: Number(typeId),
+    tamanoM2: 22,
+    disposicionMuebles: '',
+  }));
+  return { typologies, rooms };
+}
+
+function seedStoredData(): void {
   const huespedes: Huesped[] = [
     { id_huesped: 1, id_sede: TEST_SEDE_ID, nombre: 'Valentin', apellido: 'Torres', nacionalidad: 'Argentina', telefono: '+549110000', email: 'v@test.com', es_recurrente: true },
     { id_huesped: 2, id_sede: TEST_SEDE_ID, nombre: 'Marco', apellido: 'Diaz', nacionalidad: 'Colombia', telefono: '+573000000', email: 'm@test.com' },
@@ -46,26 +52,33 @@ function seedTestData(): void {
     { id_reserva: 2, id_huesped: 2, id_habitacion: 1, fecha_llegada: '2026-06-16', fecha_salida: '2026-06-20', estado_reserva: 'CHECK-IN HOY' },
   ];
 
-  localStorage.setItem(`${STORAGE_PREFIX}tipologias`, JSON.stringify(tipologias));
-  localStorage.setItem(`${STORAGE_PREFIX}habitaciones`, JSON.stringify(habitaciones));
   localStorage.setItem(`${STORAGE_PREFIX}huespedes`, JSON.stringify(huespedes));
   localStorage.setItem(`${STORAGE_PREFIX}reservas`, JSON.stringify(reservas));
 }
 
 describe('HostalService (sede-scoped)', () => {
   let service: HostalService;
+  let selectedSede: ReturnType<typeof signal<Sede | null>>;
+  let managedRooms: ReturnType<typeof signal<SedeHabitacion[]>>;
+  let managedTypologies: ReturnType<typeof signal<SedeTipologia[]>>;
 
   beforeEach(() => {
     clearTestStorage();
 
-    // Mock SedeService with a fixed sede
+    const inventory = seedManagedInventory();
+    selectedSede = signal<Sede | null>({
+      id: TEST_SEDE_ID,
+      nombre: 'Test Sede',
+      ciudad: 'Test City',
+      habitaciones: inventory.rooms,
+      tipologias: inventory.typologies,
+    });
+    managedRooms = signal(inventory.rooms);
+    managedTypologies = signal(inventory.typologies);
     const mockSedeService = {
-      selectedSede: jasmine.createSpy('selectedSede').and.returnValue({
-        id: TEST_SEDE_ID,
-        nombre: 'Test Sede',
-        ciudad: 'Test City',
-        habitaciones: [],
-      }),
+      selectedSede,
+      habitaciones: managedRooms,
+      tipologias: managedTypologies,
     };
 
     TestBed.configureTestingModule({
@@ -77,7 +90,7 @@ describe('HostalService (sede-scoped)', () => {
     service = TestBed.inject(HostalService);
 
     // Seed test data for the scoped sede
-    seedTestData();
+    seedStoredData();
     service.refreshView();
   });
 
@@ -112,6 +125,13 @@ describe('HostalService (sede-scoped)', () => {
     expect(roomNumbers).toContain('205');
     expect(roomNumbers).toContain('207');
     expect(roomNumbers).not.toContain('101');
+  });
+
+  it('matches a managed room by type name when its saved type ID is stale', () => {
+    const room = managedRooms()[0];
+    managedRooms.set([{ ...room, tipologiaId: 999 }]);
+
+    expect(service.getReservationCalendarData().map((entry) => entry.id)).toContain(2);
   });
 
   it('includes guests without a reservation in the guests view', () => {
@@ -361,19 +381,21 @@ describe('HostalService (sede-scoped)', () => {
 
     // Switch to a different sede (mock returns sede 100 now)
     const SEDE_100 = 100;
-    (service as any).sedeService.selectedSede.and.returnValue({
+    selectedSede.set({
       id: SEDE_100,
       nombre: 'Otra Sede',
       ciudad: 'Otra Ciudad',
       habitaciones: [],
     });
+    managedRooms.set([]);
+    managedTypologies.set([]);
     service.ensureSedeStorage();
 
     // Data from sede 99 should not be visible in sede 100
     expect(service.getGuests().some((g) => g.documento === 'SEDE99-DOC')).toBeFalse();
 
     // Clean up sede 100 storage
-    ['huespedes', 'habitaciones', 'reservas', 'tipologias'].forEach((key) =>
+    ['huespedes', 'reservas'].forEach((key) =>
       localStorage.removeItem(`hospal_db_sede_${SEDE_100}_${key}`)
     );
   });

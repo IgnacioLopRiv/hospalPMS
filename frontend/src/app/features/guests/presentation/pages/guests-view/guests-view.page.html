@@ -194,7 +194,8 @@
   <!-- Grilla de Tarjetas -->
   @if (viewMode === 'cards') {
   <section class="cards-grid">
-    <div class="guest-card" *ngFor="let guest of filteredGuests; let cardIndex = index">
+    <div class="guest-card" [ngClass]="'status-' + guest.status" *ngFor="let guest of filteredGuests; let cardIndex = index">
+      <div class="guest-status-line" aria-hidden="true"></div>
       <div class="card-header">
         <div class="avatar-tag" [ngClass]="'color-' + guest.cardColor">{{ guest.initials }}</div>
         <div class="header-details">

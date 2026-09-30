@@ -1,254 +1,349 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
-  chevronBackOutline,
-  chevronForwardOutline,
-  chevronDownOutline,
+  bedOutline,
   calendarOutline,
+  chevronBackOutline,
+  chevronDownOutline,
+  chevronForwardOutline,
   logInOutline,
   logOutOutline,
-  bedOutline
 } from 'ionicons/icons';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { HostalService, ReservationCalendarEntry } from '../../../../guests/application/hostal.service';
 import { SedeService } from '../../../../locations/application/sede.service';
 
+const VISIBLE_DAYS = 14;
+const NAVIGATION_DAYS = 7;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const MONTHS = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+];
+const WEEKDAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
+function dateKey(date: Date): string {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-');
+}
+
+function fromDateKey(value: string): Date {
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function addDays(value: string, days: number): string {
+  const date = fromDateKey(value);
+  date.setDate(date.getDate() + days);
+  return dateKey(date);
+}
+
 export interface CategoryTheme {
-  primary: string;    // Color principal (puntos, bordes principales)
-  background: string; // Fondo suave para las tarjetas de reserva
-  border: string;     // Borde de la tarjeta de reserva
-  text: string;       // Color de la tipografía dentro del bloque
+  primary: string;
+  background: string;
+  border: string;
+  text: string;
 }
 
 export interface ReservationBlock {
-  id: string;
-  roomNumero: string;
+  id: number;
   guestName: string;
-  startDay: number;
-  durationDays: number;
-  categoryName: string; // Nombre dinámico de la tipología
-  isPending?: boolean;
+  roomNumber: string;
+  roomType: string;
+  arrivalDate: string;
+  departureDate: string;
+  status: ReservationCalendarEntry['status'];
 }
 
 export interface DayColumn {
+  dateKey: string;
   dayName: string;
   dayNumber: number;
   monthName: string;
-  isCurrent?: boolean;
+  isCurrent: boolean;
 }
 
-const STORAGE_KEY_RESERVAS = 'hospal_reservas_data';
-
-// Paleta institucional dinámica armonizada para tarjetas y tags
-const COLOR_PALETTE: CategoryTheme[] = [
-  { primary: '#d97706', background: '#fffbeb', border: '#fde68a', text: '#92400e' }, // Ámbar / Dorado
-  { primary: '#ea580c', background: '#fff7ed', border: '#fed7aa', text: '#9a3412' }, // Naranja
-  { primary: '#059669', background: '#ecfdf5', border: '#a7f3d0', text: '#065f46' }, // Esmeralda / Verde
-  { primary: '#7c3aed', background: '#f5f3ff', border: '#ddd6fe', text: '#5b21b6' }, // Violeta
-  { primary: '#2563eb', background: '#eff6ff', border: '#bfdbfe', text: '#1e40af' }, // Azul
-  { primary: '#db2777', background: '#fdf2f8', border: '#fbcfe8', text: '#9d174d' }, // Rosa / Fucsia
-  { primary: '#0891b2', background: '#ecfeff', border: '#a5f3fc', text: '#155e75' }, // Cian / Teal
-  { primary: '#4f46e5', background: '#eef2ff', border: '#c7d2fe', text: '#3730a3' }  // Índigo
-];
+interface CalendarDay {
+  dateKey: string;
+  dayNumber: number;
+  isCurrentMonth: boolean;
+  isSelected: boolean;
+  isToday: boolean;
+}
 
 @Component({
   selector: 'app-reservas',
   templateUrl: './reservas.page.html',
   styleUrls: ['./reservas.page.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, IonIcon]
+  imports: [CommonModule, IonIcon],
 })
 export class ReservasPage implements OnInit {
+  private readonly hostalService = inject(HostalService);
   private readonly sedeService = inject(SedeService);
+  private readonly destroyRef = inject(DestroyRef);
 
-  readonly sede = this.sedeService.selectedSede;
-  readonly dbHabitaciones = this.sedeService.habitaciones;
-
+  readonly savedRooms = this.sedeService.habitaciones;
+  readonly roomTypes = this.sedeService.tipologias;
   readonly reservations = signal<ReservationBlock[]>([]);
-  readonly collapsedCategories = signal<Set<string>>(new Set<string>());
+  readonly collapsedCategories = signal<Set<string>>(new Set());
+  readonly viewStartDate = signal(dateKey(new Date()));
+  readonly selectedDate = signal(dateKey(new Date()));
+  readonly datePickerOpen = signal(false);
+  readonly pickerMonth = signal(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
 
-  readonly days: DayColumn[] = [
-    { dayName: 'MAR', dayNumber: 9, monthName: 'Jun' },
-    { dayName: 'MIÉ', dayNumber: 10, monthName: 'Jun' },
-    { dayName: 'JUE', dayNumber: 11, monthName: 'Jun' },
-    { dayName: 'VIE', dayNumber: 12, monthName: 'Jun' },
-    { dayName: 'SÁB', dayNumber: 13, monthName: 'Jun' },
-    { dayName: 'DOM', dayNumber: 14, monthName: 'Jun' },
-    { dayName: 'LUN', dayNumber: 15, monthName: 'Jun' },
-    { dayName: 'MAR', dayNumber: 16, monthName: 'Jun', isCurrent: true },
-    { dayName: 'MIÉ', dayNumber: 17, monthName: 'Jun' },
-    { dayName: 'JUE', dayNumber: 18, monthName: 'Jun' },
-    { dayName: 'VIE', dayNumber: 19, monthName: 'Jun' },
-    { dayName: 'SÁB', dayNumber: 20, monthName: 'Jun' },
-    { dayName: 'DOM', dayNumber: 21, monthName: 'Jun' },
-    { dayName: 'LUN', dayNumber: 22, monthName: 'Jun' }
-  ];
+  readonly days = computed(() => this.createDays(this.viewStartDate()));
+  readonly miniCalendarDays = computed(() => this.createMiniCalendarDays(this.pickerMonth()));
+  readonly dateRangeLabel = computed(() => {
+    const first = this.days()[0];
+    const last = this.days()[this.days().length - 1];
+    return `${first.dayNumber} ${first.monthName} — ${last.dayNumber} ${last.monthName} ${last.dateKey.slice(0, 4)}`;
+  });
 
-  // Genera grupos de categorías asignándoles una paleta de colores fija y determinista
   readonly categories = computed(() => {
-    const habs = this.dbHabitaciones();
+    const types = this.roomTypes();
+    const groups = new Map<string, {
+      theme: CategoryTheme;
+      rooms: { numero: string; name: string; capacity: number }[];
+    }>();
 
-    if (!habs || habs.length === 0) {
-      return this.getDefaultCategories();
-    }
+    types.forEach((type) => groups.set(type.nombre, {
+      theme: this.getThemeForColor(type.color ?? '#64748b'),
+      rooms: [],
+    }));
 
-    const map = new Map<string, any[]>();
-    habs.forEach((h: any) => {
-      const tipo = (h.tipo || 'General').trim();
-      if (!map.has(tipo)) map.set(tipo, []);
-      map.get(tipo)!.push({
-        id: String(h.id),
-        numero: String(h.numero),
-        name: `Habitación ${h.numero}`,
-        tipo: tipo,
-        beds: h.camas || 2
+    this.savedRooms().forEach((room) => {
+      const type = types.find((item) => item.id === room.tipologiaId) ??
+        types.find((item) => item.nombre.toLocaleLowerCase() === room.tipo.toLocaleLowerCase());
+      if (!type) return;
+      groups.get(type.nombre)?.rooms.push({
+        numero: room.numero,
+        name: `Habitación ${room.numero}`,
+        capacity: type.capacidad,
       });
     });
 
-    return Array.from(map.entries()).map(([tipo, rooms], index) => {
-      const theme = this.getThemeForName(tipo, index);
-      return {
-        name: tipo,
-        count: rooms.length,
-        theme,
-        rooms
-      };
-    });
+    return Array.from(groups.entries()).map(([name, group]) => ({
+      name,
+      count: group.rooms.length,
+      theme: group.theme,
+      rooms: group.rooms,
+    }));
   });
+
+  private readonly managedRoomNumbers = computed(() => {
+    const numbers = new Set<string>();
+    this.categories().forEach((category) =>
+      category.rooms.forEach((room) => numbers.add(room.numero))
+    );
+    return numbers;
+  });
+
+  readonly visibleReservations = computed(() => {
+    const start = this.viewStartDate();
+    const end = addDays(start, VISIBLE_DAYS);
+    const managedRooms = this.managedRoomNumbers();
+    return this.reservations().filter((reservation) =>
+      managedRooms.has(reservation.roomNumber) &&
+      reservation.arrivalDate < end &&
+      reservation.departureDate > start
+    );
+  });
+
+  readonly selectedDateReservations = computed(() => {
+    const selected = this.selectedDate();
+    const managedRooms = this.managedRoomNumbers();
+    return this.reservations().filter((reservation) =>
+      managedRooms.has(reservation.roomNumber) &&
+      reservation.arrivalDate <= selected &&
+      reservation.departureDate > selected
+    );
+  });
+
+  readonly reservationCount = computed(() => this.selectedDateReservations().length);
+  readonly arrivalCount = computed(() =>
+    this.reservations().filter((reservation) =>
+      reservation.arrivalDate === this.selectedDate() &&
+      this.managedRoomNumbers().has(reservation.roomNumber)
+    ).length
+  );
+  readonly departureCount = computed(() =>
+    this.reservations().filter((reservation) =>
+      reservation.departureDate === this.selectedDate() &&
+      this.managedRoomNumbers().has(reservation.roomNumber)
+    ).length
+  );
 
   constructor() {
     addIcons({
-      chevronBackOutline,
-      chevronForwardOutline,
-      chevronDownOutline,
+      bedOutline,
       calendarOutline,
+      chevronBackOutline,
+      chevronDownOutline,
+      chevronForwardOutline,
       logInOutline,
       logOutOutline,
-      bedOutline
     });
   }
 
   ngOnInit(): void {
-    this.loadReservationsFromStorage();
+    this.hostalService.guestsView$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.reservations.set(this.hostalService.getReservationCalendarData()
+          .map((reservation) => this.toReservationBlock(reservation)));
+      });
   }
 
-  toggleCategory(categoryName: string): void {
-    this.collapsedCategories.update((set) => {
-      const updated = new Set(set);
-      if (updated.has(categoryName)) {
-        updated.delete(categoryName);
-      } else {
-        updated.add(categoryName);
-      }
-      return updated;
+  toggleCategory(name: string): void {
+    this.collapsedCategories.update((current) => {
+      const next = new Set(current);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
     });
   }
 
-  isCategoryCollapsed(categoryName: string): boolean {
-    return this.collapsedCategories().has(categoryName);
+  isCategoryCollapsed(name: string): boolean {
+    return this.collapsedCategories().has(name);
   }
 
-  // Obtiene el tema de color para una tipología
-  getThemeForName(name: string, fallbackIndex: number = 0): CategoryTheme {
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-      hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const index = Math.abs(hash) % COLOR_PALETTE.length;
-    return COLOR_PALETTE[index] || COLOR_PALETTE[fallbackIndex % COLOR_PALETTE.length];
+  goToPreviousWeek(): void {
+    this.moveCalendar(-NAVIGATION_DAYS);
   }
 
-  getReservationsForRoom(roomNumero: string): ReservationBlock[] {
-    return this.reservations().filter((res) => String(res.roomNumero) === String(roomNumero));
+  goToNextWeek(): void {
+    this.moveCalendar(NAVIGATION_DAYS);
   }
 
-  getGridColumnStart(startDay: number): number {
-    const idx = this.days.findIndex((d) => d.dayNumber === startDay);
-    return idx !== -1 ? idx + 1 : 1;
+  goToToday(): void {
+    const today = dateKey(new Date());
+    this.viewStartDate.set(today);
+    this.selectedDate.set(today);
+    this.pickerMonth.set(new Date());
   }
 
-  private loadReservationsFromStorage(): void {
-    const rawData = localStorage.getItem(STORAGE_KEY_RESERVAS);
-    if (rawData) {
-      try {
-        const parsed = JSON.parse(rawData);
-        this.reservations.set(parsed);
-        return;
-      } catch (e) {
-        console.error('Error al parsear reservas de localStorage', e);
-      }
-    }
-
-    const defaultData: ReservationBlock[] = [
-      { id: 'r1', roomNumero: '101', guestName: 'Ana Martínez', startDay: 13, durationDays: 4, categoryName: 'Suite' },
-      { id: 'r2', roomNumero: '101', guestName: 'Carlos Ruiz', startDay: 19, durationDays: 3, categoryName: 'Suite' },
-      { id: 'r3', roomNumero: '102', guestName: 'María González', startDay: 10, durationDays: 6, categoryName: 'Suite' },
-      { id: 'r4', roomNumero: '102', guestName: 'David López', startDay: 17, durationDays: 4, categoryName: 'Suite' },
-      { id: 'r5', roomNumero: '201', guestName: 'Laura García', startDay: 12, durationDays: 7, categoryName: 'Junior Suite' },
-      { id: 'r6', roomNumero: '201', guestName: 'Pedro Sánchez', startDay: 20, durationDays: 2, categoryName: 'Junior Suite', isPending: true },
-      { id: 'r7', roomNumero: '202', guestName: 'Isabel Torres', startDay: 9, durationDays: 3, categoryName: 'Junior Suite' },
-      { id: 'r8', roomNumero: '202', guestName: 'Roberto Chen', startDay: 15, durationDays: 5, categoryName: 'Junior Suite' },
-      { id: 'r9', roomNumero: '301', guestName: 'Lucía Flores', startDay: 9, durationDays: 5, categoryName: 'Doble' },
-      { id: 'r10', roomNumero: '301', guestName: 'Tomás Rivera', startDay: 16, durationDays: 3, categoryName: 'Doble' },
-      { id: 'r11', roomNumero: '301', guestName: 'Emma Wilson', startDay: 20, durationDays: 2, categoryName: 'Doble', isPending: true },
-      { id: 'r12', roomNumero: '302', guestName: 'M. Á. Costa', startDay: 10, durationDays: 7, categoryName: 'Doble' },
-      { id: 'r13', roomNumero: '302', guestName: 'Sofia Müller', startDay: 18, durationDays: 4, categoryName: 'Doble' },
-      { id: 'r14', roomNumero: '303', guestName: 'Ana Pérez', startDay: 9, durationDays: 2, categoryName: 'Doble' },
-      { id: 'r15', roomNumero: '303', guestName: 'Juan Díaz', startDay: 12, durationDays: 3, categoryName: 'Doble' },
-      { id: 'r16', roomNumero: '303', guestName: 'Rachel Green', startDay: 16, durationDays: 5, categoryName: 'Doble' },
-      { id: 'r17', roomNumero: '304', guestName: 'F. Nakamura', startDay: 13, durationDays: 7, categoryName: 'Doble' },
-      { id: 'r18', roomNumero: '401', guestName: 'Alejandro Kim', startDay: 9, durationDays: 11, categoryName: 'Single' }
-    ];
-
-    this.saveReservationsToStorage(defaultData);
+  selectDay(value: string): void {
+    this.selectedDate.set(value);
+    const start = this.viewStartDate();
+    const end = addDays(start, VISIBLE_DAYS);
+    if (value < start || value >= end) this.viewStartDate.set(value);
   }
 
-  saveReservationsToStorage(data: ReservationBlock[]): void {
-    localStorage.setItem(STORAGE_KEY_RESERVAS, JSON.stringify(data));
-    this.reservations.set(data);
+  toggleDatePicker(): void {
+    this.datePickerOpen.update((open) => !open);
+    if (this.datePickerOpen()) this.pickerMonth.set(fromDateKey(this.selectedDate()));
   }
 
-  private getDefaultCategories() {
-    const list = [
-      {
-        name: 'Suite',
-        count: 2,
-        rooms: [
-          { id: '1', numero: '101', name: 'Suite 101', tipo: 'Suite', beds: 2 },
-          { id: '2', numero: '102', name: 'Suite 102', tipo: 'Suite', beds: 2 }
-        ]
-      },
-      {
-        name: 'Junior Suite',
-        count: 2,
-        rooms: [
-          { id: '3', numero: '201', name: 'Junior Suite 201', tipo: 'Junior Suite', beds: 2 },
-          { id: '4', numero: '202', name: 'Junior Suite 202', tipo: 'Junior Suite', beds: 2 }
-        ]
-      },
-      {
-        name: 'Doble',
-        count: 4,
-        rooms: [
-          { id: '5', numero: '301', name: 'Doble 301', tipo: 'Doble', beds: 2 },
-          { id: '6', numero: '302', name: 'Doble 302', tipo: 'Doble', beds: 2 },
-          { id: '7', numero: '303', name: 'Doble 303', tipo: 'Doble', beds: 2 },
-          { id: '8', numero: '304', name: 'Doble 304', tipo: 'Doble', beds: 2 }
-        ]
-      },
-      {
-        name: 'Single',
-        count: 1,
-        rooms: [
-          { id: '9', numero: '401', name: 'Single 401', tipo: 'Single', beds: 1 }
-        ]
-      }
-    ];
+  movePickerMonth(offset: number): void {
+    this.pickerMonth.update((month) => new Date(month.getFullYear(), month.getMonth() + offset, 1));
+  }
 
-    return list.map((cat, idx) => ({
-      ...cat,
-      theme: this.getThemeForName(cat.name, idx)
-    }));
+  changePickerMonth(month: string): void {
+    this.pickerMonth.update((current) => new Date(current.getFullYear(), Number(month), 1));
+  }
+
+  changePickerYear(year: string): void {
+    this.pickerMonth.update((current) => new Date(Number(year), current.getMonth(), 1));
+  }
+
+  selectPickerDay(day: CalendarDay): void {
+    this.selectDay(day.dateKey);
+    this.datePickerOpen.set(false);
+  }
+
+  getReservationsForRoom(roomNumber: string): ReservationBlock[] {
+    return this.visibleReservations().filter((reservation) => reservation.roomNumber === roomNumber);
+  }
+
+  getGridColumnStart(reservation: ReservationBlock): number {
+    const visibleStart = this.viewStartDate();
+    const start = reservation.arrivalDate < visibleStart ? visibleStart : reservation.arrivalDate;
+    return Math.max(1, Math.min(VISIBLE_DAYS, this.dayOffset(visibleStart, start) + 1));
+  }
+
+  getGridColumnSpan(reservation: ReservationBlock): number {
+    const visibleStart = this.viewStartDate();
+    const visibleEnd = addDays(visibleStart, VISIBLE_DAYS);
+    const start = reservation.arrivalDate < visibleStart ? visibleStart : reservation.arrivalDate;
+    const end = reservation.departureDate > visibleEnd ? visibleEnd : reservation.departureDate;
+    return Math.max(1, this.dayOffset(start, end));
+  }
+
+  getThemeForColor(color: string): CategoryTheme {
+    const validColor = /^#[0-9a-f]{6}$/i.test(color) ? color : '#64748b';
+    return {
+      primary: validColor,
+      background: `color-mix(in srgb, ${validColor} 13%, white)`,
+      border: `color-mix(in srgb, ${validColor} 38%, white)`,
+      text: validColor,
+    };
+  }
+
+  private moveCalendar(offset: number): void {
+    this.viewStartDate.update((start) => addDays(start, offset));
+  }
+
+  private toReservationBlock(reservation: ReservationCalendarEntry): ReservationBlock {
+    return {
+      id: reservation.id,
+      guestName: reservation.guestName,
+      roomNumber: reservation.roomNumber,
+      roomType: reservation.roomType,
+      arrivalDate: reservation.arrivalDate,
+      departureDate: reservation.departureDate,
+      status: reservation.status,
+    };
+  }
+
+  private createDays(start: string): DayColumn[] {
+    const today = dateKey(new Date());
+    return Array.from({ length: VISIBLE_DAYS }, (_, index) => {
+      const value = addDays(start, index);
+      const date = fromDateKey(value);
+      return {
+        dateKey: value,
+        dayName: WEEKDAYS[date.getDay()].toUpperCase(),
+        dayNumber: date.getDate(),
+        monthName: MONTHS[date.getMonth()].slice(0, 3),
+        isCurrent: value === today,
+      };
+    });
+  }
+
+  private createMiniCalendarDays(month: Date): CalendarDay[] {
+    const year = month.getFullYear();
+    const monthIndex = month.getMonth();
+    const firstDay = new Date(year, monthIndex, 1);
+    const offset = firstDay.getDay();
+    const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+    const previousMonthDays = new Date(year, monthIndex, 0).getDate();
+    const today = dateKey(new Date());
+
+    return Array.from({ length: 42 }, (_, index) => {
+      const dayNumber = index - offset + 1;
+      const date = dayNumber < 1
+        ? new Date(year, monthIndex - 1, previousMonthDays + dayNumber)
+        : dayNumber > daysInMonth
+          ? new Date(year, monthIndex + 1, dayNumber - daysInMonth)
+          : new Date(year, monthIndex, dayNumber);
+      const value = dateKey(date);
+      return {
+        dateKey: value,
+        dayNumber: date.getDate(),
+        isCurrentMonth: date.getMonth() === monthIndex,
+        isSelected: value === this.selectedDate(),
+        isToday: value === today,
+      };
+    });
+  }
+
+  private dayOffset(start: string, end: string): number {
+    return Math.round((fromDateKey(end).getTime() - fromDateKey(start).getTime()) / DAY_MS);
   }
 }

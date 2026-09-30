@@ -1,54 +1,53 @@
 import { Injectable, computed, signal } from '@angular/core';
 import {
-  ROOM_TYPES,
-  RoomType,
   Sede,
   SedeHabitacion as Habitacion,
   SedeTipologia,
   EstadoHabitacion,
 } from '../../../shared/domain/hostal.model';
 
-export { ROOM_TYPES, RoomType } from '../../../shared/domain/hostal.model';
 export type { Sede, SedeHabitacion as Habitacion, SedeTipologia, EstadoHabitacion } from '../../../shared/domain/hostal.model';
 
-const DEFAULT_HABITACIONES_SEDE_1: Habitacion[] = [
-  { id: 1, numero: '101', tipo: 'Individual Estándar', tipologiaId: 1, tamanoM2: 18, disposicionMuebles: '1 Cama 1 Plaza', estado: 'libre' },
-  { id: 2, numero: '102', tipo: 'Doble Superior', tipologiaId: 2, tamanoM2: 24, disposicionMuebles: '1 Cama Matrimonial', estado: 'libre' },
-  { id: 3, numero: '104', tipo: 'Doble Superior', tipologiaId: 2, tamanoM2: 24, disposicionMuebles: '1 Cama Matrimonial', estado: 'libre' },
-  { id: 4, numero: '204', tipo: 'Suite Ejecutiva', tipologiaId: 3, tamanoM2: 35, disposicionMuebles: '1 Cama King + Sala', estado: 'libre' },
-  { id: 5, numero: '205', tipo: 'Suite Ejecutiva', tipologiaId: 3, tamanoM2: 35, disposicionMuebles: '1 Cama King + Sala', estado: 'libre' },
-  { id: 6, numero: '207', tipo: 'Familiar Confort', tipologiaId: 4, tamanoM2: 42, disposicionMuebles: '1 Cama Matrimonial + 2 Camas', estado: 'libre' },
-  { id: 7, numero: '306', tipo: 'Doble Superior', tipologiaId: 2, tamanoM2: 24, disposicionMuebles: '2 Camas Individuales', estado: 'libre' },
-  { id: 8, numero: '308', tipo: 'Doble Superior', tipologiaId: 2, tamanoM2: 24, disposicionMuebles: '2 Camas Individuales', estado: 'libre' },
-];
-
-const DEFAULT_TIPOLOGIAS: Record<number, SedeTipologia[]> = {
-  1: [
-    { id: 1, nombre: 'Individual Estándar', capacidad: 1, precioBase: 35000, descripcion: 'Cama individual para 1 persona con baño privado' },
-    { id: 2, nombre: 'Doble Superior', capacidad: 2, precioBase: 55000, descripcion: 'Cama matrimonial o 2 camas individuales' },
-    { id: 3, nombre: 'Suite Ejecutiva', capacidad: 2, precioBase: 85000, descripcion: 'Suite espaciosa con escritorio y vista panorámica' },
-    { id: 4, nombre: 'Familiar Confort', capacidad: 4, precioBase: 95000, descripcion: 'Cama matrimonial y 2 camas individuales' },
-  ],
-  2: [
-    { id: 1, nombre: 'Doble Vista al Mar', capacidad: 2, precioBase: 65000, descripcion: 'Balcón y vista directa a la playa' },
-    { id: 2, nombre: 'Familiar Playa', capacidad: 4, precioBase: 110000, descripcion: 'Espacio para toda la familia frente al mar' },
-    { id: 3, nombre: 'Suite Costera', capacidad: 2, precioBase: 120000, descripcion: 'Jacuzzi y terraza con vista a la bahía' },
-  ],
-  3: [
-    { id: 1, nombre: 'Cabaña Rústica', capacidad: 2, precioBase: 50000, descripcion: 'Acogedora habitación con chimenea' },
-    { id: 2, nombre: 'Familiar Montaña', capacidad: 5, precioBase: 90000, descripcion: 'Cabaña amplia de dos ambientes' },
-    { id: 3, nombre: 'Suite Andina', capacidad: 2, precioBase: 80000, descripcion: 'Habitación premium con vista al volcán' },
-  ],
-};
-
 const INITIAL_SEDES: Sede[] = [
-  { id: 1, nombre: 'Hotel Centro', ciudad: 'Santiago', tipologias: DEFAULT_TIPOLOGIAS[1], habitaciones: DEFAULT_HABITACIONES_SEDE_1 },
-  { id: 2, nombre: 'Hotel Playa', ciudad: 'Viña del Mar', tipologias: DEFAULT_TIPOLOGIAS[2], habitaciones: [] },
-  { id: 3, nombre: 'Hotel Montaña', ciudad: 'Pucón', tipologias: DEFAULT_TIPOLOGIAS[3], habitaciones: [] },
+  { id: 1, nombre: 'Hotel Centro', ciudad: 'Santiago', tipologias: [], habitaciones: [] },
+  { id: 2, nombre: 'Hotel Playa', ciudad: 'Viña del Mar', tipologias: [], habitaciones: [] },
+  { id: 3, nombre: 'Hotel Montaña', ciudad: 'Pucón', tipologias: [], habitaciones: [] },
 ];
 
 const SEDES_STORAGE_KEY = 'hospal.sedes';
 const SELECTED_SEDE_KEY = 'hospal.selectedSede';
+const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
+
+function colorHue(color: string): number {
+  const red = parseInt(color.slice(1, 3), 16) / 255;
+  const green = parseInt(color.slice(3, 5), 16) / 255;
+  const blue = parseInt(color.slice(5, 7), 16) / 255;
+  const maximum = Math.max(red, green, blue);
+  const minimum = Math.min(red, green, blue);
+  const difference = maximum - minimum;
+
+  if (difference === 0) return 0;
+  if (maximum === red) return ((green - blue) / difference + (green < blue ? 6 : 0)) * 60;
+  if (maximum === green) return ((blue - red) / difference + 2) * 60;
+  return ((red - green) / difference + 4) * 60;
+}
+
+function hueToHex(hue: number): string {
+  const saturation = 0.7;
+  const lightness = 0.43;
+  const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation;
+  const secondary = chroma * (1 - Math.abs((hue / 60) % 2 - 1));
+  const offset = lightness - chroma / 2;
+  const [red, green, blue] = hue < 60 ? [chroma, secondary, 0]
+    : hue < 120 ? [secondary, chroma, 0]
+      : hue < 180 ? [0, chroma, secondary]
+        : hue < 240 ? [0, secondary, chroma]
+          : hue < 300 ? [secondary, 0, chroma]
+            : [chroma, 0, secondary];
+  return `#${[red, green, blue]
+    .map((channel) => Math.round((channel + offset) * 255).toString(16).padStart(2, '0'))
+    .join('')}`;
+}
 
 @Injectable({ providedIn: 'root' })
 export class SedeService {
@@ -90,11 +89,7 @@ export class SedeService {
       id: nextId,
       nombre: data.nombre.trim(),
       ciudad: data.ciudad.trim(),
-      tipologias: [
-        { id: 1, nombre: 'Individual', capacidad: 1, precioBase: 30000, descripcion: 'Habitación individual' },
-        { id: 2, nombre: 'Doble', capacidad: 2, precioBase: 50000, descripcion: 'Habitación doble' },
-        { id: 3, nombre: 'Suite', capacidad: 2, precioBase: 80000, descripcion: 'Suite superior' },
-      ],
+      tipologias: [],
       habitaciones: [],
     };
 
@@ -169,6 +164,7 @@ export class SedeService {
       id: nextId,
       nombre: data.nombre.trim(),
       capacidad: Number(data.capacidad) || 1,
+      color: this.createUniqueTypologyColor(currentTipologias.map((typology) => typology.color ?? '')),
       precioBase: data.precioBase !== undefined ? Number(data.precioBase) : undefined,
       descripcion: data.descripcion?.trim() || '',
     };
@@ -183,7 +179,7 @@ export class SedeService {
     return nuevaTipologia;
   }
 
-  updateTipologia(id: number, patch: Partial<Omit<SedeTipologia, 'id'>>): void {
+  updateTipologia(id: number, patch: Partial<Omit<SedeTipologia, 'id' | 'color'>>): void {
     const selected = this.selectedSede();
     if (!selected) return;
 
@@ -376,36 +372,54 @@ export class SedeService {
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map((sede: Sede) => {
-            const defaultHabs = sede.id === 1 ? DEFAULT_HABITACIONES_SEDE_1 : [];
-            const habs = sede.habitaciones && sede.habitaciones.length > 0
-              ? sede.habitaciones.map((h) => ({
-                  ...h,
-                  estado: (h.estado as EstadoHabitacion) || 'libre',
-                }))
-              : defaultHabs;
-
-            return {
-              ...sede,
-              habitaciones: habs,
-              tipologias: sede.tipologias && sede.tipologias.length > 0
-                ? sede.tipologias
-                : (DEFAULT_TIPOLOGIAS[sede.id] ?? [
-                    { id: 1, nombre: 'Individual', capacidad: 1, precioBase: 30000 },
-                    { id: 2, nombre: 'Doble', capacidad: 2, precioBase: 50000 },
-                    { id: 3, nombre: 'Suite', capacidad: 2, precioBase: 80000 },
-                  ]),
-            };
-          });
+          const sedes = (parsed as Sede[]).map((sede) => ({
+            ...sede,
+            habitaciones: (sede.habitaciones ?? []).map((room) => ({
+              ...room,
+              estado: room.estado || 'libre' as EstadoHabitacion,
+            })),
+            tipologias: this.assignMissingTypologyColors(sede.tipologias ?? []),
+          }));
+          this.saveSedes(sedes);
+          return sedes;
         }
       }
     } catch {
       // Usar sedes iniciales si falla lectura
     }
-    return INITIAL_SEDES.map((sede) => ({
-      ...sede,
-      habitaciones: sede.id === 1 ? [...DEFAULT_HABITACIONES_SEDE_1] : [],
-    }));
+    this.saveSedes(INITIAL_SEDES);
+    return INITIAL_SEDES;
+  }
+
+  private assignMissingTypologyColors(tipologias: SedeTipologia[]): SedeTipologia[] {
+    const usedColors = new Set<string>();
+    return tipologias.map((typology) => {
+      const storedColor = typology.color?.toUpperCase();
+      const color = storedColor && HEX_COLOR_PATTERN.test(storedColor) && !usedColors.has(storedColor)
+        ? storedColor
+        : this.createUniqueTypologyColor(Array.from(usedColors));
+      usedColors.add(color);
+      return { ...typology, color };
+    });
+  }
+
+  private createUniqueTypologyColor(usedColors: string[]): string {
+    const normalizedColors = new Set(usedColors.map((color) => color.toUpperCase()));
+    const usedHues = Array.from(normalizedColors)
+      .filter((color) => HEX_COLOR_PATTERN.test(color))
+      .map(colorHue);
+
+    for (let attempt = 0; attempt < 1000; attempt++) {
+      const hue = Math.random() * 360;
+      const color = hueToHex(hue).toUpperCase();
+      const huesAreDistinct = usedHues.length >= 22 ||
+        usedHues.every((usedHue) => {
+          const difference = Math.abs(hue - usedHue);
+          return Math.min(difference, 360 - difference) >= 14;
+        });
+      if (!normalizedColors.has(color) && huesAreDistinct) return color;
+    }
+    throw new Error('No se pudo generar un color único para la tipología.');
   }
 
   private readInitialSede(): Sede | null {

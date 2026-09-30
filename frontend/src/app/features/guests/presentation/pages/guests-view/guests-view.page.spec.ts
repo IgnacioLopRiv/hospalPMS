@@ -39,6 +39,27 @@ describe('GuestsViewPage', () => {
     expect(component.getCount('inactivos')).toBe(1);
   });
 
+  it('shows a matching status stripe and details panel for each guest state', () => {
+    component.guests = [
+      createGuestCard(1, true, 'confirmada'),
+      createGuestCard(2, true, 'checkin_hoy'),
+      createGuestCard(3, true, 'checkout_hoy'),
+      createGuestCard(4, true, 'hospedado'),
+      createGuestCard(5, false, 'inactivo'),
+    ];
+    component.applyFilters();
+    fixture.detectChanges();
+
+    const cards = fixture.nativeElement.querySelectorAll('.guest-card') as NodeListOf<HTMLElement>;
+    expect(cards.length).toBe(5);
+    cards.forEach((card, index) => {
+      const state = ['confirmada', 'checkin_hoy', 'checkout_hoy', 'hospedado', 'inactivo'][index];
+      expect(card.classList).toContain(`status-${state}`);
+      expect(card.querySelector('.guest-status-line')).toBeTruthy();
+      expect(card.querySelector('.status-box')?.classList).toContain(state);
+    });
+  });
+
   it('switches from guest cards to a filtered guest list and back', () => {
     component.guests = [createGuestCard(1, true)];
     component.applyFilters();
@@ -98,7 +119,11 @@ describe('GuestsViewPage', () => {
   });
 });
 
-function createGuestCard(id: number, hasReservation: boolean): GuestCardView {
+function createGuestCard(
+  id: number,
+  hasReservation: boolean,
+  status: GuestCardView['status'] = hasReservation ? 'hospedado' : 'inactivo'
+): GuestCardView {
   return {
     id_huesped: id,
     hasReservation,
@@ -106,10 +131,10 @@ function createGuestCard(id: number, hasReservation: boolean): GuestCardView {
     guestName: `Guest ${id}`,
     country: 'Chile',
     roomNumber: hasReservation ? '101' : '',
-    roomType: hasReservation ? 'Habitación Privada' : 'Sin habitación asignada',
+    roomType: hasReservation ? 'Tipo gestionado' : 'Sin habitación asignada',
     dateRange: hasReservation ? '06/16 → 06/20' : 'Sin reserva asignada',
-    status: hasReservation ? 'hospedado' : 'inactivo',
-    statusBadge: hasReservation ? 'HOSPEDADO' : 'INACTIVO',
+    status,
+    statusBadge: status.toUpperCase(),
     cardColor: 'blue',
     metric1Label: hasReservation ? 'Lleva' : 'Reserva',
     metric1Value: hasReservation ? '1 noche' : 'No asignada',
