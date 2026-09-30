@@ -86,6 +86,10 @@ const countryData: Array<[string, string, string]> = [
 ];
 
 const regionNames = new Intl.DisplayNames(['es'], { type: 'region' });
+const latinAmericanCountryCodes = new Set([
+  'ar', 'bo', 'br', 'cl', 'co', 'cr', 'cu', 'do', 'ec', 'gf', 'gt',
+  'ht', 'hn', 'mx', 'ni', 'pa', 'pe', 'pr', 'py', 'sv', 'uy', 've',
+]);
 
 export const COUNTRY_OPTIONS: CountryOption[] = countryData
   .map(([code, nationality, callingCode]) => ({
@@ -94,4 +98,19 @@ export const COUNTRY_OPTIONS: CountryOption[] = countryData
     countryName: regionNames.of(code) ?? nationality,
     callingCode,
   }))
-  .sort((a, b) => a.nationality.localeCompare(b.nationality, 'es'));
+  .sort((a, b) => {
+    if (a.code === 'cl') {
+      return b.code === 'cl' ? 0 : -1;
+    }
+    if (b.code === 'cl') {
+      return 1;
+    }
+
+    const aIsLatinAmerican = latinAmericanCountryCodes.has(a.code);
+    const bIsLatinAmerican = latinAmericanCountryCodes.has(b.code);
+    if (aIsLatinAmerican !== bIsLatinAmerican) {
+      return aIsLatinAmerican ? -1 : 1;
+    }
+
+    return a.nationality.localeCompare(b.nationality, 'es');
+  });

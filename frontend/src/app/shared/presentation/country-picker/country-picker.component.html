@@ -15,9 +15,17 @@
     <span class="country-picker-chevron" aria-hidden="true"></span>
   </button>
 
-  @if (isOpen) {
-  <div class="country-picker-options" role="listbox" [attr.aria-label]="ariaLabel">
-    @for (country of countries; track country.code) {
+  <div #options class="country-picker-options" popover="auto" (toggle)="syncOpenState()">
+    <input
+      #searchInput
+      class="country-picker-search"
+      type="search"
+      [placeholder]="mode === 'callingCode' ? 'Buscar país o código...' : 'Buscar país...'"
+      [attr.aria-label]="'Buscar en ' + ariaLabel"
+      [value]="searchTerm"
+      (input)="updateSearch($event)">
+    <div class="country-picker-list" role="listbox" [attr.aria-label]="ariaLabel">
+    @for (country of filteredCountries; track country.code) {
     <button
       type="button"
       class="country-picker-option"
@@ -27,7 +35,9 @@
       <img [src]="'https://flagcdn.com/24x18/' + country.code.toLowerCase() + '.png'" [alt]="country.countryName" class="flag-icon" />
       <span>{{ mode === 'callingCode' ? country.callingCode : country.countryName }}</span>
     </button>
+    } @empty {
+    <p class="country-picker-empty" role="status">No se encontraron resultados.</p>
     }
+    </div>
   </div>
-  }
 </div>

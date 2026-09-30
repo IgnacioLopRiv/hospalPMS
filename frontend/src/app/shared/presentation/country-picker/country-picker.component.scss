@@ -52,19 +52,45 @@
 }
 
 .country-picker-options {
-  position: absolute;
-  z-index: 1100;
-  top: calc(100% + 0.25rem);
-  left: 0;
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
   box-sizing: border-box;
-  width: 100%;
   max-height: 15rem;
-  overflow-y: auto;
+  overflow: hidden;
   padding: 0.25rem;
   border: 1px solid #bfdbfe;
   border-radius: 10px;
   background: #ffffff;
   box-shadow: 0 12px 24px rgba(15, 23, 42, 0.16);
+
+  &:not(:popover-open) {
+    display: none;
+  }
+}
+
+.country-picker-search {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 2.5rem;
+  margin-bottom: 0.25rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  color: #0f172a;
+  font: inherit;
+
+  &:focus {
+    border-color: #60a5fa;
+    outline: 2px solid rgba(96, 165, 250, 0.2);
+  }
+}
+
+.country-picker-list {
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .country-picker-option {
@@ -79,4 +105,11 @@
   &[aria-selected='true'] {
     background: #eff6ff;
   }
+}
+
+.country-picker-empty {
+  margin: 0;
+  padding: 0.65rem 0.5rem;
+  color: #64748b;
+  font-size: 0.875rem;
 }
