@@ -13,6 +13,21 @@ export interface RegisterEntryInput {
   arrivalTime: string;
 }
 
+export interface ReservationCalendarEntry {
+  id: number;
+  guestName: string;
+  country: string;
+  phone: string;
+  email: string;
+  isVip: boolean;
+  roomNumber: string;
+  roomType: string;
+  arrivalDate: string;
+  departureDate: string;
+  arrivalTime: string;
+  status: Reserva['estado_reserva'];
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -213,6 +228,41 @@ export class HostalService {
 
   getReservations(): Reserva[] {
     return JSON.parse(localStorage.getItem(this.storageKey('reservas')) || '[]') as Reserva[];
+  }
+
+  getReservationCalendarData(): ReservationCalendarEntry[] {
+    const guests = this.getGuests();
+    const rooms: Habitacion[] = JSON.parse(localStorage.getItem(this.storageKey('habitaciones')) || '[]');
+    const typologies: Tipologia[] = JSON.parse(localStorage.getItem(this.storageKey('tipologias')) || '[]');
+
+    const entries: ReservationCalendarEntry[] = [];
+    this.getReservations().forEach((reservation) => {
+      const guest = guests.find((item) => item.id_huesped === reservation.id_huesped);
+      const room = rooms.find((item) => item.id_habitacion === reservation.id_habitacion);
+      if (!guest || !room || !this.isValidDate(reservation.fecha_llegada) ||
+        !this.isValidDate(reservation.fecha_salida) ||
+        reservation.fecha_llegada >= reservation.fecha_salida) {
+        return;
+      }
+
+      const typology = typologies.find((item) => item.id_tipologia === room.id_tipologia);
+      entries.push({
+        id: reservation.id_reserva,
+        guestName: `${guest.nombre} ${guest.apellido}`,
+        country: guest.nacionalidad,
+        phone: guest.telefono,
+        email: guest.email,
+        isVip: guest.es_recurrente ?? false,
+        roomNumber: room.numero_habitacion,
+        roomType: typology?.nombre_tipologia ?? '',
+        arrivalDate: reservation.fecha_llegada,
+        departureDate: reservation.fecha_salida,
+        arrivalTime: reservation.hora_llegada ?? '',
+        status: reservation.estado_reserva,
+      });
+    });
+
+    return entries;
   }
 
   updateGuest(guestId: number, changes: Omit<Huesped, 'id_huesped' | 'id_sede'>): Huesped {

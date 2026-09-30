@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { HostalService } from '../../../../guests/application/hostal.service';
+import { SedeService } from '../../../../locations/application/sede.service';
 import { CheckPagePage } from './check-page.page';
 
 describe('CheckPagePage', () => {
@@ -6,6 +8,12 @@ describe('CheckPagePage', () => {
   let fixture: ComponentFixture<CheckPagePage>;
 
   beforeEach(() => {
+    const sedeId = TestBed.inject(SedeService).selectedSede()?.id;
+    if (sedeId !== undefined) {
+      ['huespedes', 'reservas', 'habitaciones', 'tipologias'].forEach((entity) => {
+        localStorage.removeItem(`hospal_db_sede_${sedeId}_${entity}`);
+      });
+    }
     fixture = TestBed.createComponent(CheckPagePage);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -15,9 +23,73 @@ describe('CheckPagePage', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should have pending check-ins and check-outs initialized', () => {
-    expect(component.pendingCheckIns.length).toBeGreaterThan(0);
-    expect(component.pendingCheckOuts.length).toBeGreaterThan(0);
+  it('does not show placeholder movements without reservations today', () => {
+    expect(component.pendingCheckIns).toEqual([]);
+    expect(component.pendingCheckOuts).toEqual([]);
+  });
+
+  it('shows check-ins and check-outs from reservations registered for today', () => {
+    const hostalService = TestBed.inject(HostalService);
+    const today = localDateString(new Date());
+    const previousDay = new Date();
+    previousDay.setDate(previousDay.getDate() - 1);
+    const nextDay = new Date();
+    nextDay.setDate(nextDay.getDate() + 1);
+    const todayReservationRooms = hostalService.getAvailableRooms(today, localDateString(nextDay));
+    const checkoutReservationRooms = hostalService.getAvailableRooms(localDateString(previousDay), today);
+
+    hostalService.registerEntry({
+      newGuest: {
+        documento: 'CHECKIN-TEST',
+        nombre: 'Ana',
+        apellido: 'Pérez',
+        nacionalidad: 'Chile',
+        telefono: '+56912345678',
+        email: 'ana-checkin@example.com',
+      },
+      roomId: todayReservationRooms[0].id_habitacion,
+      personCount: 1,
+      arrivalDate: today,
+      departureDate: localDateString(nextDay),
+      arrivalTime: '15:30',
+    });
+    hostalService.registerEntry({
+      newGuest: {
+        documento: 'CHECKOUT-TEST',
+        nombre: 'Luis',
+        apellido: 'Rojas',
+        nacionalidad: 'Argentina',
+        telefono: '+5491112345678',
+        email: 'luis-checkout@example.com',
+      },
+      roomId: checkoutReservationRooms[1].id_habitacion,
+      personCount: 1,
+      arrivalDate: localDateString(previousDay),
+      departureDate: today,
+      arrivalTime: '14:00',
+    });
+
+    expect(component.pendingCheckIns).toContain(jasmine.objectContaining({
+      guestName: 'Ana Pérez',
+      scheduledTime: '15:30',
+      statusBadge: 'CHECK-IN HOY',
+    }));
+    expect(component.pendingCheckOuts).toContain(jasmine.objectContaining({
+      guestName: 'Luis Rojas',
+      statusBadge: 'CHECK-OUT HOY',
+    }));
+  });
+
+  it('shows the current local date and a live 24-hour time value', () => {
+    expect(component.currentDateFormatted.toLocaleLowerCase()).toBe(
+      new Date().toLocaleDateString('es-CL', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    );
+    expect(component.currentTimeFormatted).toMatch(/^\d{2}:\d{2}:\d{2}$/);
   });
 
   it('validates Chilean RUT check digits', () => {
@@ -25,6 +97,13 @@ describe('CheckPagePage', () => {
     expect(component.isValidRut('12.345.678-9')).toBeFalse();
     expect(component.isValidRut('1-9')).toBeFalse();
   });
+
+  function localDateString(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
 
   it('formats the RUT as it is typed', () => {
     component.formatRut('12345678');

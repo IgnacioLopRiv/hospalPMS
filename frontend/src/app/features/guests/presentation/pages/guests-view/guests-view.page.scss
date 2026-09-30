@@ -348,7 +348,7 @@ p {
 
         &:hover,
         &[aria-expanded='true'] {
-          background: #f1f5f9;
+          background: transparent;
           color: $text-dark;
         }
       }

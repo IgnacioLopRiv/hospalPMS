@@ -180,10 +180,19 @@
         <ion-icon name="search-outline"></ion-icon>
         <input type="text" placeholder="Buscar huésped, hab..." [(ngModel)]="searchTerm" (input)="applyFilters()" />
       </div>
+      <button
+        type="button"
+        class="guests-view-toggle"
+        [attr.aria-label]="viewMode === 'cards' ? 'Ver lista de huéspedes' : 'Ver tarjetas de huéspedes'"
+        (click)="toggleView()">
+        <ion-icon [name]="viewMode === 'cards' ? 'list-outline' : 'grid-outline'"></ion-icon>
+        <span>Ver</span>
+      </button>
     </div>
   </section>
 
   <!-- Grilla de Tarjetas -->
+  @if (viewMode === 'cards') {
   <section class="cards-grid">
     <div class="guest-card" *ngFor="let guest of filteredGuests; let cardIndex = index">
       <div class="card-header">
@@ -254,6 +263,71 @@
       </div>
     </div>
   </section>
+  } @else {
+  <section class="guest-list-container" aria-label="Lista de huéspedes">
+    <table class="guest-list">
+      <thead>
+        <tr>
+          <th scope="col">Huésped</th>
+          <th scope="col">País</th>
+          <th scope="col">Habitación</th>
+          <th scope="col">Estadía</th>
+          <th scope="col">Estado</th>
+          <th scope="col"><span class="visually-hidden">Opciones</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (guest of filteredGuests; track guest.id_huesped; let rowIndex = $index) {
+        <tr>
+          <td>
+            <div class="list-guest-name">
+              <span class="list-avatar color-{{ guest.cardColor }}">{{ guest.initials }}</span>
+              <span>{{ guest.guestName }}</span>
+              @if (guest.isVip) {
+              <ion-icon name="star" class="star-icon" title="Huésped frecuente"></ion-icon>
+              }
+            </div>
+          </td>
+          <td>{{ guest.country || '—' }}</td>
+          <td>{{ guest.roomNumber ? 'Hab. ' + guest.roomNumber : guest.roomType }}</td>
+          <td>{{ guest.dateRange }}</td>
+          <td><span class="list-status status-{{ guest.status }}">{{ guest.statusBadge }}</span></td>
+          <td class="list-actions-cell">
+            <button
+              type="button"
+              class="menu-icon"
+              [attr.aria-label]="'Opciones para ' + guest.guestName"
+              [attr.aria-expanded]="openMenuCardIndex === rowIndex"
+              (click)="toggleGuestMenu($event, rowIndex)">
+              <ion-icon name="ellipsis-vertical-outline"></ion-icon>
+            </button>
+            @if (openMenuCardIndex === rowIndex) {
+            <div class="guest-list-menu">
+              <button type="button" (click)="openGuestEditor(guest.id_huesped)">
+                <ion-icon name="create-outline"></ion-icon>
+                Modificar huésped
+              </button>
+              @if (guest.hasReservation) {
+              <button type="button" (click)="openReservationEditor(guest)">
+                <ion-icon name="calendar-outline"></ion-icon>
+                Modificar reserva
+              </button>
+              }
+              <button type="button" class="delete-action" (click)="requestGuestDeletion(guest.id_huesped)">
+                <ion-icon name="trash-outline"></ion-icon>
+                Eliminar huésped
+              </button>
+            </div>
+            }
+          </td>
+        </tr>
+        } @empty {
+        <tr><td colspan="6" class="empty-guest-list">No hay huéspedes para mostrar.</td></tr>
+        }
+      </tbody>
+    </table>
+  </section>
+  }
 
   @if (editingGuestId !== null) {
   <dialog #guestEditDialog class="entry-modal-backdrop guest-edit-dialog"

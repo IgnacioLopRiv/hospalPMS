@@ -39,6 +39,28 @@ describe('GuestsViewPage', () => {
     expect(component.getCount('inactivos')).toBe(1);
   });
 
+  it('switches from guest cards to a filtered guest list and back', () => {
+    component.guests = [createGuestCard(1, true)];
+    component.applyFilters();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.cards-grid')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.guest-list')).toBeNull();
+
+    const button = fixture.nativeElement.querySelector('.guests-view-toggle') as HTMLButtonElement;
+    expect(button.textContent).toContain('Ver');
+    button.click();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.cards-grid')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.guest-list')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.guest-list tbody').textContent).toContain('Guest 1');
+
+    button.click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.cards-grid')).toBeTruthy();
+  });
+
   it('navigates to check-page with the guest draft for reservation assignment', async () => {
     const router = TestBed.inject(Router);
     const navigation = spyOn(router, 'navigate').and.resolveTo(true);
