@@ -1,0 +1,381 @@
+<div class="tarifas-container">
+
+  <!-- ── Encabezado ──────────────────────────────────────────────────────────── -->
+  <header class="top-bar">
+    <div>
+      <h1 class="page-title">Tarifas por Temporada</h1>
+      <p class="current-date">
+        @if (sede(); as currentSede) {
+          <span>{{ currentSede.nombre }} · {{ formattedDate() }} · <time>{{ formattedTime() }}</time></span>
+        } @else {
+          <span>{{ formattedDate() }} · <time>{{ formattedTime() }}</time></span>
+        }
+      </p>
+    </div>
+    <div class="top-actions">
+      <!-- Indicador de temporada activa -->
+      <div class="season-live-badge" [class.alta]="isHighSeason()" [class.baja]="!isHighSeason()">
+        @if (isHighSeason()) {
+          <ion-icon name="sunny-outline"></ion-icon>
+          <span>Temporada Alta activa</span>
+        } @else {
+          <ion-icon name="snow-outline"></ion-icon>
+          <span>Temporada Baja activa</span>
+        }
+        <span class="live-dot"></span>
+      </div>
+      <button type="button" class="btn-top-action" (click)="openConfig()" id="btn-config-tarifas">
+        <ion-icon name="settings-outline"></ion-icon>
+        <span>Configurar</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Panel resumen de temporadas ────────────────────────────────────────── -->
+  <section class="season-summary-panel">
+    <div class="season-summary-card alta">
+      <div class="summary-icon-badge alta">
+        <ion-icon name="sunny-outline"></ion-icon>
+      </div>
+      <div class="summary-info">
+        <span class="summary-label">TEMPORADA ALTA</span>
+        <p class="summary-months">
+          @if (config().mesesAlta.length === 0) {
+            <em>Sin meses configurados</em>
+          } @else {
+            @for (m of config().mesesAlta; track m; let last = $last) {
+              {{ monthName(m) }}@if (!last) { · }
+            }
+          }
+        </p>
+      </div>
+      @if (isHighSeason()) {
+        <span class="active-now-badge alta">
+          <span class="dot"></span>Activa ahora
+        </span>
+      }
+    </div>
+
+    <div class="season-summary-card baja">
+      <div class="summary-icon-badge baja">
+        <ion-icon name="snow-outline"></ion-icon>
+      </div>
+      <div class="summary-info">
+        <span class="summary-label">TEMPORADA BAJA</span>
+        <p class="summary-months">
+          @if (mesesBaja().length === 0) {
+            <em>Sin meses configurados</em>
+          } @else {
+            @for (m of mesesBaja(); track m; let last = $last) {
+              {{ monthName(m) }}@if (!last) { · }
+            }
+          }
+        </p>
+      </div>
+      @if (!isHighSeason()) {
+        <span class="active-now-badge baja">
+          <span class="dot"></span>Activa ahora
+        </span>
+      }
+    </div>
+  </section>
+
+  <!-- ── Grilla de columnas de tarifas ──────────────────────────────────────── -->
+  <section class="tarifas-columns-grid">
+
+    <!-- Columna Temporada Alta -->
+    <div class="tarifas-column column-alta" [class.active-season]="isHighSeason()">
+      <div class="column-header">
+        <div class="column-title-group">
+          <div class="column-icon-badge alta">
+            <ion-icon name="trending-up-outline"></ion-icon>
+          </div>
+          <div>
+            <h2>Temporada Alta</h2>
+            <p class="column-subtitle">Tarifas vigentes en meses de alta demanda</p>
+          </div>
+        </div>
+        @if (isHighSeason()) {
+          <span class="season-status-badge alta">
+            <span class="dot"></span>Activa ahora
+          </span>
+        }
+      </div>
+
+      <!-- Lista de tarifas por tipología -->
+      <div class="tarifas-list">
+        @for (tarifa of tarifasAlta(); track tarifa.tipologiaId) {
+          <div class="tarifa-row">
+            <div class="tarifa-tipo-badge" [style.background-color]="tarifa.color + '22'" [style.color]="tarifa.color">
+              <ion-icon name="pricetag-outline"></ion-icon>
+            </div>
+            <div class="tarifa-info">
+              <span class="tarifa-tipo-nombre">{{ tarifa.nombre }}</span>
+              <small class="tarifa-capacidad">Hasta {{ tarifa.capacidad }} persona{{ tarifa.capacidad !== 1 ? 's' : '' }}</small>
+            </div>
+            <div class="tarifa-precio-chip alta">
+              <ion-icon name="cash-outline"></ion-icon>
+              <span>
+                @if (tarifa.precioBase > 0) {
+                  ${{ tarifa.precioBase | number:'1.0-0' }} / noche
+                } @else {
+                  <em>Sin tarifa</em>
+                }
+              </span>
+            </div>
+          </div>
+        } @empty {
+          <div class="empty-tarifas">
+            <ion-icon name="information-circle-outline" class="empty-icon alta"></ion-icon>
+            <p>No hay tipologías de habitación registradas para esta sede.</p>
+            <small>Agrega tipologías desde la sección <strong>Habitaciones</strong> para configurar las tarifas.</small>
+          </div>
+        }
+      </div>
+
+      <!-- Abono de reserva -->
+      <div class="abono-box alta">
+        <div class="abono-header">
+          <ion-icon name="sparkles-outline"></ion-icon>
+          <span>PORCENTAJE DE ABONO</span>
+        </div>
+        <div class="abono-value">
+          <strong>{{ config().abonoPctAlta }}%</strong>
+          <small>del total de la reserva</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Columna Temporada Baja -->
+    <div class="tarifas-column column-baja" [class.active-season]="!isHighSeason()">
+      <div class="column-header">
+        <div class="column-title-group">
+          <div class="column-icon-badge baja">
+            <ion-icon name="trending-down-outline"></ion-icon>
+          </div>
+          <div>
+            <h2>Temporada Baja</h2>
+            <p class="column-subtitle">Tarifas vigentes en meses de menor demanda</p>
+          </div>
+        </div>
+        @if (!isHighSeason()) {
+          <span class="season-status-badge baja">
+            <span class="dot"></span>Activa ahora
+          </span>
+        }
+      </div>
+
+      <!-- Lista de tarifas por tipología -->
+      <div class="tarifas-list">
+        @for (tarifa of tarifasBaja(); track tarifa.tipologiaId) {
+          <div class="tarifa-row">
+            <div class="tarifa-tipo-badge" [style.background-color]="tarifa.color + '22'" [style.color]="tarifa.color">
+              <ion-icon name="pricetag-outline"></ion-icon>
+            </div>
+            <div class="tarifa-info">
+              <span class="tarifa-tipo-nombre">{{ tarifa.nombre }}</span>
+              <small class="tarifa-capacidad">Hasta {{ tarifa.capacidad }} persona{{ tarifa.capacidad !== 1 ? 's' : '' }}</small>
+            </div>
+            <div class="tarifa-precio-chip baja">
+              <ion-icon name="cash-outline"></ion-icon>
+              <span>
+                @if (tarifa.precioBase > 0) {
+                  ${{ tarifa.precioBase | number:'1.0-0' }} / noche
+                } @else {
+                  <em>Sin tarifa</em>
+                }
+              </span>
+            </div>
+          </div>
+        } @empty {
+          <div class="empty-tarifas">
+            <ion-icon name="information-circle-outline" class="empty-icon baja"></ion-icon>
+            <p>No hay tipologías de habitación registradas para esta sede.</p>
+            <small>Agrega tipologías desde la sección <strong>Habitaciones</strong> para configurar las tarifas.</small>
+          </div>
+        }
+      </div>
+
+      <!-- Abono de reserva -->
+      <div class="abono-box baja">
+        <div class="abono-header">
+          <ion-icon name="sparkles-outline"></ion-icon>
+          <span>PORCENTAJE DE ABONO</span>
+        </div>
+        <div class="abono-value">
+          <strong>{{ config().abonoPctBaja }}%</strong>
+          <small>del total de la reserva</small>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+</div>
+
+<!-- ── Modal de configuración de tarifas ──────────────────────────────────── -->
+@if (configOpen()) {
+  <div class="config-modal-backdrop" (click)="closeConfig()">
+    <section class="config-modal" role="dialog" aria-modal="true" aria-labelledby="config-modal-title" (click)="$event.stopPropagation()">
+
+      <header class="config-modal-header">
+        <div>
+          <h2 id="config-modal-title">Configurar Tarifas por Temporada</h2>
+          <p>Define los meses de temporada alta y los precios por tipología de habitación.</p>
+        </div>
+        <button type="button" class="btn-close-modal" (click)="closeConfig()" aria-label="Cerrar">
+          <ion-icon name="close-outline"></ion-icon>
+        </button>
+      </header>
+
+      <div class="config-modal-body">
+
+        <!-- Selector de meses de temporada alta -->
+        <section class="config-section">
+          <h3>
+            <ion-icon name="calendar-outline"></ion-icon>
+            Meses de Temporada Alta
+          </h3>
+          <p class="config-hint">Selecciona los meses en que las tarifas de temporada alta estarán vigentes. Los meses no marcados serán temporada baja.</p>
+          <div class="months-grid" role="group" aria-label="Selección de meses de temporada alta">
+            @for (mes of monthNames; track $index) {
+              <button
+                type="button"
+                class="month-chip"
+                [class.selected]="isMesAlta($index)"
+                (click)="toggleMesAlta($index)"
+                [attr.aria-pressed]="isMesAlta($index)"
+                [id]="'month-chip-' + $index">
+                {{ mes.slice(0, 3) }}
+              </button>
+            }
+          </div>
+          <div class="months-preview">
+            <span class="preview-label preview-alta">
+              <ion-icon name="sunny-outline"></ion-icon>
+              Alta:
+              @if (editConfig.mesesAlta.length === 0) {
+                <em>ninguno</em>
+              } @else {
+                @for (m of editConfig.mesesAlta; track m; let last = $last) {
+                  {{ monthName(m).slice(0, 3) }}@if (!last) { · }
+                }
+              }
+            </span>
+            <span class="preview-label preview-baja">
+              <ion-icon name="snow-outline"></ion-icon>
+              Baja:
+              @for (m of monthNames; track $index) {
+                @if (!isMesAlta($index)) {
+                  {{ m.slice(0, 3) }}&nbsp;
+                }
+              }
+            </span>
+          </div>
+        </section>
+
+        <!-- Tarifas por tipología -->
+        <section class="config-section">
+          <h3>
+            <ion-icon name="pricetag-outline"></ion-icon>
+            Tarifas por Tipología (por noche)
+          </h3>
+          @if (tipologias().length === 0) {
+            <p class="config-hint">No hay tipologías registradas. Agrega habitaciones y tipologías primero.</p>
+          } @else {
+            <div class="config-tarifas-grid">
+              @for (tip of tipologias(); track tip.id) {
+                <div class="config-tarifa-row">
+                  <div class="config-tipo-info">
+                    <span class="config-tipo-dot" [style.background-color]="tip.color"></span>
+                    <span class="config-tipo-nombre">{{ tip.nombre }}</span>
+                    <small>Cap. {{ tip.capacidad }}</small>
+                  </div>
+                  <div class="config-precio-inputs">
+                    <label class="config-field">
+                      <span><ion-icon name="sunny-outline"></ion-icon> Alta</span>
+                      <div class="price-input-wrapper">
+                        <span class="currency-symbol">$</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="1000"
+                          [id]="'precio-alta-' + tip.id"
+                          [value]="getEditPrecioAlta(tip.id)"
+                          (input)="setEditPrecioAlta(tip.id, +($any($event.target).value))"
+                        >
+                      </div>
+                    </label>
+                    <label class="config-field">
+                      <span><ion-icon name="snow-outline"></ion-icon> Baja</span>
+                      <div class="price-input-wrapper">
+                        <span class="currency-symbol">$</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="1000"
+                          [id]="'precio-baja-' + tip.id"
+                          [value]="getEditPrecioBaja(tip.id)"
+                          (input)="setEditPrecioBaja(tip.id, +($any($event.target).value))"
+                        >
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </section>
+
+        <!-- Porcentajes de abono -->
+        <section class="config-section">
+          <h3>
+            <ion-icon name="cash-outline"></ion-icon>
+            Porcentaje de Abono
+          </h3>
+          <p class="config-hint">Porcentaje del total de la reserva que se cobra como abono anticipado.</p>
+          <div class="config-abonos-grid">
+            <label class="config-field abono-field">
+              <span><ion-icon name="trending-up-outline"></ion-icon> Temporada Alta</span>
+              <div class="pct-input-wrapper">
+                <input
+                  id="abono-pct-alta"
+                  type="number"
+                  min="1"
+                  max="100"
+                  step="1"
+                  [(ngModel)]="editConfig.abonoPctAlta"
+                >
+                <span class="pct-symbol">%</span>
+              </div>
+            </label>
+            <label class="config-field abono-field">
+              <span><ion-icon name="trending-down-outline"></ion-icon> Temporada Baja</span>
+              <div class="pct-input-wrapper">
+                <input
+                  id="abono-pct-baja"
+                  type="number"
+                  min="1"
+                  max="100"
+                  step="1"
+                  [(ngModel)]="editConfig.abonoPctBaja"
+                >
+                <span class="pct-symbol">%</span>
+              </div>
+            </label>
+          </div>
+        </section>
+
+      </div>
+
+      <footer class="config-modal-footer">
+        <button type="button" class="btn-cancel" (click)="closeConfig()" id="btn-cancel-config">Cancelar</button>
+        <button type="button" class="btn-save" (click)="saveConfig()" id="btn-save-config">
+          <ion-icon name="checkmark-outline"></ion-icon>
+          Guardar configuración
+        </button>
+      </footer>
+
+    </section>
+  </div>
+}
