@@ -68,7 +68,7 @@ export class HomePage {
       const sede = this.sedeService.sedes().find((s) => s.id === loggedUser.sedeId);
       if (sede) {
         this.sedeService.selectSede(sede);
-        this.router.navigate(['/guests-view']);
+        this.router.navigate(['/check-page']);
         return;
       }
     }

@@ -49,7 +49,7 @@ export class SedesPage {
 
   selectSede(sede: Sede): void {
     this.sedeService.selectSede(sede);
-    this.router.navigate(['/guests-view']);
+    this.router.navigate(['/check-page']);
   }
 
   /**

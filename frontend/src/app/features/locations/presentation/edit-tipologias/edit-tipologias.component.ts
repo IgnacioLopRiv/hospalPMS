@@ -45,7 +45,7 @@ interface TipologiaForm {
     IonButton,
     IonItem,
     IonInput,
-    IonTextarea,
+    // IonTextarea,
     IonIcon,
   ],
 })

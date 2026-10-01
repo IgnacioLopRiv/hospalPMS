@@ -48,6 +48,11 @@ export const routes: Routes = [
     loadComponent: () => import('../../features/reservations/presentation/pages/check-page/check-page.page').then(m => m.CheckPagePage),
   },
   {
+    path: 'tarifas',
+    canActivate: [authGuard],
+    loadComponent: () => import('../../features/locations/presentation/pages/tarifas/tarifas.page').then((m) => m.TarifasPage),
+  },
+  {
     path: 'recuperar',
     loadComponent: () => import('../auth/presentation/pages/recuperar/recuperar.page').then((m) => m.RecuperarPage),
   },

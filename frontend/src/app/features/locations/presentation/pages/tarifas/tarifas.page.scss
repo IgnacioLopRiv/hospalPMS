@@ -1,0 +1,832 @@
+// ── Variables ────────────────────────────────────────────────────────────────
+$alta-primary:   #d97706; // Amber-600
+$alta-light:     #fffbeb;
+$alta-border:    #fde68a;
+$alta-icon-bg:   #fef3c7;
+
+$baja-primary:   #0284c7; // Sky-600
+$baja-light:     #f0f9ff;
+$baja-border:    #bae6fd;
+$baja-icon-bg:   #e0f2fe;
+
+$text-dark:      #1f2937;
+$text-muted:     #64748b;
+$border-color:   #e5e9f2;
+
+:host {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+// ── Contenedor principal ──────────────────────────────────────────────────────
+.tarifas-container {
+  padding: 2rem 2.5rem;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 100%;
+  color: $text-dark;
+}
+
+// ── Encabezado ────────────────────────────────────────────────────────────────
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+
+  .page-title {
+    margin: 0;
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: $text-dark;
+  }
+
+  .current-date {
+    margin: 0.25rem 0 0 0;
+    color: $text-muted;
+    font-size: 0.85rem;
+  }
+
+  .top-actions {
+    display: flex;
+    gap: 0.8rem;
+    align-items: center;
+    flex-shrink: 0;
+  }
+}
+
+// ── Indicador de temporada viva ───────────────────────────────────────────────
+.season-live-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.5rem 0.9rem;
+  border-radius: 20px;
+  border: 1px solid transparent;
+
+  ion-icon {
+    font-size: 1rem;
+  }
+
+  .live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    animation: pulse-dot 1.5s infinite;
+    margin-left: 0.1rem;
+  }
+
+  &.alta {
+    background: $alta-light;
+    border-color: $alta-border;
+    color: $alta-primary;
+    .live-dot { background: $alta-primary; }
+  }
+
+  &.baja {
+    background: $baja-light;
+    border-color: $baja-border;
+    color: $baja-primary;
+    .live-dot { background: $baja-primary; }
+  }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.7); }
+}
+
+// ── Botón de configuración ────────────────────────────────────────────────────
+.btn-top-action {
+  background: #1e50d8;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.65rem 1.3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  &:hover { background: #1740b0; }
+}
+
+// ── Panel resumen de temporadas ───────────────────────────────────────────────
+.season-summary-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.season-summary-card {
+  background: #ffffff;
+  border: 1px solid $border-color;
+  border-radius: 14px;
+  padding: 1.1rem 1.4rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  position: relative;
+
+  .summary-icon-badge {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+
+    &.alta { background: $alta-icon-bg; color: $alta-primary; }
+    &.baja { background: $baja-icon-bg; color: $baja-primary; }
+  }
+
+  .summary-info {
+    flex: 1;
+    min-width: 0;
+
+    .summary-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      color: $text-muted;
+    }
+
+    .summary-months {
+      margin: 0.25rem 0 0;
+      font-size: 0.8rem;
+      color: $text-dark;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+  }
+
+  .active-now-badge {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.9rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.2rem 0.55rem;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      animation: pulse-dot 1.5s infinite;
+    }
+
+    &.alta {
+      background: $alta-light;
+      color: $alta-primary;
+      border: 1px solid $alta-border;
+      .dot { background: $alta-primary; }
+    }
+
+    &.baja {
+      background: $baja-light;
+      color: $baja-primary;
+      border: 1px solid $baja-border;
+      .dot { background: $baja-primary; }
+    }
+  }
+
+  &.alta { border-top: 4px solid $alta-primary; }
+  &.baja { border-top: 4px solid $baja-primary; }
+}
+
+// ── Grilla de columnas de tarifas ────────────────────────────────────────────
+.tarifas-columns-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.75rem;
+  align-items: start;
+}
+
+// ── Columna de tarifas ────────────────────────────────────────────────────────
+.tarifas-column {
+  background: #f8fafc;
+  border: 1px solid $border-color;
+  border-radius: 16px;
+  padding: 1.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  transition: box-shadow 0.3s ease;
+
+  &.active-season {
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08), 0 4px 20px rgba(0, 0, 0, 0.05);
+  }
+
+  &.column-alta { border-top: 4px solid $alta-primary; }
+  &.column-baja { border-top: 4px solid $baja-primary; }
+
+  // ── Header de columna ───────────────────────────────────────────────────────
+  .column-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 0.9rem;
+    border-bottom: 1px solid #e2e8f0;
+
+    .column-title-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+
+      .column-icon-badge {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+
+        &.alta { background: $alta-icon-bg; color: $alta-primary; }
+        &.baja { background: $baja-icon-bg; color: $baja-primary; }
+      }
+
+      h2 {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: $text-dark;
+      }
+
+      .column-subtitle {
+        margin: 0.15rem 0 0 0;
+        font-size: 0.75rem;
+        color: $text-muted;
+      }
+    }
+
+    .season-status-badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 0.28rem 0.65rem;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      flex-shrink: 0;
+
+      .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        animation: pulse-dot 1.5s infinite;
+      }
+
+      &.alta {
+        background: $alta-light;
+        color: $alta-primary;
+        border: 1px solid $alta-border;
+        .dot { background: $alta-primary; }
+      }
+
+      &.baja {
+        background: $baja-light;
+        color: $baja-primary;
+        border: 1px solid $baja-border;
+        .dot { background: $baja-primary; }
+      }
+    }
+  }
+
+  // ── Lista de tarifas ────────────────────────────────────────────────────────
+  .tarifas-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+}
+
+// ── Fila de tarifa individual ─────────────────────────────────────────────────
+.tarifa-row {
+  background: #ffffff;
+  border: 1px solid $border-color;
+  border-radius: 10px;
+  padding: 0.75rem 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  }
+
+  .tarifa-tipo-badge {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    flex-shrink: 0;
+  }
+
+  .tarifa-info {
+    flex: 1;
+    min-width: 0;
+
+    .tarifa-tipo-nombre {
+      display: block;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: $text-dark;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tarifa-capacidad {
+      font-size: 0.72rem;
+      color: $text-muted;
+    }
+  }
+
+  .tarifa-precio-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+
+    ion-icon { font-size: 0.85rem; }
+
+    em { font-style: italic; font-weight: 400; color: $text-muted; }
+
+    &.alta {
+      background: $alta-light;
+      color: $alta-primary;
+      border: 1px solid $alta-border;
+    }
+
+    &.baja {
+      background: $baja-light;
+      color: $baja-primary;
+      border: 1px solid $baja-border;
+    }
+  }
+}
+
+// ── Estado vacío ──────────────────────────────────────────────────────────────
+.empty-tarifas {
+  background: #ffffff;
+  border: 1px dashed $border-color;
+  border-radius: 12px;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  color: $text-muted;
+
+  .empty-icon {
+    font-size: 2.2rem;
+    margin-bottom: 0.5rem;
+    &.alta { color: $alta-primary; }
+    &.baja { color: $baja-primary; }
+  }
+
+  p {
+    margin: 0 0 0.35rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: $text-dark;
+  }
+
+  small {
+    font-size: 0.77rem;
+    strong { color: $text-dark; }
+  }
+}
+
+// ── Caja de abono ─────────────────────────────────────────────────────────────
+.abono-box {
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  border: 1px solid transparent;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  .abono-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+
+    ion-icon { font-size: 0.95rem; }
+  }
+
+  .abono-value {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.1rem;
+
+    strong {
+      font-size: 1.6rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    small { font-size: 0.68rem; color: $text-muted; }
+  }
+
+  &.alta {
+    background: $alta-light;
+    border-color: $alta-border;
+    .abono-header, strong { color: $alta-primary; }
+  }
+
+  &.baja {
+    background: $baja-light;
+    border-color: $baja-border;
+    .abono-header, strong { color: $baja-primary; }
+  }
+}
+
+// ── Modal de configuración ────────────────────────────────────────────────────
+.config-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  backdrop-filter: blur(2px);
+  animation: fade-in 0.15s ease;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.config-modal {
+  background: #ffffff;
+  border-radius: 18px;
+  width: 100%;
+  max-width: 680px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  animation: slide-up 0.2s ease;
+  overflow: hidden;
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.config-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1.5rem 1.75rem 1.25rem;
+  border-bottom: 1px solid $border-color;
+
+  h2 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: $text-dark;
+  }
+
+  p {
+    margin: 0.2rem 0 0;
+    font-size: 0.82rem;
+    color: $text-muted;
+  }
+
+  .btn-close-modal {
+    background: none;
+    border: none;
+    padding: 0.3rem;
+    cursor: pointer;
+    color: $text-muted;
+    font-size: 1.35rem;
+    display: flex;
+    align-items: center;
+    border-radius: 6px;
+    transition: background 0.15s;
+    flex-shrink: 0;
+
+    &:hover { background: #f1f5f9; color: $text-dark; }
+  }
+}
+
+.config-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.config-section {
+  h3 {
+    margin: 0 0 0.6rem;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: $text-dark;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+
+    ion-icon { color: #6366f1; font-size: 1rem; }
+  }
+
+  .config-hint {
+    font-size: 0.78rem;
+    color: $text-muted;
+    margin: 0 0 0.85rem;
+    line-height: 1.5;
+  }
+}
+
+// ── Grilla de meses ───────────────────────────────────────────────────────────
+.months-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.month-chip {
+  background: #f1f5f9;
+  border: 1.5px solid $border-color;
+  border-radius: 8px;
+  padding: 0.5rem 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: $text-muted;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover { background: #e2e8f0; color: $text-dark; }
+
+  &.selected {
+    background: $alta-light;
+    border-color: $alta-primary;
+    color: $alta-primary;
+    font-weight: 700;
+  }
+}
+
+.months-preview {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+
+  .preview-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+
+    ion-icon { font-size: 0.9rem; }
+
+    &.preview-alta { color: $alta-primary; }
+    &.preview-baja { color: $baja-primary; }
+
+    em { font-weight: 400; font-style: italic; color: $text-muted; }
+  }
+}
+
+// ── Grilla de tarifas editables ───────────────────────────────────────────────
+.config-tarifas-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.config-tarifa-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: #f8fafc;
+  border: 1px solid $border-color;
+  border-radius: 10px;
+  padding: 0.7rem 1rem;
+
+  .config-tipo-info {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    flex: 1;
+    min-width: 0;
+
+    .config-tipo-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .config-tipo-nombre {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: $text-dark;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    small {
+      font-size: 0.7rem;
+      color: $text-muted;
+      white-space: nowrap;
+    }
+  }
+
+  .config-precio-inputs {
+    display: flex;
+    gap: 0.75rem;
+    flex-shrink: 0;
+  }
+}
+
+.config-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+
+  span {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: $text-muted;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    letter-spacing: 0.2px;
+
+    ion-icon { font-size: 0.8rem; }
+  }
+
+  .price-input-wrapper,
+  .pct-input-wrapper {
+    display: flex;
+    align-items: center;
+    border: 1.5px solid $border-color;
+    border-radius: 7px;
+    background: #ffffff;
+    overflow: hidden;
+    transition: border-color 0.15s;
+
+    &:focus-within { border-color: #6366f1; }
+
+    .currency-symbol,
+    .pct-symbol {
+      padding: 0 0.45rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: $text-muted;
+      background: #f1f5f9;
+      border-right: 1px solid $border-color;
+      align-self: stretch;
+      display: flex;
+      align-items: center;
+    }
+
+    .pct-symbol {
+      border-right: none;
+      border-left: 1px solid $border-color;
+    }
+
+    input {
+      width: 90px;
+      padding: 0.4rem 0.55rem;
+      border: none;
+      outline: none;
+      font-size: 0.85rem;
+      color: $text-dark;
+      background: transparent;
+
+      &::-webkit-inner-spin-button,
+      &::-webkit-outer-spin-button {
+        opacity: 0.5;
+      }
+    }
+  }
+
+  &.abono-field {
+    .pct-input-wrapper input { width: 60px; }
+  }
+}
+
+.config-abonos-grid {
+  display: flex;
+  gap: 2rem;
+}
+
+// ── Footer del modal ──────────────────────────────────────────────────────────
+.config-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1.1rem 1.75rem;
+  border-top: 1px solid $border-color;
+  background: #f8fafc;
+
+  .btn-cancel {
+    background: #ffffff;
+    border: 1.5px solid $border-color;
+    color: $text-muted;
+    border-radius: 8px;
+    padding: 0.6rem 1.25rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+
+    &:hover { background: #f1f5f9; color: $text-dark; border-color: #cbd5e1; }
+  }
+
+  .btn-save {
+    background: #1e50d8;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.6rem 1.4rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    transition: background 0.15s;
+
+    &:hover { background: #1740b0; }
+
+    ion-icon { font-size: 1rem; }
+  }
+}
+
+// ── Media Queries ─────────────────────────────────────────────────────────────
+@media (max-width: 1000px) {
+  .season-summary-panel,
+  .tarifas-columns-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 800px) {
+  .tarifas-container { padding: 1.5rem 1rem; }
+
+  .months-grid { grid-template-columns: repeat(4, 1fr); }
+
+  .config-tarifa-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.65rem;
+  }
+
+  .config-abonos-grid { flex-direction: column; }
+}
+
+@media (max-width: 600px) {
+  .top-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.9rem;
+  }
+
+  .top-actions { flex-wrap: wrap; }
+
+  .tarifas-container { padding: 1rem 0.75rem; }
+
+  .tarifas-column { padding: 1rem; }
+
+  .months-grid { grid-template-columns: repeat(3, 1fr); }
+}
