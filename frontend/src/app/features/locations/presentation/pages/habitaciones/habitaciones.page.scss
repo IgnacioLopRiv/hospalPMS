@@ -166,112 +166,6 @@ $blue-dark: #172554;
       }
     }
 
-    .new-room-form {
-      display: flex;
-      align-items: flex-end;
-      gap: 1rem;
-      flex-wrap: wrap;
-      margin: 0 0 1.5rem;
-      padding: 1.25rem;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      background: #ffffff;
-
-      .new-room-form-heading {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        flex: 1 1 100%;
-        gap: 1rem;
-
-        h2 {
-          margin: 0 0 0.25rem;
-          color: $text-dark;
-          font-size: 1rem;
-          font-weight: 700;
-        }
-
-        p {
-          margin: 0;
-          color: $text-muted;
-          font-size: 0.85rem;
-        }
-
-        .btn-close-form {
-          display: inline-flex;
-          padding: 0.3rem;
-          border: 0;
-          background: transparent;
-          color: $text-muted;
-          font-size: 1.2rem;
-          cursor: pointer;
-        }
-      }
-
-      .new-room-type-field {
-        display: flex;
-        flex: 1 1 260px;
-        flex-direction: column;
-        gap: 0.4rem;
-        color: $text-dark;
-        font-size: 0.82rem;
-        font-weight: 600;
-
-        select {
-          min-height: 40px;
-          padding: 0.5rem 0.7rem;
-          border: 1px solid #cbd5e1;
-          border-radius: 8px;
-          background: #ffffff;
-          color: $text-dark;
-          font: inherit;
-        }
-      }
-
-      .new-room-notice {
-        flex: 1 1 100%;
-        margin: 0;
-        color: #92400e;
-        font-size: 0.88rem;
-      }
-
-      .new-room-form-actions {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 0.6rem;
-        margin-left: auto;
-
-        button {
-          min-height: 40px;
-          padding: 0.5rem 0.85rem;
-          border-radius: 8px;
-          font-size: 0.85rem;
-          font-weight: 600;
-          cursor: pointer;
-        }
-
-        .btn-cancel-new-room {
-          border: 1px solid #cbd5e1;
-          background: #ffffff;
-          color: $text-dark;
-        }
-
-        .btn-save-new-room {
-          border: 1px solid $blue-primary;
-          background: $blue-primary;
-          color: #ffffff;
-
-          &:disabled {
-            border-color: #cbd5e1;
-            background: #e2e8f0;
-            color: #64748b;
-            cursor: not-allowed;
-          }
-        }
-      }
-    }
-
     .sin_habitacion {
       background: #ffffff;
       border: 1px dashed #cbd5e1;
@@ -311,6 +205,7 @@ $blue-dark: #172554;
         strong {
           color: $blue-primary;
         }
+
       }
     }
 
@@ -635,19 +530,6 @@ $blue-dark: #172554;
       }
     }
 
-    .new-room-form {
-      align-items: stretch;
-      flex-direction: column;
-
-      .new-room-form-actions {
-        width: 100%;
-
-        button {
-          flex: 1;
-        }
-      }
-    }
-
     .rooms-grid {
       grid-template-columns: 1fr;
       gap: 1rem;
@@ -656,5 +538,105 @@ $blue-dark: #172554;
     .sin_habitacion {
       padding: 2rem 1rem;
     }
+  }
+}
+
+.new-room-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(3px);
+}
+
+.new-room-modal {
+  width: min(100%, 480px);
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+
+  .new-room-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.35rem 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+
+    h2 { margin: 0 0 0.35rem; color: $text-dark; font-size: 1.2rem; }
+    p { margin: 0; color: $text-muted; font-size: 0.88rem; }
+
+    .btn-close-form {
+      padding: 0.25rem;
+      border: 0;
+      background: transparent;
+      color: $text-muted;
+      font-size: 1.35rem;
+      cursor: pointer;
+    }
+  }
+
+  .new-room-modal-body {
+    display: grid;
+    gap: 1rem;
+    padding: 1.5rem;
+
+    .new-room-field {
+      display: grid;
+      gap: 0.4rem;
+      color: $text-dark;
+      font-size: 0.85rem;
+      font-weight: 600;
+
+      select,
+      input {
+        width: 100%;
+        min-height: 42px;
+        box-sizing: border-box;
+        padding: 0.55rem 0.7rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        background: #ffffff;
+        color: $text-dark;
+        font: inherit;
+
+        &:focus { border-color: $blue-primary; outline: 3px solid rgba(30, 80, 216, 0.13); }
+      }
+
+      small { color: $text-muted; font-size: 0.78rem; font-weight: 400; line-height: 1.4; }
+    }
+
+    .new-room-notice,
+    .new-room-error { margin: 0; font-size: 0.88rem; line-height: 1.45; }
+    .new-room-notice { color: #92400e; }
+    .new-room-error { color: #b91c1c; }
+  }
+
+  .new-room-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.65rem;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e2e8f0;
+    background: #f8fafc;
+
+    button {
+      min-height: 40px;
+      padding: 0.5rem 0.9rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-cancel-new-room { border: 1px solid #cbd5e1; background: #ffffff; color: $text-dark; }
+    .btn-save-new-room { border: 1px solid $blue-primary; background: $blue-primary; color: #ffffff; }
+    .btn-save-new-room:disabled { border-color: #cbd5e1; background: #e2e8f0; color: #64748b; cursor: not-allowed; }
   }
 }

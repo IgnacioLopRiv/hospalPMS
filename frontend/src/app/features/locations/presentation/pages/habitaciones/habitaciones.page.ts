@@ -39,6 +39,8 @@ export class HabitacionesPage implements OnInit, OnDestroy {
   readonly isAdmin = computed(() => this.authService.currentUser()?.role === 'admin');
   readonly newRoomFormOpen = signal(false);
   readonly newRoomTypologyId = signal<number | null>(null);
+  readonly newRoomNumber = signal('');
+  readonly newRoomError = signal('');
 
   // Señal de tick en vivo para actualizar tiempos relativos de aseo
   readonly liveTick = signal<number>(Date.now());
@@ -95,6 +97,8 @@ export class HabitacionesPage implements OnInit, OnDestroy {
       return;
     }
     this.newRoomTypologyId.set(this.tipologias()[0]?.id ?? null);
+    this.newRoomNumber.set('');
+    this.newRoomError.set('');
     this.newRoomFormOpen.set(true);
   }
 
@@ -102,9 +106,15 @@ export class HabitacionesPage implements OnInit, OnDestroy {
     this.newRoomFormOpen.set(false);
   }
 
+  setNewRoomNumber(event: Event): void {
+    this.newRoomNumber.set((event.target as HTMLInputElement).value);
+    this.newRoomError.set('');
+  }
+
   selectNewRoomTypology(event: Event): void {
     const selectedId = Number((event.target as HTMLSelectElement).value);
     this.newRoomTypologyId.set(Number.isFinite(selectedId) ? selectedId : null);
+    this.newRoomError.set('');
   }
 
   createHabitacion(): void {
@@ -115,13 +125,26 @@ export class HabitacionesPage implements OnInit, OnDestroy {
     const sedeActual = this.sede();
     const tipologia = this.tipologias().find((item) => item.id === this.newRoomTypologyId());
     if (!sedeActual || !tipologia) {
+      this.newRoomError.set('Selecciona una tipología para crear la habitación.');
       return;
     }
 
-    const numeros = this.habitaciones()
+    const numerosActuales = this.habitaciones()
       .map((habitacion) => Number(habitacion.numero))
       .filter((numero) => Number.isFinite(numero));
-    const numero = (numeros.length > 0 ? Math.max(...numeros) : 100) + 1;
+    const numeroIngresado = this.newRoomNumber().trim();
+    const numero = numeroIngresado === ''
+      ? this.getNextRoomNumber(numerosActuales)
+      : Number(numeroIngresado);
+    if (!Number.isInteger(numero) || numero < 1) {
+      this.newRoomError.set('Ingresa un número de habitación entero mayor que cero.');
+      return;
+    }
+    if (numerosActuales.includes(numero)) {
+      this.newRoomError.set(`Ya existe una habitación con el número ${numero}.`);
+      return;
+    }
+
     const { tamanoM2, disposicionMuebles } = this.getRoomDefaults(tipologia.capacidad);
     const nuevaHabitacion: Habitacion = {
       id: this.sedeService.createHabitacionId(),
@@ -138,6 +161,15 @@ export class HabitacionesPage implements OnInit, OnDestroy {
       habitaciones: [...this.habitaciones(), nuevaHabitacion],
     });
     this.closeNewRoomForm();
+  }
+
+  private getNextRoomNumber(currentNumbers: number[]): number {
+    const usedNumbers = new Set(currentNumbers);
+    let nextNumber = currentNumbers.length > 0 ? Math.max(...currentNumbers) + 1 : 101;
+    while (usedNumbers.has(nextNumber)) {
+      nextNumber++;
+    }
+    return nextNumber;
   }
 
   private getRoomDefaults(capacidad: number): Pick<Habitacion, 'tamanoM2' | 'disposicionMuebles'> {
