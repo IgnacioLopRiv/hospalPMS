@@ -38,9 +38,10 @@
       line-height: 1;
 
       &.clock-date {
-        font-weight: 500;
+        color: #ffffff;
+        font-weight: 600;
         letter-spacing: 0.2px;
-        opacity: 0.95;
+        opacity: 1;
       }
 
       &.clock-time {

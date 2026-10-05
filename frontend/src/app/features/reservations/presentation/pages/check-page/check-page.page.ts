@@ -86,18 +86,16 @@ export class CheckPagePage implements OnInit, OnDestroy {
   entryForm = this.createEmptyEntryForm();
   readonly countries = COUNTRY_OPTIONS;
 
-  currentDateFormatted = '';
-  currentTimeFormatted = '';
   private clockInterval?: ReturnType<typeof setInterval>;
   private reservationSubscription?: Subscription;
   private currentDateKey = '';
 
   ngOnInit(): void {
-    this.updateCurrentDateTime();
+    this.updateCurrentDateKey();
     this.reservationSubscription = this.hostalService.guestsView$.subscribe(() => {
       this.refreshPendingChecks();
     });
-    this.clockInterval = setInterval(() => this.updateCurrentDateTime(), 1000);
+    this.clockInterval = setInterval(() => this.updateCurrentDateKey(), 1000);
 
     const guestDraft = this.router.getCurrentNavigation()?.extras.state?.['guestDraft'];
     if (this.isGuestDraft(guestDraft)) {
@@ -486,21 +484,8 @@ export class CheckPagePage implements OnInit, OnDestroy {
     return `${year}-${month}-${day}`;
   }
 
-  private updateCurrentDateTime(): void {
-    const now = new Date();
-    const dateKey = this.localDateString(now);
-    const dateLabel = now.toLocaleDateString('es-CL', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-    this.currentDateFormatted = `${dateLabel.charAt(0).toLocaleUpperCase()}${dateLabel.slice(1)}`;
-    this.currentTimeFormatted = [
-      String(now.getHours()).padStart(2, '0'),
-      String(now.getMinutes()).padStart(2, '0'),
-      String(now.getSeconds()).padStart(2, '0'),
-    ].join(':');
+  private updateCurrentDateKey(): void {
+    const dateKey = this.localDateString(new Date());
 
     if (dateKey !== this.currentDateKey) {
       this.currentDateKey = dateKey;

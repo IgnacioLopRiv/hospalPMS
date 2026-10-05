@@ -4,13 +4,6 @@
   <header class="top-bar">
     <div>
       <h1 class="page-title">Tarifas por Temporada</h1>
-      <p class="current-date">
-        @if (sede(); as currentSede) {
-          <span>{{ currentSede.nombre }} · {{ formattedDate() }} · <time>{{ formattedTime() }}</time></span>
-        } @else {
-          <span>{{ formattedDate() }} · <time>{{ formattedTime() }}</time></span>
-        }
-      </p>
     </div>
     <div class="top-actions">
       <!-- Indicador de temporada activa -->

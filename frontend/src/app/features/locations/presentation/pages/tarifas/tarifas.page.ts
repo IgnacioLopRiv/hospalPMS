@@ -101,29 +101,6 @@ export class TarifasPage implements OnInit, OnDestroy {
     this.config().mesesAlta.includes(this.currentMonth())
   );
 
-  /** Fecha formateada */
-  readonly formattedDate = computed(() => {
-    const d = this.now();
-    const weekday = d.toLocaleDateString('es-CL', { weekday: 'short' });
-    const day = d.getDate();
-    const month = d.toLocaleDateString('es-CL', { month: 'short' });
-    const year = d.getFullYear();
-    const capitalize = (text: string) => {
-      const clean = text.replace('.', '');
-      return clean.charAt(0).toUpperCase() + clean.slice(1);
-    };
-    return `${capitalize(weekday)}, ${day} ${capitalize(month)} ${year}`;
-  });
-
-  /** Hora formateada */
-  readonly formattedTime = computed(() =>
-    this.now().toLocaleTimeString('es-CL', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    })
-  );
-
   /** Tarifas de temporada alta con datos de tipología */
   readonly tarifasAlta = computed<TarifaTipologia[]>(() => {
     const cfg = this.config();

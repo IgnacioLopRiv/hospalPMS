@@ -80,18 +80,6 @@ describe('CheckPagePage', () => {
     }));
   });
 
-  it('shows the current local date and a live 24-hour time value', () => {
-    expect(component.currentDateFormatted.toLocaleLowerCase()).toBe(
-      new Date().toLocaleDateString('es-CL', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      })
-    );
-    expect(component.currentTimeFormatted).toMatch(/^\d{2}:\d{2}:\d{2}$/);
-  });
-
   it('validates Chilean RUT check digits', () => {
     expect(component.isValidRut('12.345.678-5')).toBeTrue();
     expect(component.isValidRut('12.345.678-9')).toBeFalse();
