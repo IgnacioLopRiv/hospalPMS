@@ -1,0 +1,173 @@
+<main class="inventory-page">
+  <header class="page-header">
+    <div>
+      <h1>Inventario</h1>
+      @if (sede(); as currentSede) {
+        <p class="sede-description">
+          <ion-icon name="business-outline"></ion-icon>
+          Insumos registrados de <strong>{{ currentSede.nombre }}</strong> en {{ currentSede.ciudad }}
+        </p>
+      }
+    </div>
+    <button type="button" class="primary-button" (click)="openInsumoModal()" [disabled]="!sede()">
+      <ion-icon name="add-outline"></ion-icon>
+      Agregar insumo
+    </button>
+  </header>
+
+  @if (!sede()) {
+    <section class="empty-state">
+      <div class="empty-icon"><ion-icon name="business-outline"></ion-icon></div>
+      <h2>No hay una sede seleccionada</h2>
+      <p>Selecciona una sede para consultar y administrar su inventario.</p>
+    </section>
+  } @else {
+    <section class="summary-cards" aria-label="Resumen del inventario">
+      <article class="summary-card summary-total">
+        <span class="summary-icon"><ion-icon name="cube-outline"></ion-icon></span>
+        <div><span>Insumos registrados</span><strong>{{ insumos().length }}</strong></div>
+      </article>
+      <article class="summary-card summary-stock">
+        <span class="summary-icon"><ion-icon name="archive-outline"></ion-icon></span>
+        <div><span>Unidades totales</span><strong>{{ totalUnidades() }}</strong></div>
+      </article>
+      <article class="summary-card summary-warning">
+        <span class="summary-icon"><ion-icon name="alert-circle-outline"></ion-icon></span>
+        <div><span>En stock mínimo</span><strong>{{ productosBajoMinimo() }}</strong></div>
+      </article>
+    </section>
+
+    @if (insumos().length === 0) {
+      <section class="empty-state">
+        <div class="empty-icon"><ion-icon name="cube-outline"></ion-icon></div>
+        <h2>Aún no hay insumos</h2>
+        <p>Agrega el primer insumo para llevar el control del stock de esta sede.</p>
+        <button type="button" class="primary-button" (click)="openInsumoModal()">
+          <ion-icon name="add-outline"></ion-icon>
+          Agregar primer insumo
+        </button>
+      </section>
+    } @else {
+      <section class="inventory-table-card">
+        <div class="table-heading">
+          <div><h2>Insumos</h2><span>{{ insumos().length }} productos en esta sede</span></div>
+          <span class="table-hint">El stock en bodega se calcula automáticamente</span>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Insumo</th>
+                <th>Costo de compra</th>
+                <th>Stock total</th>
+                <th>En habitaciones</th>
+                <th>En bodega</th>
+                <th>Stock mínimo</th>
+                <th>Estado</th>
+                <th><span class="visually-hidden">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (insumo of insumos(); track insumo.id_insumo) {
+                <tr>
+                  <td class="product-cell">
+                    <span class="product-icon"><ion-icon name="cube-outline"></ion-icon></span>
+                    <span><strong>{{ insumo.nombre_insumo }}</strong><small>{{ insumo.descripcion || 'Sin descripción' }}</small></span>
+                  </td>
+                  <td>{{ insumo.costo_compra | currency:'CLP':'symbol-narrow':'1.0-0' }}</td>
+                  <td><strong>{{ insumo.stock_actual }}</strong> unidades</td>
+                  <td>
+                    <strong>{{ insumo.stock_habitaciones }}</strong> unidades
+                    @if (insumo.stock_habitaciones > 0) {
+                      <div class="room-breakdown">
+                        @for (habitacion of habitaciones(); track habitacion.id) {
+                          @if (assignedToRoom(insumo.id_insumo, habitacion.id) > 0) {
+                            <span>Hab. {{ habitacion.numero }}: {{ assignedToRoom(insumo.id_insumo, habitacion.id) }}</span>
+                          }
+                        }
+                      </div>
+                    }
+                  </td>
+                  <td><span class="warehouse-stock">{{ insumo.stock_bodega }} unidades</span></td>
+                  <td>{{ insumo.stock_minimo }} unidades</td>
+                  <td>
+                    <span class="status-badge" [class.inactive]="!insumo.producto_activo">
+                      {{ insumo.producto_activo ? 'Activo' : 'Inactivo' }}
+                    </span>
+                    @if (insumo.producto_activo && insumo.stock_actual <= insumo.stock_minimo) {
+                      <span class="low-stock">Stock bajo</span>
+                    }
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      class="icon-button actions-trigger"
+                      [attr.aria-label]="'Acciones para ' + insumo.nombre_insumo"
+                      aria-haspopup="menu"
+                      [attr.aria-expanded]="openActionsId() === insumo.id_insumo"
+                      (click)="toggleActions(insumo.id_insumo, $event)">
+                      <ion-icon name="ellipsis-vertical-outline"></ion-icon>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+  }
+</main>
+
+@if (actionsMenuInsumo(); as insumo) {
+  <ion-popover
+    [isOpen]="true"
+    [event]="actionsMenuEvent()"
+    side="bottom"
+    alignment="end"
+    [showBackdrop]="false"
+    cssClass="inventory-actions-popover"
+    (didDismiss)="closeActionsMenu()">
+    <ng-template>
+      <div class="actions-dropdown" role="menu">
+        <button type="button" role="menuitem" (click)="editInsumo(insumo)">
+          <ion-icon name="create-outline"></ion-icon>Editar
+        </button>
+        <button type="button" class="delete-action" role="menuitem" (click)="confirmDeleteInsumo(insumo)">
+          <ion-icon name="trash-outline"></ion-icon>Eliminar
+        </button>
+      </div>
+    </ng-template>
+  </ion-popover>
+}
+
+@if (insumoModalAbierto()) {
+  <div class="modal-backdrop" (click)="closeInsumoModal()">
+    <section class="inventory-modal" role="dialog" aria-modal="true" aria-labelledby="new-item-title" (click)="$event.stopPropagation()">
+      <header class="modal-header">
+        <div><span class="modal-icon"><ion-icon name="cube-outline"></ion-icon></span><div><h2 id="new-item-title">{{ editingInsumoId() === null ? 'Agregar insumo' : 'Editar insumo' }}</h2><p>{{ editingInsumoId() === null ? 'Registra los datos y el stock inicial.' : 'Actualiza la información del insumo.' }}</p></div></div>
+        <button type="button" class="icon-button" aria-label="Cerrar" (click)="closeInsumoModal()"><ion-icon name="close-outline"></ion-icon></button>
+      </header>
+      <form (ngSubmit)="saveInsumo()">
+        <div class="modal-body">
+          <label>Nombre del insumo<input name="nombre" required maxlength="120" [(ngModel)]="insumoForm().nombre_insumo" placeholder="Ej. Toallas de baño"></label>
+          <label>Descripción <span class="optional">(opcional)</span><textarea name="descripcion" rows="3" maxlength="500" [(ngModel)]="insumoForm().descripcion" placeholder="Detalles del producto"></textarea></label>
+          <div class="form-grid">
+            <label>Costo de compra<input name="costo" required type="number" min="0" step="1" [(ngModel)]="insumoForm().costo_compra"></label>
+            <label>{{ editingInsumoId() === null ? 'Stock total inicial' : 'Stock total' }}<input name="stock" required type="number" min="0" step="1" [(ngModel)]="insumoForm().stock_actual"></label>
+          </div>
+          <label>Stock mínimo<input name="stockMinimo" required type="number" min="0" step="1" [(ngModel)]="insumoForm().stock_minimo"></label>
+          <label class="active-toggle"><input name="activo" type="checkbox" [(ngModel)]="insumoForm().producto_activo"><span>Insumo activo</span></label>
+          @if (errorFormulario()) { <p class="form-error" role="alert">{{ errorFormulario() }}</p> }
+        </div>
+        <footer class="modal-actions">
+          <button type="button" class="secondary-button" (click)="closeInsumoModal()">Cancelar</button>
+          <button type="submit" class="primary-button">
+            <ion-icon [name]="editingInsumoId() === null ? 'add-outline' : 'create-outline'"></ion-icon>
+            {{ editingInsumoId() === null ? 'Guardar insumo' : 'Guardar cambios' }}
+          </button>
+        </footer>
+      </form>
+    </section>
+  </div>
+}

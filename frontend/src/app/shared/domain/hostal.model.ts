@@ -69,6 +69,13 @@ export interface SedeTipologia {
 
 export type EstadoHabitacion = 'libre' | 'ocupada' | 'en aseo';
 
+export interface SedeInventarioItem {
+  id: number;
+  nombre: string;
+  cantidad: number;
+  observaciones?: string;
+}
+
 export interface SedeHabitacion {
   id: number;
   numero: string;
@@ -76,6 +83,8 @@ export interface SedeHabitacion {
   tipologiaId?: number;
   tamanoM2: number | null;
   disposicionMuebles: string;
+  descripcion?: string;
+  inventario?: SedeInventarioItem[];
   estado?: EstadoHabitacion;
   huespedActual?: string;
   aseoIniciado?: number;

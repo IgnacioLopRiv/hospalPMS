@@ -798,3 +798,51 @@ dialog.entry-modal-backdrop.guest-edit-dialog::backdrop {
     width: 0 !important;
     height: 0 !important;
   }
+
+ion-popover.inventory-actions-popover {
+  --background: #ffffff;
+  --ion-background-color: #ffffff;
+  --ion-text-color: #1f2937;
+  --color: #1f2937;
+  --box-shadow: 0 8px 24px rgba(15, 23, 42, 0.2);
+  --width: 180px;
+}
+
+ion-popover.inventory-actions-popover::part(content) {
+  overflow: hidden;
+  border: 1px solid #e5e9f2;
+  border-radius: 9px;
+  background: #ffffff;
+}
+
+ion-popover.inventory-actions-popover .actions-dropdown {
+  display: grid;
+  width: 180px;
+  padding: 0.35rem;
+  background: #ffffff;
+  color: #1f2937;
+}
+
+ion-popover.inventory-actions-popover .actions-dropdown button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 0.75rem;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #1f2937;
+  font: inherit;
+  font-size: 0.95rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+ion-popover.inventory-actions-popover .actions-dropdown button:hover {
+  background: #f1f5f9;
+}
+
+ion-popover.inventory-actions-popover .actions-dropdown .delete-action {
+  color: #b91c1c;
+}

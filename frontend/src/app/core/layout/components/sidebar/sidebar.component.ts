@@ -11,6 +11,7 @@ import {
   swapHorizontalOutline,
   barChartOutline,
   logOutOutline,
+  cubeOutline,
 } from 'ionicons/icons';
 
 import { AuthService } from '../../../auth/application/auth.service';
@@ -46,6 +47,7 @@ export class SidebarComponent {
       swapHorizontalOutline,
       barChartOutline,
       logOutOutline,
+      cubeOutline,
     });
   }
 

@@ -33,6 +33,11 @@ export const routes: Routes = [
     loadComponent: () => import('../../features/locations/presentation/pages/habitaciones/habitaciones.page').then((m) => m.HabitacionesPage),
   },
   {
+    path: 'inventario',
+    canActivate: [authGuard],
+    loadComponent: () => import('../../features/inventory/presentation/pages/inventario/inventario.page').then((m) => m.InventarioPage),
+  },
+  {
     path: 'reportes',
     canActivate: [authGuard, permissionGuard('viewReports')],
     loadComponent: () => import('../../features/reports/presentation/pages/reportes/reportes.page').then((m) => m.ReportesPage),

@@ -331,9 +331,9 @@
 
   @if (editingGuestId !== null) {
   <dialog #guestEditDialog class="entry-modal-backdrop guest-edit-dialog"
-    (click)="onGuestEditDialogBackdropClick($event)" (cancel)="onGuestEditDialogCancel($event)">
-    <section class="entry-modal guest-edit-modal" role="dialog" aria-modal="true" aria-labelledby="edit-guest-title"
-      (click)="$event.stopPropagation()">
+    (cancel)="onGuestEditDialogCancel($event)">
+    <section class="entry-modal guest-edit-modal" role="dialog" aria-modal="true"
+      aria-labelledby="edit-guest-title">
       <header class="entry-modal-header">
         <div>
           <h2 id="edit-guest-title">Modificar huésped</h2>
@@ -383,9 +383,9 @@
 
   @if (editingReservationId !== null) {
   <dialog #reservationEditDialog class="entry-modal-backdrop guest-edit-dialog"
-    (click)="onReservationEditDialogBackdropClick($event)" (cancel)="onReservationEditDialogCancel($event)">
+    (cancel)="onReservationEditDialogCancel($event)">
     <section class="entry-modal guest-edit-modal" role="dialog" aria-modal="true"
-      aria-labelledby="edit-reservation-title" (click)="$event.stopPropagation()">
+      aria-labelledby="edit-reservation-title">
       <header class="entry-modal-header">
         <div>
           <h2 id="edit-reservation-title">Modificar reserva</h2>
@@ -448,9 +448,9 @@
 
   @if (deletingGuestId !== null) {
   <dialog #guestDeleteDialog class="entry-modal-backdrop guest-edit-dialog"
-    (click)="onGuestDeleteDialogBackdropClick($event)" (cancel)="onGuestDeleteDialogCancel($event)">
+    (cancel)="onGuestDeleteDialogCancel($event)">
     <section class="entry-modal guest-delete-modal" role="alertdialog" aria-modal="true"
-      aria-labelledby="delete-guest-title" (click)="$event.stopPropagation()">
+      aria-labelledby="delete-guest-title">
       <header class="entry-modal-header">
         <div>
           <h2 id="delete-guest-title">Eliminar huésped</h2>

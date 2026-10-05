@@ -52,7 +52,14 @@
       <!-- Grilla de Tarjetas -->
       <section class="rooms-grid">
         @for (habitacion of habitaciones(); track habitacion.id) {
-          <article class="room-summary" [ngClass]="'card-estado-' + (habitacion.estado || 'libre')">
+          <article
+            class="room-summary"
+            [ngClass]="'card-estado-' + (habitacion.estado || 'libre')"
+            [class.room-editable]="isAdmin()"
+            [attr.tabindex]="isAdmin() ? 0 : null"
+            [attr.aria-label]="isAdmin() ? 'Editar habitación ' + habitacion.numero : null"
+            (click)="openRoomEditor(habitacion)"
+            (keydown)="onRoomCardKeydown($event, habitacion)">
             <!-- Pestaña superior que indica el estado actual con color distintivo -->
             <header class="room-status-tab" [ngClass]="'tab-' + (habitacion.estado || 'libre')">
               <div class="status-tab-info">
@@ -125,6 +132,18 @@
                   <dt>Disposición de muebles</dt>
                   <dd>{{ habitacion.disposicionMuebles || 'Estándar' }}</dd>
                 </div>
+                @if (habitacion.descripcion) {
+                  <div class="full">
+                    <dt>Descripción</dt>
+                    <dd>{{ habitacion.descripcion }}</dd>
+                  </div>
+                }
+                @if (roomInventoryCount(habitacion.id) > 0) {
+                  <div class="full room-inventory-summary">
+                    <dt>Inventario</dt>
+                    <dd>{{ roomInventoryCount(habitacion.id) }} insumos registrados</dd>
+                  </div>
+                }
               </dl>
             </div>
           </article>
@@ -134,7 +153,7 @@
   </main>
 
   @if (isAdmin() && newRoomFormOpen()) {
-    <div class="new-room-modal-backdrop" (click)="closeNewRoomForm()">
+    <div class="new-room-modal-backdrop">
       <section
         class="new-room-modal"
         role="dialog"
@@ -197,6 +216,367 @@
           </footer>
         </form>
       </section>
+    </div>
+  }
+
+  @if (isAdmin() && editingRoom(); as room) {
+    <div class="room-detail-modal-backdrop">
+      <section
+        class="room-detail-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="room-detail-title"
+        (click)="$event.stopPropagation()">
+        <header class="room-detail-modal-header">
+          <div>
+            <span class="room-detail-eyebrow">Administración de habitación</span>
+            <h2 id="room-detail-title">Habitación {{ room.numero }}</h2>
+          </div>
+          <button type="button" class="btn-close-form" aria-label="Cerrar" (click)="closeRoomEditor()">
+            <ion-icon name="close-outline"></ion-icon>
+          </button>
+        </header>
+
+        <nav class="room-detail-tabs" aria-label="Secciones de la habitación">
+          <button
+            type="button"
+            [class.active]="roomDetailTab() === 'details'"
+            [attr.aria-selected]="roomDetailTab() === 'details'"
+            role="tab"
+            (click)="roomDetailTab.set('details')">
+            <ion-icon name="create-outline"></ion-icon>
+            Datos de la habitación
+          </button>
+          <button
+            type="button"
+            [class.active]="roomDetailTab() === 'inventory'"
+            [attr.aria-selected]="roomDetailTab() === 'inventory'"
+            role="tab"
+            (click)="roomDetailTab.set('inventory')">
+            <ion-icon name="cube-outline"></ion-icon>
+            Inventario
+            <span class="inventory-count">{{ roomInventory().length }}</span>
+          </button>
+          <button
+            type="button"
+            [class.active]="roomDetailTab() === 'photos'"
+            [attr.aria-selected]="roomDetailTab() === 'photos'"
+            role="tab"
+            (click)="roomDetailTab.set('photos')">
+            <ion-icon name="images-outline"></ion-icon>
+            Fotos
+            <span class="inventory-count">{{ roomPhotos().length }}</span>
+          </button>
+        </nav>
+
+        <form (ngSubmit)="saveRoomChanges()">
+          @if (roomDetailTab() === 'details') {
+            <div class="room-detail-modal-body room-details-fields" role="tabpanel">
+              <label class="room-detail-field">
+                <span>Número de habitación</span>
+                <input
+                  type="number"
+                  name="editRoomNumber"
+                  min="1"
+                  step="1"
+                  required
+                  [(ngModel)]="roomNumber"
+                  (ngModelChange)="roomFormError.set('')">
+              </label>
+              <label class="room-detail-field">
+                <span>Tipología</span>
+                <select
+                  name="editRoomTypology"
+                  [value]="roomTypologyId ?? ''"
+                  (change)="setRoomTypology($event)">
+                  <option value="" disabled>Selecciona una tipología</option>
+                  @for (tipologia of tipologias(); track tipologia.id) {
+                    <option [value]="tipologia.id">{{ tipologia.nombre }} ({{ tipologia.capacidad }}p)</option>
+                  }
+                </select>
+              </label>
+              <label class="room-detail-field">
+                <span>Tamaño (m²)</span>
+                <input
+                  type="number"
+                  name="editRoomSize"
+                  min="0.1"
+                  step="any"
+                  placeholder="Sin especificar"
+                  [(ngModel)]="roomSize"
+                  (ngModelChange)="roomFormError.set('')">
+              </label>
+              <label class="room-detail-field">
+                <span>Disposición de muebles</span>
+                <input
+                  type="text"
+                  name="editRoomFurniture"
+                  placeholder="Ej. 1 cama matrimonial"
+                  [(ngModel)]="roomFurniture">
+              </label>
+              <label class="room-detail-field room-detail-field-full">
+                <span>Descripción</span>
+                <textarea
+                  name="editRoomDescription"
+                  rows="4"
+                  maxlength="500"
+                  placeholder="Agrega detalles o características de la habitación"
+                  [(ngModel)]="roomDescription"></textarea>
+              </label>
+              @if (roomFormError()) {
+                <p class="room-detail-error" role="alert">{{ roomFormError() }}</p>
+              }
+            </div>
+          } @else if (roomDetailTab() === 'inventory') {
+            <div class="room-detail-modal-body inventory-panel" role="tabpanel">
+              <p class="inventory-intro">Asigna a esta habitación insumos registrados en el inventario de la sede.</p>
+
+              @if (roomInventory().length === 0) {
+                <p class="inventory-empty">Todavía no hay insumos asignados a esta habitación.</p>
+              }
+
+              @if (roomInventory().length > 0) {
+                <div class="inventory-list">
+                  @for (item of roomInventory(); track item.asignacion.id_inventario_hab) {
+                    <div class="inventory-item">
+                      <div class="assigned-supply-details">
+                        <strong>{{ item.insumo.nombre_insumo }}</strong>
+                        <span>{{ item.asignacion.cantidad }} unidades asignadas</span>
+                      </div>
+                      <button
+                        type="button"
+                        class="btn-remove-inventory"
+                        [attr.aria-label]="'Devolver ' + item.insumo.nombre_insumo + ' a bodega'"
+                        (click)="releaseInventoryFromRoom(item.asignacion.id_inventario_hab)">
+                        <ion-icon name="return-up-back-outline"></ion-icon>
+                        Devolver
+                      </button>
+                    </div>
+                  }
+                </div>
+              }
+
+              <div class="inventory-add-form">
+                <h3>Asignar insumo</h3>
+                <div class="inventory-add-fields">
+                  <label class="room-detail-field inventory-item-name">
+                    <span>Insumo disponible</span>
+                    <select
+                      name="inventorySupply"
+                      [ngModel]="selectedInventorySupplyId()"
+                      (ngModelChange)="selectedInventorySupplyId.set($event)">
+                      @for (insumo of insumosActivos(); track insumo.id_insumo) {
+                        <option [ngValue]="insumo.id_insumo" [disabled]="availableInventoryStock(insumo.id_insumo) < 1">
+                          {{ insumo.nombre_insumo }} · {{ availableInventoryStock(insumo.id_insumo) }} en bodega
+                        </option>
+                      }
+                    </select>
+                  </label>
+                  <label class="room-detail-field inventory-item-quantity">
+                    <span>Cantidad</span>
+                    <input
+                      type="number"
+                      name="inventoryQuantity"
+                      min="1"
+                      [max]="selectedInventoryAvailableStock()"
+                      step="1"
+                      [ngModel]="inventoryQuantity()"
+                      (ngModelChange)="inventoryQuantity.set($event)">
+                  </label>
+                  <button
+                    type="button"
+                    class="btn-add-inventory"
+                    (click)="assignInventoryToRoom()"
+                    [disabled]="insumosActivos().length === 0 || selectedInventorySupplyId() === null || availableInventoryStock(selectedInventorySupplyId()!) < 1">
+                    <ion-icon name="add-outline"></ion-icon>
+                    Asignar
+                  </button>
+                </div>
+                @if (insumosActivos().length === 0) {
+                  <p class="inventory-empty">No hay insumos activos en esta sede. Regístralos primero en la sección Inventario.</p>
+                }
+              </div>
+              @if (inventoryFormError()) {
+                <p class="room-detail-error" role="alert">{{ inventoryFormError() }}</p>
+              }
+            </div>
+          } @else {
+            <div class="room-detail-modal-body room-photos-panel" role="tabpanel">
+              <header class="room-photos-heading">
+                <div>
+                  <h3>Fotos de la habitación</h3>
+                  <p>Administra las imágenes de la habitación {{ room.numero }}.</p>
+                </div>
+                @if (roomPhotos().length > 0) {
+                  <button
+                    type="button"
+                    class="btn-download-room-photos"
+                    [disabled]="downloadingPhotos()"
+                    (click)="downloadAllRoomPhotos()">
+                    <ion-icon name="download-outline"></ion-icon>
+                    {{ downloadingPhotos() ? 'Preparando ZIP…' : 'Descargar todas (ZIP)' }}
+                  </button>
+                }
+              </header>
+
+              <label for="room-photo-upload" class="btn-upload btn-photo-action">
+                <ion-icon name="camera-outline"></ion-icon>
+                <span>{{ photoPreviewUrl() ? 'Cambiar foto' : 'Seleccionar foto' }}</span>
+              </label>
+              <input
+                id="room-photo-upload"
+                class="room-photo-file-input"
+                type="file"
+                accept="image/*"
+                (change)="selectRoomPhoto($event)">
+
+              @if (photoPreviewUrl(); as previewUrl) {
+                <section class="room-photo-preview" aria-label="Vista previa de la foto seleccionada">
+                  <img [src]="previewUrl" [alt]="photoTitle || 'Vista previa de la foto'">
+                  <div class="room-photo-preview-fields">
+                    <label class="room-detail-field">
+                      <span>Título</span>
+                      <input
+                        type="text"
+                        name="photoTitle"
+                        maxlength="100"
+                        placeholder="Ej. Vista desde la habitación"
+                        [(ngModel)]="photoTitle">
+                    </label>
+                    <label class="room-detail-field">
+                      <span>Descripción</span>
+                      <textarea
+                        name="photoDescription"
+                        rows="2"
+                        maxlength="300"
+                        placeholder="Describe brevemente esta foto"
+                        [(ngModel)]="photoDescription"></textarea>
+                    </label>
+                    <div class="room-photo-preview-actions">
+                      <button type="button" class="btn-photo-discard" [disabled]="savingPhoto()" (click)="discardPhotoPreview()">
+                        Descartar
+                      </button>
+                      <button type="button" class="btn-photo-save" [disabled]="savingPhoto()" (click)="saveRoomPhoto()">
+                        {{ savingPhoto() ? 'Subiendo…' : 'Subir foto' }}
+                      </button>
+                    </div>
+                  </div>
+                </section>
+              }
+
+              @if (roomPhotos().length === 0) {
+                <div class="room-photos-empty">
+                  <span class="room-photos-empty-icon"><ion-icon name="images-outline"></ion-icon></span>
+                  <strong>Aún no hay fotos</strong>
+                  <span>Selecciona una imagen para agregarla a la galería de esta habitación.</span>
+                </div>
+              } @else {
+                <div class="room-photo-grid">
+                  @for (photo of roomPhotos(); track photo.id) {
+                    <article class="room-photo-card">
+                      <button
+                        type="button"
+                        class="room-photo-image-button"
+                        [attr.aria-label]="'Ampliar foto ' + (photo.titulo || '')"
+                        (click)="openPhotoLightbox(photo)">
+                        <img [src]="photo.url" [alt]="photo.titulo || photo.descripcion || 'Foto de habitación'">
+                      </button>
+                      <div class="room-photo-card-content">
+                        <h4>{{ photo.titulo || 'Foto de habitación' }}</h4>
+                        @if (photo.descripcion) {
+                          <p>{{ photo.descripcion }}</p>
+                        }
+                        <time [attr.datetime]="photo.fechaSubida">{{ photo.fechaSubida | date:'dd/MM/yyyy' }}</time>
+                        <button
+                          type="button"
+                          class="btn-copy-room-photo"
+                          [attr.aria-label]="'Copiar imagen ' + (photo.titulo || '')"
+                          (click)="$event.stopPropagation(); copyRoomPhoto(photo)">
+                          <ion-icon name="copy-outline"></ion-icon>
+                          Copiar imagen
+                        </button>
+                        <button
+                          type="button"
+                          class="btn-remove-room-photo"
+                          [attr.aria-label]="'Eliminar foto ' + (photo.titulo || '')"
+                          (click)="removeRoomPhoto(photo)">
+                          <ion-icon name="trash-outline"></ion-icon>
+                          Eliminar foto
+                        </button>
+                      </div>
+                    </article>
+                  }
+                </div>
+              }
+
+              @if (lightboxPhoto(); as selectedPhoto) {
+                <div class="room-photo-lightbox">
+                  <section
+                    class="room-photo-lightbox-content"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Vista ampliada de foto"
+                    (click)="$event.stopPropagation()">
+                    <button
+                      type="button"
+                      class="room-photo-lightbox-close"
+                      aria-label="Cerrar imagen ampliada"
+                      (click)="closePhotoLightbox()">
+                      <ion-icon name="close-outline"></ion-icon>
+                    </button>
+                    <img [src]="selectedPhoto.url" [alt]="selectedPhoto.titulo || selectedPhoto.descripcion || 'Foto ampliada de habitación'">
+                    <div class="room-photo-lightbox-caption">
+                      <div>
+                        <strong>{{ selectedPhoto.titulo || 'Foto de habitación' }}</strong>
+                        @if (selectedPhoto.descripcion) {
+                          <p>{{ selectedPhoto.descripcion }}</p>
+                        }
+                      </div>
+                      <button type="button" class="btn-copy-lightbox-photo" (click)="copyLightboxPhoto()">
+                        <ion-icon name="copy-outline"></ion-icon>
+                        Copiar imagen
+                      </button>
+                    </div>
+                  </section>
+                </div>
+              }
+            </div>
+          }
+
+          <footer class="room-detail-modal-actions">
+            @if (confirmRoomDelete()) {
+              <div class="room-delete-confirmation" role="alert">
+                <span>¿Eliminar la habitación {{ room.numero }} y su inventario?</span>
+                <button type="button" class="btn-confirm-delete" (click)="deleteRoom()">Sí, eliminar</button>
+                <button type="button" class="btn-cancel-delete" (click)="confirmRoomDelete.set(false)">No</button>
+              </div>
+            } @else {
+              <button type="button" class="btn-delete-room" (click)="requestRoomDelete()">
+                <ion-icon name="trash-outline"></ion-icon>
+                Eliminar habitación
+              </button>
+              <div class="room-detail-save-actions">
+                <button type="button" class="btn-cancel-new-room" (click)="closeRoomEditor()">Cancelar</button>
+                <button type="submit" class="btn-save-new-room">Guardar cambios</button>
+              </div>
+            }
+          </footer>
+        </form>
+      </section>
+    </div>
+  }
+  @if (photoNotice()) {
+    <div class="room-photo-notice" [class.error]="photoNoticeIsError()" role="status" aria-live="polite">
+      @if (!photoNoticeIsError()) {
+        <span class="room-photo-notice-icon"><ion-icon name="checkmark-circle-outline" aria-hidden="true"></ion-icon></span>
+      }
+      <div class="room-photo-notice-content">
+        <strong>{{ photoNoticeTitle() }}</strong>
+        <span>{{ photoNotice() }}</span>
+      </div>
+      <button type="button" class="room-photo-notice-close" aria-label="Cerrar aviso" (click)="dismissPhotoNotice()">
+        <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+      </button>
     </div>
   }
 </div>

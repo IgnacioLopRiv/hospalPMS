@@ -334,32 +334,14 @@ export class GuestsViewPage implements OnInit, OnDestroy {
     }
   }
 
-  onGuestEditDialogBackdropClick(event: MouseEvent): void {
-    if (event.target === event.currentTarget) {
-      this.closeGuestEditor();
-    }
-  }
-
   onGuestEditDialogCancel(event: Event): void {
     event.preventDefault();
     this.closeGuestEditor();
   }
 
-  onReservationEditDialogBackdropClick(event: MouseEvent): void {
-    if (event.target === event.currentTarget) {
-      this.closeReservationEditor();
-    }
-  }
-
   onReservationEditDialogCancel(event: Event): void {
     event.preventDefault();
     this.closeReservationEditor();
-  }
-
-  onGuestDeleteDialogBackdropClick(event: MouseEvent): void {
-    if (event.target === event.currentTarget) {
-      this.cancelGuestDeletion();
-    }
   }
 
   onGuestDeleteDialogCancel(event: Event): void {
