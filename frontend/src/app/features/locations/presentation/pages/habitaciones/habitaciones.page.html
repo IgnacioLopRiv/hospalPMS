@@ -1,26 +1,17 @@
 <div class="habitaciones-page-container">
   <main class="page-content">
-    <!-- Banner de Encabezado Institucional -->
-    <header class="habitaciones-banner-header">
-      <div class="banner-top-row">
-        <div class="header-main-info">
-          <h1>Habitaciones</h1>
-          @if (sede(); as currentSede) {
-            <p class="sede-description">
-              <ion-icon name="business-outline"></ion-icon>
-              Habitaciones registradas de <strong>{{ currentSede.nombre }}</strong> en {{ currentSede.ciudad }}
-            </p>
-          }
-        </div>
-
-        <!-- Reloj en vivo integrado en la cabecera -->
-        <div class="header-clock-box">
-          <app-clock></app-clock>
-        </div>
+    <header class="habitaciones-page-header">
+      <div class="heading-main-info">
+        <h1>Habitaciones</h1>
+        @if (sede(); as currentSede) {
+          <p class="sede-description">
+            <ion-icon name="business-outline"></ion-icon>
+            Habitaciones registradas de <strong>{{ currentSede.nombre }}</strong> en {{ currentSede.ciudad }}
+          </p>
+        }
       </div>
 
-      <!-- Barra divisoria con resumen de estados y botón de gestión -->
-      <div class="box-legend">
+      <div class="rooms-overview">
         <div class="legend-info">
           <span class="legend-badge">ESTADO EN VIVO</span>
           <div class="status-summary-pills">
@@ -40,13 +31,52 @@
         </div>
 
         @if (isAdmin()) {
-          <button type="button" class="btn-manage-rooms" (click)="addHabitaciones()">
-            <ion-icon name="create-outline"></ion-icon>
-            <span>Gestionar habitaciones</span>
+          <button type="button" class="btn-new-room" (click)="openNewRoomForm()">
+            <ion-icon name="add-outline"></ion-icon>
+            <span>Nueva habitación</span>
           </button>
         }
       </div>
     </header>
+
+    @if (isAdmin() && newRoomFormOpen()) {
+      <form class="new-room-form" (ngSubmit)="createHabitacion()">
+        <div class="new-room-form-heading">
+          <div>
+            <h2>Nueva habitación</h2>
+            <p>El número se asignará automáticamente.</p>
+          </div>
+          <button type="button" class="btn-close-form" aria-label="Cerrar" (click)="closeNewRoomForm()">
+            <ion-icon name="close-outline"></ion-icon>
+          </button>
+        </div>
+
+        @if (tipologias().length === 0) {
+          <p class="new-room-notice" role="status">
+            Esta sede no tiene tipologías configuradas. Agrega una tipología en la configuración de la sede para crear habitaciones.
+          </p>
+        } @else {
+          <label class="new-room-type-field">
+            <span>Tipología</span>
+            <select
+              name="tipologia"
+              [value]="newRoomTypologyId()"
+              (change)="selectNewRoomTypology($event)">
+              @for (tipologia of tipologias(); track tipologia.id) {
+                <option [value]="tipologia.id">{{ tipologia.nombre }} ({{ tipologia.capacidad }}p)</option>
+              }
+            </select>
+          </label>
+        }
+
+        <div class="new-room-form-actions">
+          <button type="button" class="btn-cancel-new-room" (click)="closeNewRoomForm()">Cancelar</button>
+          <button type="submit" class="btn-save-new-room" [disabled]="tipologias().length === 0">
+            Crear habitación
+          </button>
+        </div>
+      </form>
+    }
 
     <!-- Estado vacío -->
     @if (habitaciones().length === 0) {
@@ -55,7 +85,7 @@
           <ion-icon name="bed-outline"></ion-icon>
         </div>
         <p>No hay habitaciones registradas para esta sede.</p>
-        <span class="empty-hint">Utiliza el botón superior <strong>Gestionar habitaciones</strong> para dar de alta nuevas habitaciones.</span>
+        <span class="empty-hint">Utiliza el botón superior <strong>Nueva habitación</strong> para dar de alta una habitación.</span>
       </div>
     } @else {
       <!-- Grilla de Tarjetas -->
@@ -142,9 +172,3 @@
     }
   </main>
 </div>
-
-<app-edit-habitaciones-modal
-  [isOpen]="editHabitacionesOpen()"
-  (closed)="closeEditHabitaciones()"
-  (close)="closeEditHabitaciones()">
-</app-edit-habitaciones-modal>
