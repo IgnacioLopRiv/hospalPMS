@@ -24,9 +24,10 @@ import {
   copyOutline,
   downloadOutline,
   returnUpBackOutline,
+  pricetagsOutline,
 } from 'ionicons/icons';
 import JSZip from 'jszip';
-import { Habitacion, SedeService, EstadoHabitacion } from '../../../application/sede.service';
+import { Habitacion, SedeService, EstadoHabitacion, SedeTipologia } from '../../../application/sede.service';
 import { FotoHabitacionService } from '../../../application/foto-habitacion.service';
 import { FotoHabitacion } from '../../../domain/foto-habitacion.model';
 import { AuthService } from '../../../../../core/auth/application/auth.service';
@@ -36,6 +37,7 @@ import {
   InsumoInventario,
   InventarioService,
 } from '../../../../inventory/application/inventario.service';
+import { EditTipologiasComponent } from '../../edit-tipologias/edit-tipologias.component';
 
 interface ArticuloInventarioHabitacion {
   asignacion: AsignacionInventarioHabitacion;
@@ -47,7 +49,7 @@ interface ArticuloInventarioHabitacion {
   templateUrl: './habitaciones.page.html',
   styleUrls: ['./habitaciones.page.scss', './habitaciones-modal.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, IonIcon],
+  imports: [CommonModule, FormsModule, IonIcon, EditTipologiasComponent],
 })
 export class HabitacionesPage implements OnInit, OnDestroy {
   private photoNoticeTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -61,6 +63,7 @@ export class HabitacionesPage implements OnInit, OnDestroy {
   readonly habitaciones = this.sedeService.habitaciones;
   readonly tipologias = this.sedeService.tipologias;
   readonly isAdmin = computed(() => this.authService.currentUser()?.role === 'admin');
+  readonly editTipologiasOpen = signal(false);
   readonly newRoomFormOpen = signal(false);
   readonly newRoomTypologyId = signal<number | null>(null);
   readonly newRoomNumber = signal('');
@@ -144,6 +147,7 @@ export class HabitacionesPage implements OnInit, OnDestroy {
       copyOutline,
       downloadOutline,
       returnUpBackOutline,
+      pricetagsOutline,
     });
 
     // Hook reactivo useEffect con setInterval para revisar estados y auto-liberar aseo en vivo
@@ -181,6 +185,16 @@ export class HabitacionesPage implements OnInit, OnDestroy {
 
   closeNewRoomForm(): void {
     this.newRoomFormOpen.set(false);
+  }
+
+  openEditTipologias(): void {
+    if (this.isAdmin()) {
+      this.editTipologiasOpen.set(true);
+    }
+  }
+
+  closeEditTipologias(): void {
+    this.editTipologiasOpen.set(false);
   }
 
   openRoomEditor(room: Habitacion): void {
@@ -691,11 +705,15 @@ export class HabitacionesPage implements OnInit, OnDestroy {
     return { tamanoM2: 22, disposicionMuebles: '1 Cama Matrimonial' };
   }
 
-  getManagedTypologyName(room: Habitacion): string {
+  getManagedTypology(room: Habitacion): SedeTipologia | undefined {
     return this.tipologias().find((typology) =>
       typology.id === room.tipologiaId ||
       typology.nombre.toLocaleLowerCase() === room.tipo.toLocaleLowerCase()
-    )?.nombre ?? 'Tipología no gestionada';
+    );
+  }
+
+  getManagedTypologyName(room: Habitacion): string {
+    return this.getManagedTypology(room)?.nombre ?? 'Tipología no gestionada';
   }
 
   getEstadoLabel(estado?: EstadoHabitacion): string {

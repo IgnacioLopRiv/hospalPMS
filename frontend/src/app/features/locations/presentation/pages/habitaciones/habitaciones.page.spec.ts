@@ -57,6 +57,36 @@ describe('HabitacionesPage', () => {
     expect(component).toBeTruthy();
   });
 
+  it('shows the room typology color and the corresponding guest capacity on its card', () => {
+    sedeService.selectedSede.update((sede) => ({
+      ...sede!,
+      tipologias: [{
+        id: 1,
+        nombre: 'Doble',
+        capacidad: 2,
+        color: '#aa3366',
+      }],
+      habitaciones: [{
+        ...sede!.habitaciones[0],
+        tipologiaId: 1,
+      }],
+    }));
+    fixture.detectChanges();
+
+    const capacity = fixture.nativeElement.querySelector('.room-header-capacity') as HTMLElement;
+    const typology = fixture.nativeElement.querySelector('.badge-tipo') as HTMLElement;
+    const labels = [...fixture.nativeElement.querySelectorAll('dt')].map((label: HTMLElement) => label.textContent.trim());
+    const titleLine = fixture.nativeElement.querySelector('.room-title-line') as HTMLElement;
+
+    expect(typology.textContent.trim()).toBe('Doble');
+    expect(typology.style.getPropertyValue('--typology-color')).toBe('#aa3366');
+    expect(labels).toContain('Tipología');
+    expect(labels).not.toContain('Personas');
+    expect(capacity.textContent).toContain('2 personas');
+    expect(capacity.querySelector('ion-icon[name="person-outline"]')).not.toBeNull();
+    expect(titleLine.contains(capacity)).toBeTrue();
+  });
+
   it('should not open the new room modal when user is not admin', () => {
     authService.currentUser.set({
       id: 2,
@@ -79,6 +109,34 @@ describe('HabitacionesPage', () => {
 
     component.openNewRoomForm();
     expect(component.newRoomFormOpen()).toBeTrue();
+  });
+
+  it('opens the typology manager from the rooms page for administrators', () => {
+    authService.currentUser.set({
+      id: 1,
+      name: 'Administrador',
+      email: 'admin@hostal.cl',
+      role: 'admin',
+    });
+
+    component.openEditTipologias();
+
+    expect(component.editTipologiasOpen()).toBeTrue();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.btn-manage-typologies')).not.toBeNull();
+  });
+
+  it('does not open the typology manager for non-admin users', () => {
+    authService.currentUser.set({
+      id: 2,
+      name: 'Recepcionista',
+      email: 'recepcion@hostal.cl',
+      role: 'staff',
+    });
+
+    component.openEditTipologias();
+
+    expect(component.editTipologiasOpen()).toBeFalse();
   });
 
   it('keeps the new room modal open when clicking outside it', () => {
