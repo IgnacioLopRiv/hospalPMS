@@ -1,0 +1,146 @@
+// =============================================================================
+// HospalPMS – Prisma Schema
+// Motor: MySQL
+// Arquitectura: Clean Architecture / Modular Monolith
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MÓDULO: Locations (Sedes, Tipologías, Habitaciones)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Sede {
+  id          Int          @id @default(autoincrement())
+  nombre      String       @db.VarChar(120)
+  ciudad      String       @db.VarChar(120)
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  tipologias   Tipologia[]
+  habitaciones Habitacion[]
+
+  @@map("sedes")
+}
+
+model Tipologia {
+  id          Int          @id @default(autoincrement())
+  sedeId      Int          @map("sede_id")
+  nombre      String       @db.VarChar(80)
+  capacidad   Int
+  color       String?      @db.Char(7)
+  precioBase  Decimal?     @map("precio_base") @db.Decimal(10, 2)
+  descripcion String?      @db.Text
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  sede         Sede         @relation(fields: [sedeId], references: [id], onDelete: Cascade)
+  habitaciones Habitacion[]
+
+  @@map("tipologias")
+}
+
+model Habitacion {
+  id                 Int              @id @default(autoincrement())
+  sedeId             Int              @map("sede_id")
+  tipologiaId        Int?             @map("tipologia_id")
+  numero             String           @db.VarChar(20)
+  tamanoM2           Decimal?         @map("tamano_m2") @db.Decimal(6, 2)
+  disposicionMuebles String?          @map("disposicion_muebles") @db.Text
+  descripcion        String?          @db.Text
+  estado             EstadoHabitacion @default(libre)
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+
+  sede       Sede        @relation(fields: [sedeId], references: [id], onDelete: Cascade)
+  tipologia  Tipologia?  @relation(fields: [tipologiaId], references: [id], onDelete: SetNull)
+  inventario InventarioItem[]
+  reservas   Reserva[]
+
+  @@unique([sedeId, numero])
+  @@map("habitaciones")
+}
+
+enum EstadoHabitacion {
+  libre
+  ocupada
+  en_aseo
+
+  @@map("estado_habitacion")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MÓDULO: Inventory (Inventario por habitación)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model InventarioItem {
+  id            Int        @id @default(autoincrement())
+  habitacionId  Int        @map("habitacion_id")
+  nombre        String     @db.VarChar(120)
+  cantidad      Int
+  observaciones String?    @db.Text
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  habitacion Habitacion @relation(fields: [habitacionId], references: [id], onDelete: Cascade)
+
+  @@map("inventario_items")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MÓDULO: Guests (Huéspedes)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Huesped {
+  id           Int       @id @default(autoincrement())
+  documento    String?   @db.VarChar(40)
+  nombre       String    @db.VarChar(80)
+  apellido     String    @db.VarChar(80)
+  nacionalidad String    @db.VarChar(60)
+  telefono     String    @db.VarChar(30)
+  email        String    @unique @db.VarChar(120)
+  esRecurrente Boolean   @default(false) @map("es_recurrente")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  reservas Reserva[]
+
+  @@map("huespedes")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MÓDULO: Reservations (Reservas)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Reserva {
+  id               Int           @id @default(autoincrement())
+  huespedId        Int           @map("huesped_id")
+  habitacionId     Int           @map("habitacion_id")
+  fechaLlegada     DateTime      @map("fecha_llegada") @db.Date
+  fechaSalida      DateTime      @map("fecha_salida") @db.Date
+  horaLlegada      String?       @map("hora_llegada") @db.VarChar(5)
+  cantidadPersonas Int?          @map("cantidad_personas")
+  estado           EstadoReserva @default(CONFIRMADA)
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  huesped    Huesped    @relation(fields: [huespedId], references: [id])
+  habitacion Habitacion @relation(fields: [habitacionId], references: [id])
+
+  @@map("reservas")
+}
+
+enum EstadoReserva {
+  HOSPEDADO
+  CHECK_IN_HOY
+  CHECK_OUT_HOY
+  CONFIRMADA
+
+  @@map("estado_reserva")
+}
