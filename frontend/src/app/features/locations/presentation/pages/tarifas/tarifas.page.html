@@ -1,220 +1,182 @@
 <div class="tarifas-container">
-
-  <!-- ── Encabezado ──────────────────────────────────────────────────────────── -->
   <header class="top-bar">
     <div>
-      <h1 class="page-title">Tarifas por Temporada</h1>
+      <h1 class="page-title">Tarifas</h1>
+      @if (sede(); as currentSede) {
+        <p class="page-subtitle">Precios y periodos de {{ currentSede.nombre }}</p>
+      }
     </div>
-    <div class="top-actions">
-      <!-- Indicador de temporada activa -->
-      <div class="season-live-badge" [class.alta]="isHighSeason()" [class.baja]="!isHighSeason()">
-        @if (isHighSeason()) {
-          <ion-icon name="sunny-outline"></ion-icon>
-          <span>Temporada Alta activa</span>
-        } @else {
-          <ion-icon name="snow-outline"></ion-icon>
-          <span>Temporada Baja activa</span>
-        }
-        <span class="live-dot"></span>
-      </div>
-      <button type="button" class="btn-top-action" (click)="openConfig()" id="btn-config-tarifas">
-        <ion-icon name="settings-outline"></ion-icon>
-        <span>Configurar</span>
-      </button>
-    </div>
+    <button type="button" class="btn-top-action" (click)="openConfig()" id="btn-new-tarifa">
+      <ion-icon name="add-outline"></ion-icon>
+      <span>Nueva tarifa</span>
+    </button>
   </header>
 
-  <!-- ── Panel resumen de temporadas ────────────────────────────────────────── -->
-  <section class="season-summary-panel">
-    <div class="season-summary-card alta">
-      <div class="summary-icon-badge alta">
-        <ion-icon name="sunny-outline"></ion-icon>
-      </div>
-      <div class="summary-info">
-        <span class="summary-label">TEMPORADA ALTA</span>
-        <p class="summary-months">
-          @if (config().mesesAlta.length === 0) {
-            <em>Sin meses configurados</em>
-          } @else {
-            @for (m of config().mesesAlta; track m; let last = $last) {
-              {{ monthName(m) }}@if (!last) { · }
-            }
-          }
-        </p>
-      </div>
-      @if (isHighSeason()) {
-        <span class="active-now-badge alta">
-          <span class="dot"></span>Activa ahora
-        </span>
+  <section class="active-rates-note" aria-live="polite">
+    @if (activeTarifas().length > 0) {
+      <span class="active-dot"></span>
+      <span>Tarifas aplicables hoy:</span>
+      @for (tarifa of activeTarifas(); track tarifa.id; let last = $last) {
+        <strong>{{ tarifa.nombre }}@if (!last) {, }</strong>
       }
-    </div>
-
-    <div class="season-summary-card baja">
-      <div class="summary-icon-badge baja">
-        <ion-icon name="snow-outline"></ion-icon>
-      </div>
-      <div class="summary-info">
-        <span class="summary-label">TEMPORADA BAJA</span>
-        <p class="summary-months">
-          @if (mesesBaja().length === 0) {
-            <em>Sin meses configurados</em>
-          } @else {
-            @for (m of mesesBaja(); track m; let last = $last) {
-              {{ monthName(m) }}@if (!last) { · }
-            }
-          }
-        </p>
-      </div>
-      @if (!isHighSeason()) {
-        <span class="active-now-badge baja">
-          <span class="dot"></span>Activa ahora
-        </span>
-      }
-    </div>
+    } @else {
+      <span class="inactive-dot"></span>
+      <span>No hay tarifas aplicables hoy.</span>
+    }
   </section>
 
-  <!-- ── Grilla de columnas de tarifas ──────────────────────────────────────── -->
-  <section class="tarifas-columns-grid">
-
-    <!-- Columna Temporada Alta -->
-    <div class="tarifas-column column-alta" [class.active-season]="isHighSeason()">
-      <div class="column-header">
-        <div class="column-title-group">
-          <div class="column-icon-badge alta">
-            <ion-icon name="trending-up-outline"></ion-icon>
-          </div>
+  <div class="settings-grid" [class.settings-grid-many-typologies]="tipologias().length > 4">
+    <section class="base-prices-settings" aria-labelledby="base-prices-title">
+      <div class="base-prices-header">
+        <div class="deposit-settings-copy">
+          <span class="deposit-settings-icon"><ion-icon name="cash-outline"></ion-icon></span>
           <div>
-            <h2>Temporada Alta</h2>
-            <p class="column-subtitle">Tarifas vigentes en meses de alta demanda</p>
+            <h2 id="base-prices-title">Precio base por tipología</h2>
+            <p>Se usa como precio predeterminado al crear nuevas tarifas.</p>
           </div>
         </div>
-        @if (isHighSeason()) {
-          <span class="season-status-badge alta">
-            <span class="dot"></span>Activa ahora
-          </span>
-        }
+        <button
+          type="button"
+          class="btn-save-deposit"
+          [disabled]="!isValidBasePriceDraft()"
+          (click)="saveBasePrices()">
+          Guardar precios base
+        </button>
       </div>
-
-      <!-- Lista de tarifas por tipología -->
-      <div class="tarifas-list">
-        @for (tarifa of tarifasAlta(); track tarifa.tipologiaId) {
-          <div class="tarifa-row">
-            <div class="tarifa-tipo-badge" [style.background-color]="tarifa.color + '22'" [style.color]="tarifa.color">
-              <ion-icon name="pricetag-outline"></ion-icon>
-            </div>
-            <div class="tarifa-info">
-              <span class="tarifa-tipo-nombre">{{ tarifa.nombre }}</span>
-              <small class="tarifa-capacidad">Hasta {{ tarifa.capacidad }} persona{{ tarifa.capacidad !== 1 ? 's' : '' }}</small>
-            </div>
-            <div class="tarifa-precio-chip alta">
-              <ion-icon name="cash-outline"></ion-icon>
-              <span>
-                @if (tarifa.precioBase > 0) {
-                  ${{ tarifa.precioBase | number:'1.0-0' }} / noche
-                } @else {
-                  <em>Sin tarifa</em>
-                }
+      @if (tipologias().length > 0) {
+        <div class="base-prices-grid">
+          @for (tipologia of tipologias(); track tipologia.id) {
+            <label class="base-price-row">
+              <span class="typology-name">
+                <span class="typology-dot" [style.background-color]="tipologia.color ?? '#64748b'"></span>
+                {{ tipologia.nombre }}
               </span>
-            </div>
-          </div>
-        } @empty {
-          <div class="empty-tarifas">
-            <ion-icon name="information-circle-outline" class="empty-icon alta"></ion-icon>
-            <p>No hay tipologías de habitación registradas para esta sede.</p>
-            <small>Agrega tipologías desde la sección <strong>Habitaciones</strong> para configurar las tarifas.</small>
-          </div>
-        }
-      </div>
-
-      <!-- Abono de reserva -->
-      <div class="abono-box alta">
-        <div class="abono-header">
-          <ion-icon name="sparkles-outline"></ion-icon>
-          <span>PORCENTAJE DE ABONO</span>
-        </div>
-        <div class="abono-value">
-          <strong>{{ config().abonoPctAlta }}%</strong>
-          <small>del total de la reserva</small>
-        </div>
-      </div>
-    </div>
-
-    <!-- Columna Temporada Baja -->
-    <div class="tarifas-column column-baja" [class.active-season]="!isHighSeason()">
-      <div class="column-header">
-        <div class="column-title-group">
-          <div class="column-icon-badge baja">
-            <ion-icon name="trending-down-outline"></ion-icon>
-          </div>
-          <div>
-            <h2>Temporada Baja</h2>
-            <p class="column-subtitle">Tarifas vigentes en meses de menor demanda</p>
-          </div>
-        </div>
-        @if (!isHighSeason()) {
-          <span class="season-status-badge baja">
-            <span class="dot"></span>Activa ahora
-          </span>
-        }
-      </div>
-
-      <!-- Lista de tarifas por tipología -->
-      <div class="tarifas-list">
-        @for (tarifa of tarifasBaja(); track tarifa.tipologiaId) {
-          <div class="tarifa-row">
-            <div class="tarifa-tipo-badge" [style.background-color]="tarifa.color + '22'" [style.color]="tarifa.color">
-              <ion-icon name="pricetag-outline"></ion-icon>
-            </div>
-            <div class="tarifa-info">
-              <span class="tarifa-tipo-nombre">{{ tarifa.nombre }}</span>
-              <small class="tarifa-capacidad">Hasta {{ tarifa.capacidad }} persona{{ tarifa.capacidad !== 1 ? 's' : '' }}</small>
-            </div>
-            <div class="tarifa-precio-chip baja">
-              <ion-icon name="cash-outline"></ion-icon>
-              <span>
-                @if (tarifa.precioBase > 0) {
-                  ${{ tarifa.precioBase | number:'1.0-0' }} / noche
-                } @else {
-                  <em>Sin tarifa</em>
-                }
+              <span class="price-input-wrapper">
+                <span class="currency-symbol">$</span>
+                <input
+                  class="text-input"
+                  type="number"
+                  min="0"
+                  step="1000"
+                  [attr.aria-label]="'Precio base para ' + tipologia.nombre"
+                  [(ngModel)]="basePriceDraft[tipologia.id]">
               </span>
+            </label>
+          }
+        </div>
+      } @else {
+        <p class="base-prices-empty">Añade tipologías desde Habitaciones para configurar sus precios base.</p>
+      }
+    </section>
+
+    <section class="deposit-settings" aria-labelledby="deposit-settings-title">
+      <div class="deposit-settings-copy">
+        <span class="deposit-settings-icon"><ion-icon name="cash-outline"></ion-icon></span>
+        <h2 id="deposit-settings-title">Abono de reserva</h2>
+      </div>
+      <div class="deposit-settings-control">
+        <label class="sr-only" for="page-deposit-percentage">Porcentaje de abono</label>
+        <div class="deposit-input">
+          <input
+            id="page-deposit-percentage"
+            class="text-input"
+            type="number"
+            min="1900"
+            max="100"
+            step="1"
+            [(ngModel)]="abonoDraft">
+          <span>%</span>
+        </div>
+        <button
+          type="button"
+          class="btn-save-deposit"
+          [disabled]="!isValidAbonoDraft()"
+          (click)="saveAbonoPorcentaje()">
+          Guardar abono
+        </button>
+      </div>
+    </section>
+  </div>
+
+  @if (tarifas().length === 0) {
+    <section class="empty-tarifas">
+      <ion-icon name="pricetag-outline" class="empty-icon"></ion-icon>
+      <h2>Aún no hay tarifas configuradas</h2>
+      <p>Crea una tarifa, define cuándo se aplica y asigna precios a las tipologías de esta sede.</p>
+      <button type="button" class="btn-top-action" (click)="openConfig()">
+        <ion-icon name="add-outline"></ion-icon>
+        <span>Nueva tarifa</span>
+      </button>
+    </section>
+  } @else {
+    <section class="rates-grid" aria-label="Tarifas configuradas">
+      @for (tarifa of tarifas(); track tarifa.id) {
+        <article class="rate-card" [class.rate-active]="activeTarifas().includes(tarifa)">
+          <header class="rate-card-header">
+            <div class="rate-title">
+              <span class="rate-icon"><ion-icon name="pricetag-outline"></ion-icon></span>
+              <div>
+                <h2>{{ tarifa.nombre }}</h2>
+                @if (activeTarifas().includes(tarifa)) {
+                  <span class="rate-active-label"><span class="active-dot"></span>Vigente hoy</span>
+                }
+              </div>
             </div>
-          </div>
-        } @empty {
-          <div class="empty-tarifas">
-            <ion-icon name="information-circle-outline" class="empty-icon baja"></ion-icon>
-            <p>No hay tipologías de habitación registradas para esta sede.</p>
-            <small>Agrega tipologías desde la sección <strong>Habitaciones</strong> para configurar las tarifas.</small>
-          </div>
-        }
-      </div>
+            <div class="rate-actions">
+              <button type="button" class="btn-edit-rate" (click)="editTarifaConfig(tarifa)" [attr.aria-label]="'Editar ' + tarifa.nombre">Editar</button>
+              <button type="button" class="btn-delete-rate" (click)="deleteTarifa(tarifa.id)" [attr.aria-label]="'Eliminar ' + tarifa.nombre">
+                <ion-icon name="trash-outline"></ion-icon>
+              </button>
+            </div>
+          </header>
 
-      <!-- Abono de reserva -->
-      <div class="abono-box baja">
-        <div class="abono-header">
-          <ion-icon name="sparkles-outline"></ion-icon>
-          <span>PORCENTAJE DE ABONO</span>
-        </div>
-        <div class="abono-value">
-          <strong>{{ config().abonoPctBaja }}%</strong>
-          <small>del total de la reserva</small>
-        </div>
-      </div>
-    </div>
+          <section class="rate-periods">
+            <h3><ion-icon name="calendar-outline"></ion-icon> Periodos de aplicación</h3>
+            @for (periodo of tarifa.periodos; track periodo.id) {
+              <span class="period-chip">{{ periodSummary(periodo) }}</span>
+            }
+          </section>
 
-  </section>
-
+          <section class="rate-prices">
+            <h3><ion-icon name="cash-outline"></ion-icon> Precio por noche</h3>
+            @for (tipologia of tipologias(); track tipologia.id) {
+              <div class="price-row">
+                <span class="typology-name">
+                  <span class="typology-dot" [style.background-color]="tipologia.color ?? '#64748b'"></span>
+                  {{ tipologia.nombre }}
+                </span>
+                <strong>{{ getRatePrice(tarifa, tipologia.id) | currency:'CLP':'symbol-narrow':'1.0-0' }}</strong>
+                @if (activeTarifas().includes(tarifa)) {
+                  @if (getAppliedTarifa(tipologia.id)?.id === tarifa.id) {
+                    <small class="applied-price-label">Precio aplicado hoy</small>
+                  } @else if (getAppliedTarifa(tipologia.id); as appliedTarifa) {
+                    <small class="applied-price-label">Hoy se prioriza {{ appliedTarifa.nombre }}</small>
+                  }
+                }
+              </div>
+            } @empty {
+              <p class="no-typologies">No hay tipologías registradas en esta sede.</p>
+            }
+          </section>
+        </article>
+      }
+    </section>
+  }
 </div>
 
-<!-- ── Modal de configuración de tarifas ──────────────────────────────────── -->
 @if (configOpen()) {
   <div class="config-modal-backdrop" (click)="closeConfig()">
-    <section class="config-modal" role="dialog" aria-modal="true" aria-labelledby="config-modal-title" (click)="$event.stopPropagation()">
-
+    <section
+      class="config-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="config-modal-title"
+      (click)="$event.stopPropagation()">
       <header class="config-modal-header">
         <div>
-          <h2 id="config-modal-title">Configurar Tarifas por Temporada</h2>
-          <p>Define los meses de temporada alta y los precios por tipología de habitación.</p>
+          <span class="modal-eyebrow">{{ editingTarifaId() ? 'Editar tarifa' : 'Nueva tarifa' }}</span>
+          <h2 id="config-modal-title">{{ editingTarifaId() ? 'Configurar tarifa' : 'Crear tarifa' }}</h2>
+          <p>{{ rateStep() === 1 ? 'Paso 1 de 2 · Define el nombre y los periodos.' : 'Paso 2 de 2 · Asigna los precios por tipología.' }}</p>
         </div>
         <button type="button" class="btn-close-modal" (click)="closeConfig()" aria-label="Cerrar">
           <ion-icon name="close-outline"></ion-icon>
@@ -222,153 +184,237 @@
       </header>
 
       <div class="config-modal-body">
+        <nav class="wizard-progress" aria-label="Progreso de configuración">
+          <span class="wizard-step" [class.current]="rateStep() === 1" [class.complete]="rateStep() === 2">
+            <span class="wizard-step-number">1</span>
+            <span>Periodo</span>
+          </span>
+          <span class="wizard-connector" [class.complete]="rateStep() === 2"></span>
+          <span class="wizard-step" [class.current]="rateStep() === 2" [attr.aria-current]="rateStep() === 2 ? 'step' : null">
+            <span class="wizard-step-number">2</span>
+            <span>Precios</span>
+          </span>
+        </nav>
 
-        <!-- Selector de meses de temporada alta -->
-        <section class="config-section">
-          <h3>
-            <ion-icon name="calendar-outline"></ion-icon>
-            Meses de Temporada Alta
-          </h3>
-          <p class="config-hint">Selecciona los meses en que las tarifas de temporada alta estarán vigentes. Los meses no marcados serán temporada baja.</p>
-          <div class="months-grid" role="group" aria-label="Selección de meses de temporada alta">
-            @for (mes of monthNames; track $index) {
-              <button
-                type="button"
-                class="month-chip"
-                [class.selected]="isMesAlta($index)"
-                (click)="toggleMesAlta($index)"
-                [attr.aria-pressed]="isMesAlta($index)"
-                [id]="'month-chip-' + $index">
-                {{ mes.slice(0, 3) }}
-              </button>
-            }
+        @if (rateStep() === 1) {
+          <div class="wizard-panel">
+            <section class="config-section">
+              <label class="field-label" for="rate-name">Nombre de la tarifa</label>
+              <input
+                id="rate-name"
+                class="text-input"
+                type="text"
+                [(ngModel)]="editTarifa.nombre"
+                placeholder="Ej. Temporada de verano"
+                maxlength="60">
+            </section>
+
+            <section class="config-section">
+              <div class="section-heading">
+                <div>
+                  <h3><ion-icon name="calendar-outline"></ion-icon> Periodos de aplicación</h3>
+                  <p class="config-hint">Añade uno o varios periodos. La tarifa se aplicará si coincide cualquiera de ellos.</p>
+                </div>
+                <button type="button" class="btn-add-period" (click)="addPeriod()">
+                  <ion-icon name="add-outline"></ion-icon> Añadir periodo
+                </button>
+              </div>
+
+              @for (periodo of editTarifa.periodos; track periodo.id; let index = $index) {
+                <article class="period-editor">
+                  <header class="period-editor-header">
+                    <strong>Periodo {{ index + 1 }}</strong>
+                    @if (editTarifa.periodos.length > 1) {
+                      <button type="button" class="btn-remove-period" (click)="removePeriod(periodo.id)" [attr.aria-label]="'Quitar periodo ' + (index + 1)">
+                        <ion-icon name="trash-outline"></ion-icon> Quitar
+                      </button>
+                    }
+                  </header>
+                  <label class="field-label" [for]="'period-type-' + periodo.id">Tipo de periodo</label>
+                  <select
+                    class="text-input"
+                    [id]="'period-type-' + periodo.id"
+                    [ngModel]="periodo.tipo"
+                    (ngModelChange)="changePeriodType(periodo, $event)">
+                    @if (periodo.tipo === 'month-days') {
+                      <option value="month-days">Días específicos para cada mes (anterior)</option>
+                    }
+                    <option value="months">Meses del año</option>
+                    <option value="weekdays">Días de la semana</option>
+                    <option value="specific-month-days">Días de un mes y año específico</option>
+                    <option value="date-range">Rango de fechas</option>
+                    <option value="specific-dates">Fechas específicas</option>
+                  </select>
+
+                  @switch (periodo.tipo) {
+                    @case ('months') {
+                      <div class="selection-grid months-grid" role="group" aria-label="Meses en que aplica la tarifa">
+                        @for (month of monthNames; track $index) {
+                          <button type="button" class="selection-chip" [class.selected]="periodo.meses.includes($index)" [disabled]="!periodo.meses.includes($index) && isMonthUnavailable(periodo, $index)" [attr.aria-pressed]="periodo.meses.includes($index)" (click)="toggleMonth(periodo, $index)">
+                            {{ month }}
+                          </button>
+                        }
+                      </div>
+                    }
+                    @case ('weekdays') {
+                      <div class="selection-grid weekdays-grid" role="group" aria-label="Días en que aplica la tarifa">
+                        @for (weekday of weekdayNames; track $index) {
+                          <button type="button" class="selection-chip" [class.selected]="periodo.diasSemana.includes($index)" [disabled]="!periodo.diasSemana.includes($index) && isWeekdayUnavailable(periodo, $index)" [attr.aria-pressed]="periodo.diasSemana.includes($index)" (click)="toggleWeekday(periodo, $index)">
+                            {{ weekday }}
+                          </button>
+                        }
+                      </div>
+                    }
+                    @case ('specific-month-days') {
+                      <div class="specific-month-calendar">
+                        <div class="specific-month-controls">
+                          <label class="field-label">
+                            Mes
+                            <select
+                              class="text-input"
+                              [ngModel]="periodo.mes"
+                              (ngModelChange)="updateSpecificMonth(periodo, +$event)"
+                              >
+                              @for (month of monthNames; track $index) {
+                                <option
+                                  [ngValue]="$index"
+                                  [disabled]="$index !== periodo.mes && isSpecificCalendarMonthUnavailable(periodo, $index)">
+                                  {{ month }}
+                                </option>
+                              }
+                            </select>
+                          </label>
+                          <label class="field-label">
+                            Año
+                            <input
+                              class="text-input"
+                              type="number"
+                              min="1900"
+                              max="9999"
+                              [ngModel]="periodo.anio"
+                              (ngModelChange)="updateSpecificYear(periodo, +$event)">
+                          </label>
+                        </div>
+                        <p class="config-hint">Selecciona los días de {{ monthNames[periodo.mes ?? 0] }} de {{ periodo.anio }} en que se aplicará la tarifa.</p>
+                        <div class="month-calendar" role="group" [attr.aria-label]="'Días de ' + monthNames[periodo.mes ?? 0] + ' de ' + periodo.anio">
+                          @for (weekday of weekdayNames; track weekday) {
+                            <span class="calendar-weekday">{{ weekday.slice(0, 2) }}</span>
+                          }
+                          @for (placeholder of calendarPlaceholders; track placeholder) {
+                            @if (placeholder < calendarOffset(periodo)) {
+                              <span class="calendar-empty" aria-hidden="true"></span>
+                            }
+                          }
+                          @for (day of daysInSelectedMonth(periodo); track day) {
+                            <button
+                              type="button"
+                              class="calendar-day"
+                              [class.selected]="periodo.diasMes.includes(day)"
+                              [disabled]="!periodo.diasMes.includes(day) && isCalendarDayUnavailable(periodo, day)"
+                              [attr.aria-pressed]="periodo.diasMes.includes(day)"
+                              [attr.aria-label]="day + ' de ' + monthNames[periodo.mes ?? 0] + ' de ' + periodo.anio"
+                              (click)="toggleMonthDay(periodo, day)">
+                              {{ day }}
+                            </button>
+                          }
+                        </div>
+                      </div>
+                    }
+                    @case ('date-range') {
+                      <div class="date-range-fields">
+                        <label class="field-label">Desde<input class="text-input" type="date" [ngModel]="periodo.fechaInicio" (ngModelChange)="updateDateRange(periodo, 'fechaInicio', $event)"></label>
+                        <label class="field-label">Hasta<input class="text-input" type="date" [ngModel]="periodo.fechaFin" [min]="periodo.fechaInicio" (ngModelChange)="updateDateRange(periodo, 'fechaFin', $event)"></label>
+                      </div>
+                      @if (periodSelectionError()) {
+                        <p class="period-validation">{{ periodSelectionError() }}</p>
+                      }
+                    }
+                    @case ('specific-dates') {
+                      <div class="specific-dates-fields">
+                        <label class="field-label">Añadir fecha<input #specificDate class="text-input" type="date" (change)="addSpecificDate(periodo, specificDate.value); specificDate.value = ''"></label>
+                        @if (periodSelectionError()) {
+                          <p class="period-validation">{{ periodSelectionError() }}</p>
+                        }
+                        <div class="date-chips">
+                          @for (date of periodo.fechas; track date) {
+                            <span class="date-chip">{{ date }}<button type="button" (click)="removeSpecificDate(periodo, date)" [attr.aria-label]="'Quitar fecha ' + date"><ion-icon name="close-outline"></ion-icon></button></span>
+                          }
+                        </div>
+                      </div>
+                    }
+                  }
+                  @if (!periodIsValid(periodo)) {
+                    <p class="period-validation">Selecciona al menos una opción para este periodo.</p>
+                  }
+                  @if (periodHasConflict(periodo)) {
+                    <p class="period-validation">Este periodo se solapa con otro periodo de esta u otra tarifa.</p>
+                  }
+                </article>
+              }
+            </section>
           </div>
-          <div class="months-preview">
-            <span class="preview-label preview-alta">
-              <ion-icon name="sunny-outline"></ion-icon>
-              Alta:
-              @if (editConfig.mesesAlta.length === 0) {
-                <em>ninguno</em>
+        } @else {
+          <div class="wizard-panel">
+            <section class="config-section">
+              <h3><ion-icon name="cash-outline"></ion-icon> Precios por tipología (por noche)</h3>
+              <p class="config-hint">Define el precio de cada tipología para la tarifa «{{ editTarifa.nombre }}».</p>
+              @if (tipologias().length === 0) {
+                <p class="no-typologies">No hay tipologías en esta sede. Añádelas desde la sección Habitaciones.</p>
               } @else {
-                @for (m of editConfig.mesesAlta; track m; let last = $last) {
-                  {{ monthName(m).slice(0, 3) }}@if (!last) { · }
-                }
-              }
-            </span>
-            <span class="preview-label preview-baja">
-              <ion-icon name="snow-outline"></ion-icon>
-              Baja:
-              @for (m of monthNames; track $index) {
-                @if (!isMesAlta($index)) {
-                  {{ m.slice(0, 3) }}&nbsp;
-                }
-              }
-            </span>
-          </div>
-        </section>
-
-        <!-- Tarifas por tipología -->
-        <section class="config-section">
-          <h3>
-            <ion-icon name="pricetag-outline"></ion-icon>
-            Tarifas por Tipología (por noche)
-          </h3>
-          @if (tipologias().length === 0) {
-            <p class="config-hint">No hay tipologías registradas. Agrega habitaciones y tipologías primero.</p>
-          } @else {
-            <div class="config-tarifas-grid">
-              @for (tip of tipologias(); track tip.id) {
-                <div class="config-tarifa-row">
-                  <div class="config-tipo-info">
-                    <span class="config-tipo-dot" [style.background-color]="tip.color"></span>
-                    <span class="config-tipo-nombre">{{ tip.nombre }}</span>
-                    <small>Cap. {{ tip.capacidad }}</small>
-                  </div>
-                  <div class="config-precio-inputs">
-                    <label class="config-field">
-                      <span><ion-icon name="sunny-outline"></ion-icon> Alta</span>
-                      <div class="price-input-wrapper">
+                <div class="config-tarifas-grid">
+                  @for (tipologia of tipologias(); track tipologia.id) {
+                    <label class="config-tarifa-row">
+                      <span class="config-tipo-info">
+                        <span class="config-tipo-dot" [style.background-color]="tipologia.color ?? '#64748b'"></span>
+                        <span class="config-tipo-nombre">{{ tipologia.nombre }}</span>
+                        <small>Hasta {{ tipologia.capacidad }} personas</small>
+                      </span>
+                      <span class="price-input-wrapper">
                         <span class="currency-symbol">$</span>
                         <input
                           type="number"
                           min="0"
                           step="1000"
-                          [id]="'precio-alta-' + tip.id"
-                          [value]="getEditPrecioAlta(tip.id)"
-                          (input)="setEditPrecioAlta(tip.id, +($any($event.target).value))"
-                        >
-                      </div>
+                          required
+                          [attr.aria-label]="'Precio por noche para ' + tipologia.nombre"
+                          [(ngModel)]="editTarifa.precios[tipologia.id]">
+                      </span>
                     </label>
-                    <label class="config-field">
-                      <span><ion-icon name="snow-outline"></ion-icon> Baja</span>
-                      <div class="price-input-wrapper">
-                        <span class="currency-symbol">$</span>
-                        <input
-                          type="number"
-                          min="0"
-                          step="1000"
-                          [id]="'precio-baja-' + tip.id"
-                          [value]="getEditPrecioBaja(tip.id)"
-                          (input)="setEditPrecioBaja(tip.id, +($any($event.target).value))"
-                        >
-                      </div>
-                    </label>
-                  </div>
+                  }
                 </div>
               }
-            </div>
-          }
-        </section>
+            </section>
 
-        <!-- Porcentajes de abono -->
-        <section class="config-section">
-          <h3>
-            <ion-icon name="cash-outline"></ion-icon>
-            Porcentaje de Abono
-          </h3>
-          <p class="config-hint">Porcentaje del total de la reserva que se cobra como abono anticipado.</p>
-          <div class="config-abonos-grid">
-            <label class="config-field abono-field">
-              <span><ion-icon name="trending-up-outline"></ion-icon> Temporada Alta</span>
-              <div class="pct-input-wrapper">
-                <input
-                  id="abono-pct-alta"
-                  type="number"
-                  min="1"
-                  max="100"
-                  step="1"
-                  [(ngModel)]="editConfig.abonoPctAlta"
-                >
-                <span class="pct-symbol">%</span>
-              </div>
-            </label>
-            <label class="config-field abono-field">
-              <span><ion-icon name="trending-down-outline"></ion-icon> Temporada Baja</span>
-              <div class="pct-input-wrapper">
-                <input
-                  id="abono-pct-baja"
-                  type="number"
-                  min="1"
-                  max="100"
-                  step="1"
-                  [(ngModel)]="editConfig.abonoPctBaja"
-                >
-                <span class="pct-symbol">%</span>
-              </div>
-            </label>
           </div>
-        </section>
-
+        }
       </div>
 
       <footer class="config-modal-footer">
-        <button type="button" class="btn-cancel" (click)="closeConfig()" id="btn-cancel-config">Cancelar</button>
-        <button type="button" class="btn-save" (click)="saveConfig()" id="btn-save-config">
-          <ion-icon name="checkmark-outline"></ion-icon>
-          Guardar configuración
-        </button>
+        <button type="button" class="btn-cancel" (click)="closeConfig()">Cancelar</button>
+        <div class="wizard-actions">
+          @if (rateStep() === 2) {
+            <button type="button" class="btn-previous-step" (click)="backToPeriods()">Anterior</button>
+            <button
+              type="button"
+              class="btn-save"
+              (click)="saveTarifa()"
+              [disabled]="!canSaveTarifa()"
+              id="btn-save-config">
+              <ion-icon name="checkmark-outline"></ion-icon>
+              Guardar tarifa
+            </button>
+          } @else {
+            <button
+              type="button"
+              class="btn-save"
+              (click)="continueToPrices()"
+              [disabled]="!hasValidNameAndPeriods()">
+              Continuar
+              <ion-icon name="add-outline"></ion-icon>
+            </button>
+          }
+        </div>
       </footer>
-
     </section>
   </div>
 }

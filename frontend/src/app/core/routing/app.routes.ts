@@ -55,7 +55,7 @@ export const routes: Routes = [
   {
     path: 'tarifas',
     canActivate: [authGuard],
-    loadComponent: () => import('../../features/locations/presentation/pages/tarifas/tarifas.page').then((m) => m.TarifasPage),
+    loadComponent: () => import('../../features/locations/presentation/pages/tarifas').then((m) => m.TarifasPage),
   },
   {
     path: 'recuperar',
