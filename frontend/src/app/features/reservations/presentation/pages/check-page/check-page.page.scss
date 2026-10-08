@@ -520,7 +520,6 @@ $orange-border: #fed7aa;
   }
 }
 
-/* ── Media Queries Responsive ────────────────────────────────────────────── */
 @media (max-width: 1100px) {
   .kpi-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -555,6 +554,18 @@ $orange-border: #fed7aa;
   .check-column {
     min-width: 0;
     padding: 1rem;
+  }
+
+  .room-selection-detail-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .room-selection-detail-actions {
+    flex-direction: column-reverse;
+
+    button {
+      width: 100%;
+    }
   }
 
 }

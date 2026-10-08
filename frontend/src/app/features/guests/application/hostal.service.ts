@@ -11,6 +11,13 @@ export interface RegisterEntryInput {
   arrivalDate: string;
   departureDate: string;
   arrivalTime: string;
+  payment?: {
+    totalAmount: number;
+    paidAmount: number;
+    depositPercentage: number;
+    method: 'transferencia' | 'efectivo';
+    paidInFull: boolean;
+  };
 }
 
 export interface ReservationCalendarEntry {
@@ -26,6 +33,9 @@ export interface ReservationCalendarEntry {
   departureDate: string;
   arrivalTime: string;
   status: Reserva['estado_reserva'];
+  totalAmount: number;
+  amountPaid: number;
+  hasPaymentRecord: boolean;
 }
 
 @Injectable({
@@ -107,7 +117,8 @@ export class HostalService {
     const tipologias = this.getManagedTypologies();
     const reservas = this.getReservations().filter((reservation) => {
       const room = habitaciones.find((item) => item.id_habitacion === reservation.id_habitacion);
-      return huespedes.some((guest) => guest.id_huesped === reservation.id_huesped) &&
+      return reservation.estado_reserva !== 'FINALIZADA' &&
+        huespedes.some((guest) => guest.id_huesped === reservation.id_huesped) &&
         !!room && tipologias.some((typology) => typology.id_tipologia === room.id_tipologia);
     });
     const today = new Date();
@@ -246,6 +257,9 @@ export class HostalService {
         departureDate: reservation.fecha_salida,
         arrivalTime: reservation.hora_llegada ?? '',
         status: reservation.estado_reserva,
+        totalAmount: reservation.precio_total ?? 0,
+        amountPaid: reservation.monto_pagado ?? 0,
+        hasPaymentRecord: reservation.precio_total !== undefined,
       });
     });
 
@@ -394,6 +408,61 @@ export class HostalService {
     this.refreshView();
   }
 
+  processCheckIn(
+    reservationId: number,
+    paymentMethod?: 'transferencia' | 'efectivo'
+  ): Reserva {
+    const reservations = this.getReservations();
+    const reservation = reservations.find((item) => item.id_reserva === reservationId);
+    if (!reservation) {
+      throw new Error('La reserva ya no existe. Actualiza la lista e inténtalo otra vez.');
+    }
+    if (!['CONFIRMADA', 'CHECK-IN HOY'].includes(reservation.estado_reserva)) {
+      throw new Error('Esta reserva ya no está pendiente de check-in.');
+    }
+
+    const balance = Math.max(0, (reservation.precio_total ?? 0) - (reservation.monto_pagado ?? 0));
+    if (balance > 0 && paymentMethod !== 'transferencia' && paymentMethod !== 'efectivo') {
+      throw new Error('Selecciona transferencia o efectivo para cobrar el saldo pendiente.');
+    }
+
+    const updatedReservation: Reserva = {
+      ...reservation,
+      estado_reserva: 'HOSPEDADO',
+      ...(balance > 0 ? {
+        monto_pagado: (reservation.monto_pagado ?? 0) + balance,
+        metodo_pago: paymentMethod,
+        pago_completo: true,
+      } : {}),
+    };
+    this.persistReservationUpdate(reservations, updatedReservation);
+    return updatedReservation;
+  }
+
+  processCheckOut(reservationId: number): Reserva {
+    const reservations = this.getReservations();
+    const reservation = reservations.find((item) => item.id_reserva === reservationId);
+    if (!reservation) {
+      throw new Error('La reserva ya no existe. Actualiza la lista e inténtalo otra vez.');
+    }
+    if (!['HOSPEDADO', 'CHECK-OUT HOY'].includes(reservation.estado_reserva)) {
+      throw new Error('Esta reserva no está pendiente de check-out.');
+    }
+
+    const updatedReservation: Reserva = { ...reservation, estado_reserva: 'FINALIZADA' };
+    this.persistReservationUpdate(reservations, updatedReservation);
+    return updatedReservation;
+  }
+
+  private persistReservationUpdate(reservations: Reserva[], updatedReservation: Reserva): void {
+    localStorage.setItem(this.storageKey('reservas'), JSON.stringify(
+      reservations.map((reservation) =>
+        reservation.id_reserva === updatedReservation.id_reserva ? updatedReservation : reservation
+      )
+    ));
+    this.refreshView();
+  }
+
   getAvailableRooms(
     arrivalDate: string,
     departureDate: string,
@@ -404,25 +473,43 @@ export class HostalService {
       return [];
     }
 
-    const habitaciones = this.getManagedRooms();
-    const reservas: Reserva[] = JSON.parse(localStorage.getItem(this.storageKey('reservas')) || '[]');
     const tipologias = this.getManagedTypologies();
+    const habitacionesCandidatas = this.getManagedRooms().filter((habitacion) =>
+      personCount === undefined ||
+      (tipologias.find((tipologia) => tipologia.id_tipologia === habitacion.id_tipologia)?.capacidad ?? 0) >= personCount
+    );
+    const reservas: Reserva[] = JSON.parse(localStorage.getItem(this.storageKey('reservas')) || '[]');
 
-    return habitaciones.filter((habitacion) =>
+    return habitacionesCandidatas.filter((habitacion) =>
       !reservas.some((reserva) =>
         reserva.id_reserva !== excludeReservationId &&
+        reserva.estado_reserva !== 'FINALIZADA' &&
         reserva.id_habitacion === habitacion.id_habitacion &&
         arrivalDate < reserva.fecha_salida &&
         departureDate > reserva.fecha_llegada
-      ) &&
-      (personCount === undefined ||
-        (tipologias.find((tipologia) => tipologia.id_tipologia === habitacion.id_tipologia)?.capacidad ?? 0) >= personCount)
+      )
     );
   }
 
   registerEntry(input: RegisterEntryInput): { guest: Huesped; reservation: Reserva } {
     if (!Number.isInteger(input.personCount) || input.personCount < 1) {
       throw new Error('La cantidad de personas debe ser al menos 1.');
+    }
+    if (input.payment && (
+      !Number.isFinite(input.payment.totalAmount) ||
+      input.payment.totalAmount < 0 ||
+      !Number.isFinite(input.payment.paidAmount) ||
+      input.payment.paidAmount < 0 ||
+      input.payment.paidAmount > input.payment.totalAmount ||
+      !Number.isFinite(input.payment.depositPercentage) ||
+      input.payment.depositPercentage < 1 ||
+      input.payment.depositPercentage > 100 ||
+      !['transferencia', 'efectivo'].includes(input.payment.method) ||
+      (input.payment.paidInFull && input.payment.paidAmount !== input.payment.totalAmount) ||
+      (!input.payment.paidInFull &&
+        input.payment.paidAmount !== Math.round(input.payment.totalAmount * input.payment.depositPercentage / 100))
+    )) {
+      throw new Error('Los datos del pago no son válidos.');
     }
     if (!this.isValidDate(input.arrivalDate) || !this.isValidDate(input.departureDate) ||
       input.arrivalDate >= input.departureDate) {
@@ -492,6 +579,13 @@ export class HostalService {
       hora_llegada: input.arrivalTime,
       cantidad_personas: input.personCount,
       estado_reserva: 'CONFIRMADA',
+      ...(input.payment ? {
+        precio_total: input.payment.totalAmount,
+        porcentaje_abono: input.payment.depositPercentage,
+        monto_pagado: input.payment.paidAmount,
+        metodo_pago: input.payment.method,
+        pago_completo: input.payment.paidInFull,
+      } : {}),
     };
 
     localStorage.setItem(this.storageKey('huespedes'), JSON.stringify(updatedGuests));

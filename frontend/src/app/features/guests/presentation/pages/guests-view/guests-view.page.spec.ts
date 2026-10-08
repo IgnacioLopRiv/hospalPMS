@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
+import { By } from '@angular/platform-browser';
+import { CheckPagePage } from '../../../../reservations/presentation/pages/check-page/check-page.page';
 import { GuestsViewPage } from './guests-view.page';
 import { GuestCardView } from '../../../../../shared/domain/hostal.model';
 
@@ -82,9 +84,10 @@ describe('GuestsViewPage', () => {
     expect(fixture.nativeElement.querySelector('.cards-grid')).toBeTruthy();
   });
 
-  it('navigates to check-page with the guest draft for reservation assignment', async () => {
+  it('opens the new-entry modal without leaving the guest page and keeps the guest draft', () => {
     const router = TestBed.inject(Router);
-    const navigation = spyOn(router, 'navigate').and.resolveTo(true);
+    const navigation = spyOn(router, 'navigate');
+    component.openNewGuestForm();
     component.guestForm = {
       documentType: 'rut',
       documento: '12.345.678-5',
@@ -95,27 +98,30 @@ describe('GuestsViewPage', () => {
       email: 'ana@example.com',
       nacionalidad: 'Chile',
     };
-    component.openNewGuestForm();
+    fixture.detectChanges();
 
-    await component.assignReservation();
+    const assignButton = fixture.nativeElement.querySelector('.assign-reservation-button') as HTMLButtonElement;
+    assignButton.click();
+    fixture.detectChanges();
+    fixture.detectChanges();
 
-    expect(navigation).toHaveBeenCalledWith(['/check-page'], {
-      state: {
-        guestDraft: {
-          documentType: 'rut',
-          documento: '12.345.678-5',
-          nombre: 'Ana',
-          apellido: 'Pérez',
-          telefono: '912345678',
-          phoneCountry: 'cl',
-          email: 'ana@example.com',
-          nacionalidad: 'Chile',
-        },
-      },
-    });
-    expect(component.showNewGuestForm).toBeFalse();
-    component.ngOnDestroy();
-    expect(document.body.classList.contains('entry-modal-open')).toBeTrue();
+    expect(navigation).not.toHaveBeenCalled();
+    expect(component.showReservationAssignment).toBeTrue();
+    const entryPage = fixture.debugElement.query(By.directive(CheckPagePage)).componentInstance as CheckPagePage;
+    expect(fixture.nativeElement.querySelector('.entry-modal-backdrop #entry-modal-title')?.textContent).toContain('Nuevo ingreso');
+    expect(fixture.nativeElement.querySelector('.check-page-container .page-title')).toBeNull();
+    expect(entryPage.entryForm.nombre).toBe('Ana');
+    expect(entryPage.entryForm.apellido).toBe('Pérez');
+
+    const cancelButton = fixture.nativeElement.querySelector('app-check-page .entry-cancel-button') as HTMLButtonElement;
+    cancelButton.click();
+    fixture.detectChanges();
+    fixture.detectChanges();
+
+    expect(component.showReservationAssignment).toBeFalse();
+    expect(fixture.nativeElement.querySelector('#guest-modal-title')).toBeTruthy();
+    expect(component.guestForm.nombre).toBe('Ana');
+    expect(component.guestForm.apellido).toBe('Pérez');
   });
 });
 

@@ -1,7 +1,6 @@
-import { Component, inject, OnDestroy, OnInit, Renderer2 } from '@angular/core';
+import { Component, EventEmitter, inject, Input, OnDestroy, OnInit, Output, Renderer2 } from '@angular/core';
 import { CommonModule, DOCUMENT } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
-import { Router } from '@angular/router';
 import { IonIcon } from '@ionic/angular/standalone';
 import { Subscription } from 'rxjs';
 import { addIcons } from 'ionicons';
@@ -22,14 +21,18 @@ import {
   checkmarkCircleOutline,
   swapHorizontalOutline,
   closeOutline,
+  cashOutline,
 } from 'ionicons/icons';
 import { SedeService } from '../../../../locations/application/sede.service';
 import { HostalService, ReservationCalendarEntry } from '../../../../guests/application/hostal.service';
-import { Huesped, Habitacion } from '../../../../../shared/domain/hostal.model';
+import { Huesped, Habitacion, SedeHabitacion, SedeTipologia } from '../../../../../shared/domain/hostal.model';
 import { COUNTRY_OPTIONS } from '../../../../../shared/domain/country-options';
 import { CountryPickerComponent } from '../../../../../shared/presentation/country-picker/country-picker.component';
+import { FotoHabitacionService } from '../../../../locations/application/foto-habitacion.service';
+import { FotoHabitacion } from '../../../../locations/domain/foto-habitacion.model';
+import { InventarioService } from '../../../../inventory/application/inventario.service';
 
-interface GuestDraft {
+export interface GuestDraft {
   documentType: 'rut' | 'passport';
   documento: string;
   nombre: string;
@@ -38,6 +41,36 @@ interface GuestDraft {
   phoneCountry: string;
   email: string;
   nacionalidad: string;
+}
+
+type PaymentMethod = 'transferencia' | 'efectivo';
+type TarifaPeriodType = 'months' | 'weekdays' | 'month-days' | 'specific-month-days' | 'date-range' | 'specific-dates';
+
+interface StoredTarifaPeriod {
+  tipo: TarifaPeriodType;
+  meses: number[];
+  diasSemana: number[];
+  diasMes: number[];
+  fechaInicio: string;
+  fechaFin: string;
+  fechas: string[];
+  anio?: number;
+  mes?: number;
+}
+
+interface StoredTarifa {
+  periodos: StoredTarifaPeriod[];
+  precios: Record<number, number>;
+}
+
+interface ReservationQuote {
+  nights: number;
+  total: number;
+  depositPercentage: number;
+  deposit: number;
+  typologyName: string;
+  roomNumber: string;
+  guestName: string;
 }
 
 export interface CheckItemPlaceholder {
@@ -55,6 +88,10 @@ export interface CheckItemPlaceholder {
   timeWindowLabel: string;
   statusBadge: string;
   avatarColor: 'green' | 'orange' | 'blue' | 'purple';
+  totalAmount: number;
+  amountPaid: number;
+  outstandingBalance: number;
+  hasPaymentRecord: boolean;
   notes?: string;
   isVip?: boolean;
 }
@@ -71,19 +108,37 @@ export class CheckPagePage implements OnInit, OnDestroy {
   private readonly hostalService = inject(HostalService);
   private readonly renderer = inject(Renderer2);
   private readonly document = inject(DOCUMENT);
-  private readonly router = inject(Router);
+  private readonly fotoHabitacionService = inject(FotoHabitacionService);
+  private readonly inventarioService = inject(InventarioService);
+  @Input() modalOnly = false;
+  @Input() guestDraft?: GuestDraft;
+  @Output() entryModalClosed = new EventEmitter<void>();
+  @Output() entryRegistered = new EventEmitter<string>();
   readonly sede = this.sedeService.selectedSede;
   availableGuests: Huesped[] = [];
   availableRooms: Habitacion[] = [];
+  roomNightlyPrices = new Map<number, number | null>();
+  isSearchingRooms = false;
+  roomDetails: SedeHabitacion | null = null;
+  roomDetailsTab: 'details' | 'inventory' | 'photos' = 'details';
+  expandedRoomPhoto: FotoHabitacion | null = null;
   showNewEntryForm = false;
   entryError = '';
   entrySuccessMessage = '';
+  movementError = '';
+  showCloseConfirmation = false;
+  checkInPaymentItem: CheckItemPlaceholder | null = null;
+  checkInPaymentMethod: PaymentMethod | '' = '';
+  checkInPaymentError = '';
   documentFieldFocused = false;
   emailFieldFocused = false;
   guestMode: 'new' | 'existing' = 'new';
   selectedGuestId = '';
-  entryStep: 1 | 2 = 1;
+  entryStep: 1 | 2 | 3 | 4 = 1;
   entryForm = this.createEmptyEntryForm();
+  paymentOption: 'deposit' | 'full' = 'deposit';
+  paymentMethod: PaymentMethod | '' = '';
+  reservationQuote: ReservationQuote | null = null;
   readonly countries = COUNTRY_OPTIONS;
 
   private clockInterval?: ReturnType<typeof setInterval>;
@@ -96,10 +151,8 @@ export class CheckPagePage implements OnInit, OnDestroy {
       this.refreshPendingChecks();
     });
     this.clockInterval = setInterval(() => this.updateCurrentDateKey(), 1000);
-
-    const guestDraft = this.router.getCurrentNavigation()?.extras.state?.['guestDraft'];
-    if (this.isGuestDraft(guestDraft)) {
-      this.openNewEntryForm(guestDraft);
+    if (this.modalOnly && this.guestDraft) {
+      this.openNewEntryForm(this.guestDraft);
     }
   }
 
@@ -146,6 +199,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
       checkmarkCircleOutline,
       swapHorizontalOutline,
       closeOutline,
+      cashOutline,
     });
   }
 
@@ -155,6 +209,9 @@ export class CheckPagePage implements OnInit, OnDestroy {
     this.guestMode = 'new';
     this.selectedGuestId = '';
     this.entryStep = 1;
+    this.paymentOption = 'deposit';
+    this.paymentMethod = '';
+    this.reservationQuote = null;
     if (guestDraft) {
       this.entryForm = {
         ...this.entryForm,
@@ -176,14 +233,33 @@ export class CheckPagePage implements OnInit, OnDestroy {
     this.documentFieldFocused = false;
     this.emailFieldFocused = false;
     this.showNewEntryForm = true;
+    this.showCloseConfirmation = false;
     this.setPageScrollLocked(true);
-    this.updateAvailableRooms();
+    this.availableRooms = [];
   }
 
   closeNewEntryForm(): void {
     this.showNewEntryForm = false;
+    this.showCloseConfirmation = false;
     this.entryError = '';
-    this.setPageScrollLocked(false);
+    if (!this.modalOnly) {
+      this.setPageScrollLocked(false);
+    }
+    if (this.modalOnly) {
+      this.entryModalClosed.emit();
+    }
+  }
+
+  confirmCloseNewEntryForm(): void {
+    this.showCloseConfirmation = true;
+  }
+
+  cancelCloseNewEntryForm(): void {
+    this.showCloseConfirmation = false;
+  }
+
+  discardNewEntryForm(): void {
+    this.closeNewEntryForm();
   }
 
   ngOnDestroy(): void {
@@ -191,14 +267,20 @@ export class CheckPagePage implements OnInit, OnDestroy {
     if (this.clockInterval !== undefined) {
       clearInterval(this.clockInterval);
     }
-    this.setPageScrollLocked(false);
+    if (!this.modalOnly) {
+      this.setPageScrollLocked(false);
+    }
   }
 
   refreshPendingChecks(): void {
     const today = this.localDateString(new Date());
     const entries = this.hostalService.getReservationCalendarData();
-    const checkIns = entries.filter((entry) => entry.arrivalDate === today);
-    const checkOuts = entries.filter((entry) => entry.departureDate === today);
+    const checkIns = entries.filter((entry) =>
+      entry.arrivalDate === today && ['CONFIRMADA', 'CHECK-IN HOY'].includes(entry.status)
+    );
+    const checkOuts = entries.filter((entry) =>
+      entry.departureDate === today && ['HOSPEDADO', 'CHECK-OUT HOY'].includes(entry.status)
+    );
 
     this.pendingCheckIns.splice(
       0,
@@ -241,7 +323,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
       !this.duplicateGuest;
   }
 
-  goToReservationStep(form: NgForm): void {
+  goToReservationDetailsStep(form: NgForm): void {
     if (!this.isGuestStepValid(form)) {
       form.form.markAllAsTouched();
       return;
@@ -250,16 +332,146 @@ export class CheckPagePage implements OnInit, OnDestroy {
     this.entryStep = 2;
   }
 
+  async goToRoomSelectionStep(form: NgForm): Promise<void> {
+    if (!this.isReservationDetailsValid(form)) {
+      form.form.markAllAsTouched();
+      return;
+    }
+    this.entryError = '';
+    this.entryStep = 3;
+    this.entryForm.roomId = '';
+    this.availableRooms = [];
+    this.isSearchingRooms = true;
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    try {
+      this.updateAvailableRooms();
+    } catch (error) {
+      this.entryError = error instanceof Error
+        ? `No se pudieron buscar habitaciones: ${error.message}`
+        : 'No se pudieron buscar habitaciones disponibles.';
+    } finally {
+      this.isSearchingRooms = false;
+    }
+  }
+
   returnToGuestStep(): void {
     this.entryError = '';
     this.entryStep = 1;
+  }
+
+  returnToReservationDetailsStep(): void {
+    this.entryError = '';
+    this.entryStep = 2;
+  }
+
+  goToPaymentStep(form: NgForm): void {
+    if (!this.isEntryStepValid(form)) {
+      form.form.markAllAsTouched();
+      return;
+    }
+    this.entryError = '';
+    try {
+      this.reservationQuote = this.createReservationQuote();
+      this.entryStep = 4;
+    } catch (error) {
+      this.entryError = error instanceof Error
+        ? error.message
+        : 'No se pudo calcular el monto de la reserva.';
+    }
+  }
+
+  returnToRoomSelectionStep(): void {
+    this.entryError = '';
+    this.entryStep = 3;
+  }
+
+  get paymentAmount(): number {
+    if (!this.reservationQuote) return 0;
+    return this.paymentOption === 'full'
+      ? this.reservationQuote.total
+      : this.reservationQuote.deposit;
+  }
+
+  isPaymentStepValid(): boolean {
+    return this.entryStep === 4 && this.reservationQuote !== null &&
+      (this.paymentMethod === 'transferencia' || this.paymentMethod === 'efectivo');
+  }
+
+  clearRoomSelection(): void {
+    this.availableRooms = [];
+    this.roomNightlyPrices.clear();
+    this.entryForm.roomId = '';
+  }
+
+  selectRoom(roomId: number): void {
+    this.entryForm.roomId = String(roomId);
+    this.entryError = '';
+  }
+
+  isRoomSelected(roomId: number): boolean {
+    return this.entryForm.roomId === String(roomId);
+  }
+
+  openRoomDetails(roomId: number): void {
+    this.roomDetails = this.sedeService.habitaciones().find((room) => room.id === roomId) ?? null;
+    this.roomDetailsTab = 'details';
+    this.expandedRoomPhoto = null;
+  }
+
+  roomDetailsFor(room: Habitacion): SedeHabitacion | undefined {
+    return this.sedeService.habitaciones().find((managedRoom) => managedRoom.id === room.id_habitacion);
+  }
+
+  closeRoomDetails(): void {
+    this.roomDetails = null;
+    this.expandedRoomPhoto = null;
+  }
+
+  roomTypology(room: SedeHabitacion): SedeTipologia | undefined {
+    return this.sedeService.tipologias().find((typology) =>
+      typology.id === room.tipologiaId ||
+      typology.nombre.toLocaleLowerCase() === room.tipo.toLocaleLowerCase()
+    );
+  }
+
+  roomPhotos(room: SedeHabitacion): FotoHabitacion[] {
+    return this.fotoHabitacionService.forRoom(room.id);
+  }
+
+  roomInventory(room: SedeHabitacion): Array<{ name: string; quantity: number; description: string }> {
+    const supplies = new Map(this.inventarioService.insumos().map((supply) => [supply.id_insumo, supply]));
+    return this.inventarioService.habitacionesAsignadas()
+      .filter((assignment) => assignment.id_habitacion === room.id)
+      .flatMap((assignment) => {
+        const supply = supplies.get(assignment.id_insumo);
+        return supply
+          ? [{ name: supply.nombre_insumo, quantity: assignment.cantidad, description: supply.descripcion }]
+          : [];
+      });
+  }
+
+  isReservationDetailsValid(form: NgForm): boolean {
+    return form.valid === true &&
+      this.isValidReservationDate(this.entryForm.arrivalDate) &&
+      this.isValidReservationDate(this.entryForm.departureDate) &&
+      this.entryForm.arrivalDate < this.entryForm.departureDate &&
+      Number.isInteger(this.entryForm.personCount) &&
+      this.entryForm.personCount >= 1 &&
+      /^([01]\d|2[0-3]):[0-5]\d$/.test(this.entryForm.arrivalTime);
   }
 
   isEntryStepValid(form: NgForm): boolean {
     const guestIsValid = this.guestMode === 'existing'
       ? !!this.selectedGuest
       : this.areNewGuestFieldsValid();
-    return form.valid === true && guestIsValid;
+    return form.valid === true && guestIsValid &&
+      this.isValidReservationDate(this.entryForm.arrivalDate) &&
+      this.isValidReservationDate(this.entryForm.departureDate) &&
+      this.entryForm.arrivalDate < this.entryForm.departureDate &&
+      Number.isInteger(this.entryForm.personCount) &&
+      this.entryForm.personCount >= 1 &&
+      /^([01]\d|2[0-3]):[0-5]\d$/.test(this.entryForm.arrivalTime) &&
+      this.availableRooms.some((room) => room.id_habitacion === Number(this.entryForm.roomId));
   }
 
   updateAvailableRooms(): void {
@@ -268,11 +480,24 @@ export class CheckPagePage implements OnInit, OnDestroy {
       this.entryForm.departureDate,
       this.entryForm.personCount
     );
+    this.updateRoomNightlyPrices();
     this.entryForm.roomId = '';
+  }
+
+  roomNightlyPrice(room: Habitacion): number | null {
+    return this.roomNightlyPrices.get(room.id_tipologia) ?? null;
   }
 
   registerEntry(): void {
     this.entryError = '';
+    if (!this.isPaymentStepValid() || !this.reservationQuote) {
+      this.entryError = 'Selecciona el medio de pago para confirmar la reserva.';
+      return;
+    }
+    if (this.paymentMethod !== 'transferencia' && this.paymentMethod !== 'efectivo') {
+      this.entryError = 'Selecciona transferencia o efectivo como medio de pago.';
+      return;
+    }
     if (this.guestMode === 'new' && !this.isValidEmail(this.entryForm.email)) {
       this.entryError = 'Ingresa un email válido, por ejemplo nombre@dominio.com.';
       return;
@@ -303,30 +528,77 @@ export class CheckPagePage implements OnInit, OnDestroy {
         arrivalDate: this.entryForm.arrivalDate,
         departureDate: this.entryForm.departureDate,
         arrivalTime: this.entryForm.arrivalTime,
+        payment: {
+          totalAmount: this.reservationQuote.total,
+          paidAmount: this.paymentAmount,
+          depositPercentage: this.reservationQuote.depositPercentage,
+          method: this.paymentMethod,
+          paidInFull: this.paymentOption === 'full',
+        },
       });
       const roomAssigned = this.availableRooms.find((room) => room.id_habitacion === registered.reservation.id_habitacion);
       const roomNum = roomAssigned?.numero_habitacion ?? '';
-      if (roomNum) {
-        this.sedeService.marcarOcupada(roomNum, `${registered.guest.nombre} ${registered.guest.apellido}`);
-      }
-      this.entrySuccessMessage = `Ingreso registrado para ${registered.guest.nombre} ${registered.guest.apellido} en la habitación ${roomNum}. La habitación ahora está OCUPADA.`;
+      this.entrySuccessMessage = `Reserva confirmada para ${registered.guest.nombre} ${registered.guest.apellido} en la habitación ${roomNum}. Se registró un pago de ${this.paymentAmount.toLocaleString('es-CL')} CLP por ${this.paymentMethod}.`;
       this.showNewEntryForm = false;
       this.setPageScrollLocked(false);
+      if (this.modalOnly) {
+        this.entryRegistered.emit(this.entrySuccessMessage);
+      }
     } catch (error) {
       this.entryError = error instanceof Error ? error.message : 'No se pudo registrar el ingreso. Inténtalo nuevamente.';
     }
   }
 
   realizarCheckIn(item: CheckItemPlaceholder): void {
-    this.sedeService.marcarOcupada(item.roomNumber, item.guestName);
-    item.statusBadge = 'Ingresado';
-    this.entrySuccessMessage = `Check-in completado para ${item.guestName}. La habitación ${item.roomNumber} ahora está OCUPADA.`;
+    this.movementError = '';
+    this.checkInPaymentItem = item;
+    this.checkInPaymentMethod = '';
+    this.checkInPaymentError = '';
+  }
+
+  closeCheckInPayment(): void {
+    this.checkInPaymentItem = null;
+    this.checkInPaymentMethod = '';
+    this.checkInPaymentError = '';
+  }
+
+  confirmCheckInPayment(): void {
+    const item = this.checkInPaymentItem;
+    if (!item) return;
+    if (item.outstandingBalance > 0 &&
+      this.checkInPaymentMethod !== 'transferencia' &&
+      this.checkInPaymentMethod !== 'efectivo') {
+      this.checkInPaymentError = 'Selecciona el medio de pago para cobrar el saldo pendiente.';
+      return;
+    }
+
+    try {
+      this.hostalService.processCheckIn(item.id, this.checkInPaymentMethod || undefined);
+      this.sedeService.marcarOcupada(item.roomNumber, item.guestName);
+      this.entrySuccessMessage = item.outstandingBalance > 0
+        ? `Check-in completado para ${item.guestName}. Se cobraron ${item.outstandingBalance.toLocaleString('es-CL')} CLP por ${this.checkInPaymentMethod}. La habitación ${item.roomNumber} ahora está OCUPADA.`
+        : `Check-in completado para ${item.guestName}. ${item.hasPaymentRecord ? 'El pago de la reserva ya estaba completo.' : 'No había saldo pendiente registrado.'} La habitación ${item.roomNumber} ahora está OCUPADA.`;
+      this.movementError = '';
+      this.closeCheckInPayment();
+    } catch (error) {
+      this.checkInPaymentError = error instanceof Error
+        ? error.message
+        : 'No se pudo procesar el check-in.';
+    }
   }
 
   realizarCheckOut(item: CheckItemPlaceholder): void {
-    this.sedeService.marcarEnAseo(item.roomNumber);
-    item.statusBadge = 'En Aseo';
-    this.entrySuccessMessage = `Check-out procesado para ${item.guestName}. La habitación ${item.roomNumber} pasa a estado EN ASEO.`;
+    this.movementError = '';
+    try {
+      this.hostalService.processCheckOut(item.id);
+      this.sedeService.marcarEnAseo(item.roomNumber);
+      this.movementError = '';
+      this.entrySuccessMessage = `Check-out procesado para ${item.guestName}. La habitación ${item.roomNumber} pasa a estado EN ASEO.`;
+    } catch (error) {
+      this.movementError = error instanceof Error
+        ? error.message
+        : 'No se pudo procesar el check-out.';
+    }
   }
 
   isRoomOcupada(roomNumber: string): boolean {
@@ -421,6 +693,12 @@ export class CheckPagePage implements OnInit, OnDestroy {
     return value.replace(/[.\s-]/g, '').toUpperCase();
   }
 
+  private isValidReservationDate(value: string): boolean {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const date = new Date(`${value}T00:00:00`);
+    return !Number.isNaN(date.getTime()) && this.localDateString(date) === value;
+  }
+
   private setPageScrollLocked(locked: boolean): void {
     if (locked) {
       this.renderer.addClass(this.document.body, 'entry-modal-open');
@@ -462,19 +740,6 @@ export class CheckPagePage implements OnInit, OnDestroy {
       personCount: 1,
       roomId: '',
     };
-  }
-
-  private isGuestDraft(value: unknown): value is GuestDraft {
-    if (!value || typeof value !== 'object') return false;
-    const draft = value as Partial<GuestDraft>;
-    return (draft.documentType === 'rut' || draft.documentType === 'passport') &&
-      typeof draft.documento === 'string' &&
-      typeof draft.nombre === 'string' &&
-      typeof draft.apellido === 'string' &&
-      typeof draft.telefono === 'string' &&
-      typeof draft.phoneCountry === 'string' &&
-      typeof draft.email === 'string' &&
-      typeof draft.nacionalidad === 'string';
   }
 
   private localDateString(date: Date): string {
@@ -523,6 +788,10 @@ export class CheckPagePage implements OnInit, OnDestroy {
       timeWindowLabel: type === 'checkin' ? 'Hora de llegada' : 'Hora de salida',
       statusBadge: type === 'checkin' ? 'CHECK-IN HOY' : 'CHECK-OUT HOY',
       avatarColor: colors[index % colors.length],
+      totalAmount: entry.totalAmount,
+      amountPaid: entry.amountPaid,
+      outstandingBalance: Math.max(0, entry.totalAmount - entry.amountPaid),
+      hasPaymentRecord: entry.hasPaymentRecord,
       isVip: entry.isVip,
       notes: entry.isVip ? 'Huésped recurrente' : undefined,
     };
@@ -532,6 +801,145 @@ export class CheckPagePage implements OnInit, OnDestroy {
     const arrival = Date.parse(`${arrivalDate}T00:00:00Z`);
     const departure = Date.parse(`${departureDate}T00:00:00Z`);
     return Math.round((departure - arrival) / (24 * 60 * 60 * 1000));
+  }
+
+  private createReservationQuote(): ReservationQuote {
+    const roomId = Number(this.entryForm.roomId);
+    const room = this.availableRooms.find((candidate) => candidate.id_habitacion === roomId);
+    const typology = room
+      ? this.sedeService.tipologias().find((candidate) => candidate.id === room.id_tipologia)
+      : undefined;
+    if (!room || !typology) {
+      throw new Error('No se encontró la tipología de la habitación seleccionada.');
+    }
+
+    const rates = this.loadStoredTarifas();
+    const nights = this.getNights(this.entryForm.arrivalDate, this.entryForm.departureDate);
+    if (nights < 1) {
+      throw new Error('El rango de fechas debe incluir al menos una noche.');
+    }
+
+    let total = 0;
+    for (let offset = 0; offset < nights; offset++) {
+      const date = new Date(`${this.entryForm.arrivalDate}T00:00:00`);
+      date.setDate(date.getDate() + offset);
+      const nightlyPrice = this.getEffectiveNightlyPrice(typology, date, rates);
+      if (nightlyPrice === undefined || !Number.isFinite(nightlyPrice) || nightlyPrice < 0) {
+        throw new Error(`Configura un precio para la tipología ${typology.nombre} en /tarifas antes de confirmar.`);
+      }
+      total += nightlyPrice;
+    }
+
+    const depositPercentage = this.loadDepositPercentage();
+    total = Math.round(total);
+    return {
+      nights,
+      total,
+      depositPercentage,
+      deposit: Math.round(total * depositPercentage / 100),
+      typologyName: typology.nombre,
+      roomNumber: room.numero_habitacion,
+      guestName: this.guestMode === 'existing'
+        ? `${this.selectedGuest?.nombre ?? ''} ${this.selectedGuest?.apellido ?? ''}`.trim()
+        : `${this.entryForm.nombre} ${this.entryForm.apellido}`.trim(),
+    };
+  }
+
+  private updateRoomNightlyPrices(): void {
+    this.roomNightlyPrices.clear();
+    if (this.availableRooms.length === 0) return;
+    const rates = this.loadStoredTarifas();
+    const arrivalDate = new Date(`${this.entryForm.arrivalDate}T00:00:00`);
+    for (const typology of this.sedeService.tipologias()) {
+      const price = this.getEffectiveNightlyPrice(typology, arrivalDate, rates);
+      this.roomNightlyPrices.set(typology.id, price ?? null);
+    }
+  }
+
+  private getEffectiveNightlyPrice(
+    typology: SedeTipologia,
+    date: Date,
+    rates: StoredTarifa[]
+  ): number | undefined {
+    const matchingRates = rates.filter((rate) =>
+      rate.periodos.some((period) => this.tarifaPeriodMatches(period, date))
+    );
+    let nightlyPrice = typeof typology.precioBase === 'number' &&
+      Number.isFinite(typology.precioBase) && typology.precioBase >= 0
+      ? typology.precioBase
+      : undefined;
+    for (const rate of matchingRates) {
+      const ratePrice = rate.precios[typology.id] ?? typology.precioBase;
+      if (typeof ratePrice === 'number' && Number.isFinite(ratePrice) && ratePrice >= 0 &&
+        (nightlyPrice === undefined || ratePrice > nightlyPrice)) {
+        nightlyPrice = ratePrice;
+      }
+    }
+    return nightlyPrice;
+  }
+
+  private loadStoredTarifas(): StoredTarifa[] {
+    const sedeId = this.sede()?.id;
+    if (sedeId === undefined) {
+      throw new Error('Selecciona una sede para consultar sus tarifas.');
+    }
+    const stored = localStorage.getItem(`hospal.tarifas.sede.${sedeId}`);
+    if (stored === null) return [];
+    const parsed: unknown = JSON.parse(stored);
+    if (!Array.isArray(parsed) || !parsed.every((rate) => this.isStoredTarifa(rate))) {
+      throw new Error('Las tarifas guardadas tienen un formato inválido. Revísalas en /tarifas.');
+    }
+    return parsed.filter((rate): rate is StoredTarifa => this.isStoredTarifa(rate));
+  }
+
+  private isStoredTarifa(value: unknown): value is StoredTarifa {
+    if (!value || typeof value !== 'object') return false;
+    const rate = value as Record<string, unknown>;
+    const periodTypes: TarifaPeriodType[] = [
+      'months', 'weekdays', 'month-days', 'specific-month-days', 'date-range', 'specific-dates',
+    ];
+    return Array.isArray(rate['periodos']) &&
+      rate['periodos'].every((period: unknown) => {
+        if (!period || typeof period !== 'object') return false;
+        const item = period as Record<string, unknown>;
+        return typeof item['tipo'] === 'string' && periodTypes.includes(item['tipo'] as TarifaPeriodType) &&
+        Array.isArray(item['meses']) && item['meses'].every(Number.isInteger) &&
+        Array.isArray(item['diasSemana']) && item['diasSemana'].every(Number.isInteger) &&
+        Array.isArray(item['diasMes']) && item['diasMes'].every(Number.isInteger) &&
+        typeof item['fechaInicio'] === 'string' && typeof item['fechaFin'] === 'string' &&
+        Array.isArray(item['fechas']) && item['fechas'].every((date) => typeof date === 'string');
+    }) &&
+    !!rate['precios'] && typeof rate['precios'] === 'object' && !Array.isArray(rate['precios']) &&
+      Object.values(rate['precios']).every((price) =>
+        typeof price === 'number' && Number.isFinite(price) && price >= 0
+      );
+  }
+
+  private loadDepositPercentage(): number {
+    const sedeId = this.sede()?.id;
+    if (sedeId === undefined) {
+      throw new Error('Selecciona una sede para consultar el porcentaje de abono.');
+    }
+    const stored = localStorage.getItem(`hospal.tarifas.abono.sede.${sedeId}`);
+    if (stored === null) return 20;
+    const percentage = Number(stored);
+    if (!Number.isFinite(percentage) || percentage < 1 || percentage > 100) {
+      throw new Error('El porcentaje de abono configurado en /tarifas no es válido.');
+    }
+    return percentage;
+  }
+
+  private tarifaPeriodMatches(period: StoredTarifaPeriod, date: Date): boolean {
+    const dateString = this.localDateString(date);
+    switch (period.tipo) {
+      case 'months': return period.meses.includes(date.getMonth());
+      case 'weekdays': return period.diasSemana.includes((date.getDay() + 6) % 7);
+      case 'month-days': return period.diasMes.includes(date.getDate());
+      case 'specific-month-days': return period.anio === date.getFullYear() &&
+        period.mes === date.getMonth() && period.diasMes.includes(date.getDate());
+      case 'date-range': return dateString >= period.fechaInicio && dateString <= period.fechaFin;
+      case 'specific-dates': return period.fechas.includes(dateString);
+    }
   }
 
   private formatDate(dateKey: string): string {

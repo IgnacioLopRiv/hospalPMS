@@ -151,7 +151,7 @@ export class ReservasPage implements OnInit {
     return this.reservations().filter((reservation) =>
       managedRooms.has(reservation.roomNumber) &&
       reservation.arrivalDate < end &&
-      reservation.departureDate > start
+      reservation.departureDate >= start
     );
   });
 
@@ -269,10 +269,10 @@ export class ReservasPage implements OnInit {
 
   getGridColumnSpan(reservation: ReservationBlock): number {
     const visibleStart = this.viewStartDate();
-    const visibleEnd = addDays(visibleStart, VISIBLE_DAYS);
+    const visibleEnd = addDays(visibleStart, VISIBLE_DAYS - 1);
     const start = reservation.arrivalDate < visibleStart ? visibleStart : reservation.arrivalDate;
     const end = reservation.departureDate > visibleEnd ? visibleEnd : reservation.departureDate;
-    return Math.max(1, this.dayOffset(start, end));
+    return Math.max(1, this.dayOffset(start, end) + 1);
   }
 
   getThemeForColor(color: string): CategoryTheme {
