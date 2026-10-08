@@ -8,7 +8,6 @@ import {
   logOutOutline,
   closeOutline,
   shieldCheckmarkOutline,
-  pricetagsOutline,
 } from 'ionicons/icons';
 
 import { AuthService } from '../../../../core/auth/application/auth.service';
@@ -28,7 +27,6 @@ export class ConfigOptionsComponent {
 
   readonly close = output<void>();
   readonly manageProfiles = output<void>();
-  readonly manageTipologias = output<void>();
   readonly logout = output<void>();
 
   /** Reutiliza el mismo patrón de permisos que canEditSede en el header */
@@ -40,7 +38,6 @@ export class ConfigOptionsComponent {
       logOutOutline,
       closeOutline,
       shieldCheckmarkOutline,
-      pricetagsOutline,
     });
   }
 
@@ -50,11 +47,6 @@ export class ConfigOptionsComponent {
 
   handleManageProfiles(): void {
     this.manageProfiles.emit();
-    this.dismiss();
-  }
-
-  handleManageTipologias(): void {
-    this.manageTipologias.emit();
     this.dismiss();
   }
 

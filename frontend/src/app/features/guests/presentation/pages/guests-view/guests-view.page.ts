@@ -1,7 +1,6 @@
 import { ChangeDetectorRef, Component, DOCUMENT, ElementRef, OnDestroy, OnInit, Renderer2, ViewChild, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 import { IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
@@ -25,6 +24,7 @@ import {
 
 import { HostalService } from '../../../application/hostal.service';
 import { SedeService } from '../../../../locations/application/sede.service';
+import { CheckPagePage } from '../../../../reservations/presentation/pages/check-page/check-page.page';
 import { GuestCardView, Habitacion, Huesped } from '../../../../../shared/domain/hostal.model';
 import { COUNTRY_OPTIONS } from '../../../../../shared/domain/country-options';
 import { CountryPickerComponent } from '../../../../../shared/presentation/country-picker/country-picker.component';
@@ -38,15 +38,14 @@ import { CountryPickerComponent } from '../../../../../shared/presentation/count
     CommonModule,
     FormsModule,
     IonIcon,
-    CountryPickerComponent
+    CountryPickerComponent,
+    CheckPagePage
   ]
 })
 export class GuestsViewPage implements OnInit, OnDestroy {
   private readonly renderer = inject(Renderer2);
   private readonly document = inject(DOCUMENT);
-  private readonly router = inject(Router);
   private readonly changeDetector = inject(ChangeDetectorRef);
-  private preserveScrollLockOnDestroy = false;
 
   @ViewChild('guestEditDialog') guestEditDialog?: ElementRef<HTMLDialogElement>;
   @ViewChild('reservationEditDialog') reservationEditDialog?: ElementRef<HTMLDialogElement>;
@@ -58,6 +57,7 @@ export class GuestsViewPage implements OnInit, OnDestroy {
   viewMode: 'cards' | 'list' = 'cards';
   searchTerm: string = '';
   showNewGuestForm = false;
+  showReservationAssignment = false;
   guestError = '';
   guestSuccessMessage = '';
   documentFieldFocused = false;
@@ -311,6 +311,7 @@ export class GuestsViewPage implements OnInit, OnDestroy {
 
   openNewGuestForm(): void {
     this.guestForm = this.createEmptyGuestForm();
+    this.showReservationAssignment = false;
     this.guestError = '';
     this.guestSuccessMessage = '';
     this.documentFieldFocused = false;
@@ -321,6 +322,7 @@ export class GuestsViewPage implements OnInit, OnDestroy {
 
   closeNewGuestForm(): void {
     this.showNewGuestForm = false;
+    this.showReservationAssignment = false;
     this.guestError = '';
     this.setPageScrollLocked(false);
   }
@@ -329,9 +331,7 @@ export class GuestsViewPage implements OnInit, OnDestroy {
     this.closeGuestEditDialog();
     this.closeReservationEditDialog();
     this.closeGuestDeleteDialog();
-    if (!this.preserveScrollLockOnDestroy) {
-      this.setPageScrollLocked(false);
-    }
+    this.setPageScrollLocked(false);
   }
 
   onGuestEditDialogCancel(event: Event): void {
@@ -378,23 +378,21 @@ export class GuestsViewPage implements OnInit, OnDestroy {
     }
   }
 
-  async assignReservation(): Promise<void> {
+  assignReservation(): void {
     this.guestError = '';
-    this.preserveScrollLockOnDestroy = true;
-    try {
-      const navigated = await this.router.navigate(['/check-page'], {
-        state: { guestDraft: { ...this.guestForm } },
-      });
-      if (!navigated) {
-        this.preserveScrollLockOnDestroy = false;
-        this.guestError = 'No se pudo abrir el formulario para asignar la reserva.';
-        return;
-      }
-      this.showNewGuestForm = false;
-    } catch {
-      this.preserveScrollLockOnDestroy = false;
-      this.guestError = 'No se pudo abrir el formulario para asignar la reserva.';
-    }
+    this.showReservationAssignment = true;
+  }
+
+  closeReservationAssignment(): void {
+    this.showReservationAssignment = false;
+    this.setPageScrollLocked(true);
+  }
+
+  completeReservationAssignment(message: string): void {
+    this.showReservationAssignment = false;
+    this.showNewGuestForm = false;
+    this.guestSuccessMessage = message;
+    this.setPageScrollLocked(false);
   }
 
   formatRut(value: string): void {

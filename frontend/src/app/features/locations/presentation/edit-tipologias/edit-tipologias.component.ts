@@ -2,12 +2,9 @@ import { Component, computed, effect, inject, input, output, signal } from '@ang
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
-  IonButton,
   IonIcon,
   IonInput,
-  IonItem,
   IonModal,
-  IonTextarea,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
@@ -29,7 +26,6 @@ type FormMode = 'add' | 'edit' | null;
 interface TipologiaForm {
   nombre: string;
   capacidad: number;
-  precioBase: number | null;
   descripcion: string;
 }
 
@@ -42,8 +38,6 @@ interface TipologiaForm {
     CommonModule,
     FormsModule,
     IonModal,
-    IonButton,
-    IonItem,
     IonInput,
     // IonTextarea,
     IonIcon,
@@ -65,7 +59,6 @@ export class EditTipologiasComponent {
   readonly form = signal<TipologiaForm>({
     nombre: '',
     capacidad: 2,
-    precioBase: null,
     descripcion: '',
   });
 
@@ -100,7 +93,6 @@ export class EditTipologiasComponent {
     this.form.set({
       nombre: '',
       capacidad: 2,
-      precioBase: null,
       descripcion: '',
     });
     this.editingId.set(null);
@@ -114,7 +106,6 @@ export class EditTipologiasComponent {
     this.form.set({
       nombre: tipologia.nombre,
       capacidad: tipologia.capacidad,
-      precioBase: tipologia.precioBase ?? null,
       descripcion: tipologia.descripcion ?? '',
     });
     this.editingId.set(tipologia.id);
@@ -138,9 +129,6 @@ export class EditTipologiasComponent {
     const f = this.form();
     const nombre = f.nombre.trim();
     const capacidad = Number(f.capacidad);
-    const precioBase = f.precioBase !== null && f.precioBase !== undefined && f.precioBase !== ('' as unknown)
-      ? Number(f.precioBase)
-      : undefined;
     const descripcion = f.descripcion.trim();
 
     if (!nombre) {
@@ -166,7 +154,6 @@ export class EditTipologiasComponent {
       this.sedeService.addTipologia({
         nombre,
         capacidad,
-        precioBase,
         descripcion,
       });
       this.showSuccess('Tipología agregada correctamente.');
@@ -174,7 +161,6 @@ export class EditTipologiasComponent {
       this.sedeService.updateTipologia(this.editingId()!, {
         nombre,
         capacidad,
-        precioBase,
         descripcion,
       });
       this.showSuccess('Tipología actualizada correctamente.');
@@ -218,6 +204,15 @@ export class EditTipologiasComponent {
     return habitaciones.filter(
       (h) => h.tipologiaId === tipologia.id || h.tipo.toLowerCase() === tipologia.nombre.toLowerCase()
     ).length;
+  }
+
+  getThemeForColor(color?: string): { primary: string; background: string; border: string } {
+    const validColor = color && /^#[0-9a-f]{6}$/i.test(color) ? color : '#64748b';
+    return {
+      primary: validColor,
+      background: `color-mix(in srgb, ${validColor} 13%, white)`,
+      border: `color-mix(in srgb, ${validColor} 38%, white)`,
+    };
   }
 
   // ── Cierre ────────────────────────────────────────────────────────────────

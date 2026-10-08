@@ -18,6 +18,9 @@ describe('ReservasPage', () => {
     }).compileComponents();
 
     sedeService = TestBed.inject(SedeService);
+    const sedeId = sedeService.selectedSede()!.id;
+    localStorage.removeItem(`hospal_db_sede_${sedeId}_huespedes`);
+    localStorage.removeItem(`hospal_db_sede_${sedeId}_reservas`);
     hostalService = TestBed.inject(HostalService);
     fixture = TestBed.createComponent(ReservasPage);
     component = fixture.componentInstance;
@@ -25,6 +28,11 @@ describe('ReservasPage', () => {
   });
 
   afterEach(() => {
+    const sedeId = sedeService.selectedSede()?.id;
+    if (sedeId !== undefined) {
+      localStorage.removeItem(`hospal_db_sede_${sedeId}_huespedes`);
+      localStorage.removeItem(`hospal_db_sede_${sedeId}_reservas`);
+    }
     localStorage.removeItem('hospal.sedes');
     localStorage.removeItem('hospal.selectedSede');
   });
@@ -130,6 +138,25 @@ describe('ReservasPage', () => {
     expect(component.arrivalCount()).toBe(0);
     expect(component.departureCount()).toBe(1);
     expect(component.reservationCount()).toBe(0);
+  });
+
+  it('shows the reservation bar from arrival through departure day', () => {
+    const reservation = addReservation(1, 3);
+    fixture.detectChanges();
+    const block = component.reservations().find((entry) => entry.id === reservation.id_reserva)!;
+
+    expect(component.getGridColumnStart(block)).toBe(2);
+    expect(component.getGridColumnSpan(block)).toBe(3);
+  });
+
+  it('keeps the checkout day visible when it is the first day of the calendar', () => {
+    const reservation = addReservation(-1, 0);
+    fixture.detectChanges();
+    const block = component.reservations().find((entry) => entry.id === reservation.id_reserva)!;
+
+    expect(component.visibleReservations()).toContain(block);
+    expect(component.getGridColumnStart(block)).toBe(1);
+    expect(component.getGridColumnSpan(block)).toBe(1);
   });
 
   it('assigns different colors to managed typologies', () => {

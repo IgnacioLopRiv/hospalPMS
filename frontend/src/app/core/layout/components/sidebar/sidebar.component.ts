@@ -10,6 +10,7 @@ import {
   calendarOutline,
   swapHorizontalOutline,
   barChartOutline,
+  cashOutline,
   logOutOutline,
   cubeOutline,
 } from 'ionicons/icons';
@@ -46,6 +47,7 @@ export class SidebarComponent {
       calendarOutline,
       swapHorizontalOutline,
       barChartOutline,
+      cashOutline,
       logOutOutline,
       cubeOutline,
     });

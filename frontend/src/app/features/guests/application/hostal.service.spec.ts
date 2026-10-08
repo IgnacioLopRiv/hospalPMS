@@ -125,6 +125,7 @@ describe('HostalService (sede-scoped)', () => {
     expect(roomNumbers).toContain('205');
     expect(roomNumbers).toContain('207');
     expect(roomNumbers).not.toContain('101');
+    expect(roomNumbers).not.toContain('204');
   });
 
   it('matches a managed room by type name when its saved type ID is stale', () => {
@@ -307,10 +308,24 @@ describe('HostalService (sede-scoped)', () => {
       arrivalDate: '2026-09-26',
       departureDate: '2026-09-28',
       arrivalTime: '14:00',
+      payment: {
+        totalAmount: 80000,
+        paidAmount: 28000,
+        depositPercentage: 35,
+        method: 'transferencia' as const,
+        paidInFull: false,
+      },
     };
 
     const registered = service.registerEntry(entry);
     expect(registered.reservation.cantidad_personas).toBe(2);
+    expect(registered.reservation).toEqual(jasmine.objectContaining({
+      precio_total: 80000,
+      porcentaje_abono: 35,
+      monto_pagado: 28000,
+      metodo_pago: 'transferencia',
+      pago_completo: false,
+    }));
     expect(registered.guest.id_sede).toBe(TEST_SEDE_ID);
     expect(service.getGuests()).toContain(jasmine.objectContaining({ documento: '12.345.678-9' }));
     expect(service.getAvailableRooms(entry.arrivalDate, entry.departureDate)
@@ -319,6 +334,50 @@ describe('HostalService (sede-scoped)', () => {
       ...entry,
       newGuest: { ...entry.newGuest, documento: 'otro-rut' },
     })).toThrowError('La habitación seleccionada no está disponible para esas fechas.');
+  });
+
+  it('collects a reservation balance during check-in and finalizes the reservation on check-out', () => {
+    const room = service.getAvailableRooms('2026-09-26', '2026-09-28')[0];
+    const registered = service.registerEntry({
+      newGuest: {
+        documento: 'BALANCE-TEST',
+        nombre: 'Ana',
+        apellido: 'Pérez',
+        telefono: '+56912345678',
+        email: 'balance@example.com',
+        nacionalidad: 'Chile',
+      },
+      roomId: room.id_habitacion,
+      personCount: 1,
+      arrivalDate: '2026-09-26',
+      departureDate: '2026-09-28',
+      arrivalTime: '14:00',
+      payment: {
+        totalAmount: 80000,
+        paidAmount: 28000,
+        depositPercentage: 35,
+        method: 'transferencia',
+        paidInFull: false,
+      },
+    });
+
+    expect(() => service.processCheckIn(registered.reservation.id_reserva))
+      .toThrowError('Selecciona transferencia o efectivo para cobrar el saldo pendiente.');
+    const checkedIn = service.processCheckIn(registered.reservation.id_reserva, 'efectivo');
+    expect(checkedIn).toEqual(jasmine.objectContaining({
+      estado_reserva: 'HOSPEDADO',
+      precio_total: 80000,
+      monto_pagado: 80000,
+      metodo_pago: 'efectivo',
+      pago_completo: true,
+    }));
+    expect(service.getReservationCalendarData())
+      .toContain(jasmine.objectContaining({ id: checkedIn.id_reserva, status: 'HOSPEDADO' }));
+
+    const checkedOut = service.processCheckOut(checkedIn.id_reserva);
+    expect(checkedOut.estado_reserva).toBe('FINALIZADA');
+    expect(service.getReservationCalendarData())
+      .toContain(jasmine.objectContaining({ id: checkedOut.id_reserva, status: 'FINALIZADA' }));
   });
 
   it('rejects a duplicate identity document', () => {

@@ -16,7 +16,7 @@
   <div class="entry-success" role="status">{{ guestSuccessMessage }}</div>
   }
 
-  @if (showNewGuestForm) {
+  @if (showNewGuestForm && !showReservationAssignment) {
   <div class="entry-modal-backdrop">
     <section class="entry-modal" role="dialog" aria-modal="true" aria-labelledby="guest-modal-title"
       (click)="$event.stopPropagation()">
@@ -110,6 +110,15 @@
       </form>
     </section>
   </div>
+  }
+
+  @if (showReservationAssignment) {
+  <app-check-page
+    [modalOnly]="true"
+    [guestDraft]="guestForm"
+    (entryModalClosed)="closeReservationAssignment()"
+    (entryRegistered)="completeReservationAssignment($event)">
+  </app-check-page>
   }
 
   <!-- Tarjetas KPI -->

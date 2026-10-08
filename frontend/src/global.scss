@@ -9,6 +9,8 @@
  * https://ionicframework.com/docs/layout/global-stylesheets
  */
 
+@use './app/features/reservations/presentation/pages/check-page/room-selection.global';
+
 /* Core CSS required for Ionic components to work properly */
 @import "@ionic/angular/css/core.css";
 
@@ -382,6 +384,127 @@ dialog.entry-modal-backdrop.guest-edit-dialog::backdrop {
 
   h2 { margin: 0 0 0.3rem; color: #0f172a; font-size: 1.35rem; }
   p { margin: 0; color: #64748b; font-size: 0.85rem; }
+}
+
+.entry-modal-close-button {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  place-items: center;
+  margin: -0.25rem -0.5rem 0 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #64748b;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: #fecaca;
+    background: #fef2f2;
+    color: #b91c1c;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #1e50d8;
+    outline-offset: 2px;
+  }
+}
+
+.entry-close-confirm-backdrop {
+  position: fixed;
+  z-index: 1050;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(3px);
+}
+
+.entry-close-confirm-dialog {
+  display: grid;
+  width: min(420px, 100%);
+  justify-items: center;
+  padding: 1.6rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
+  text-align: center;
+  animation: entry-modal-enter 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+
+  h2 {
+    margin: 0.9rem 0 0.4rem;
+    color: #0f172a;
+    font-size: 1.1rem;
+  }
+
+  p {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.88rem;
+    line-height: 1.5;
+  }
+}
+
+.entry-close-confirm-icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff7ed;
+  color: #ea580c;
+  font-size: 1.6rem;
+}
+
+.entry-close-confirm-actions {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  gap: 0.65rem;
+  margin-top: 1.35rem;
+
+  button {
+    min-height: 40px;
+    padding: 0.55rem 0.85rem;
+    border: 1px solid #e5e9f2;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:focus-visible {
+      outline: 2px solid #1e50d8;
+      outline-offset: 2px;
+    }
+  }
+}
+
+.entry-close-keep-button {
+  background: #ffffff;
+  color: #475569;
+
+  &:hover {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+  }
+}
+
+.entry-close-discard-button {
+  border-color: #dc2626 !important;
+  background: #dc2626;
+  color: #ffffff;
+
+  &:hover {
+    border-color: #b91c1c !important;
+    background: #b91c1c;
+  }
 }
 
 .entry-form {

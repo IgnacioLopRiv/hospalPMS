@@ -31,10 +31,16 @@
         </div>
 
         @if (isAdmin()) {
-          <button type="button" class="btn-new-room" (click)="openNewRoomForm()">
-            <ion-icon name="add-outline"></ion-icon>
-            <span>Nueva habitación</span>
-          </button>
+          <div class="room-header-actions">
+            <button type="button" class="btn-manage-typologies" (click)="openEditTipologias()">
+              <ion-icon name="pricetags-outline"></ion-icon>
+              <span>Gestionar tipologías</span>
+            </button>
+            <button type="button" class="btn-new-room" (click)="openNewRoomForm()">
+              <ion-icon name="add-outline"></ion-icon>
+              <span>Nueva habitación</span>
+            </button>
+          </div>
         }
       </div>
     </header>
@@ -52,6 +58,7 @@
       <!-- Grilla de Tarjetas -->
       <section class="rooms-grid">
         @for (habitacion of habitaciones(); track habitacion.id) {
+          @let typology = getManagedTypology(habitacion);
           <article
             class="room-summary"
             [ngClass]="'card-estado-' + (habitacion.estado || 'libre')"
@@ -114,15 +121,31 @@
                   <ion-icon name="bed-outline"></ion-icon>
                 </div>
                 <div>
-                  <h2>Habitación {{ habitacion.numero }}</h2>
-                  <span class="room-subtitle">{{ getManagedTypologyName(habitacion) }}</span>
+                  <div class="room-title-line">
+                    <h2>Habitación {{ habitacion.numero }}</h2>
+                    @if (typology) {
+                      <span
+                        class="room-header-capacity"
+                        [attr.aria-label]="typology.capacidad + (typology.capacidad === 1 ? ' persona' : ' personas')"
+                        [title]="typology.capacidad + (typology.capacidad === 1 ? ' persona' : ' personas')"
+                      >
+                      <ion-icon name="person-outline"></ion-icon>
+                      {{ typology.capacidad }} {{ typology.capacidad === 1 ? 'persona' : 'personas' }}
+                      </span>
+                    }
+                  </div>
                 </div>
               </div>
 
               <dl>
                 <div>
-                  <dt>Tipo</dt>
-                  <dd class="badge-tipo">{{ getManagedTypologyName(habitacion) }}</dd>
+                  <dt>Tipología</dt>
+                  <dd>
+                    <span
+                      class="badge-tipo"
+                      [style.--typology-color]="typology?.color ?? '#64748b'"
+                    >{{ typology?.nombre ?? 'Tipología no gestionada' }}</span>
+                  </dd>
                 </div>
                 <div>
                   <dt>Tamaño</dt>
@@ -151,6 +174,11 @@
       </section>
     }
   </main>
+
+  <app-edit-tipologias
+    [isOpen]="editTipologiasOpen()"
+    (closed)="closeEditTipologias()">
+  </app-edit-tipologias>
 
   @if (isAdmin() && newRoomFormOpen()) {
     <div class="new-room-modal-backdrop">

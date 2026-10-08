@@ -34,7 +34,12 @@ export interface Reserva {
   fecha_salida: string;
   hora_llegada?: string;
   cantidad_personas?: number;
-  estado_reserva: 'HOSPEDADO' | 'CHECK-IN HOY' | 'CHECK-OUT HOY' | 'CONFIRMADA';
+  estado_reserva: 'HOSPEDADO' | 'CHECK-IN HOY' | 'CHECK-OUT HOY' | 'CONFIRMADA' | 'FINALIZADA';
+  precio_total?: number;
+  porcentaje_abono?: number;
+  monto_pagado?: number;
+  metodo_pago?: 'transferencia' | 'efectivo';
+  pago_completo?: boolean;
 }
 
 export interface GuestCardView {

@@ -14,9 +14,10 @@ ion-modal.edit-tipologias-banner {
   --height: auto;
   --max-height: 90vh;
   --max-height: 90dvh;
-  --border-radius: 0 0 16px 16px;
+  --border-radius: 16px;
   --box-shadow: 0 12px 40px rgba(30, 80, 216, 0.18);
-  align-items: flex-start;
+  align-items: center;
+  justify-content: center;
 }
 
 // ── Banner container ────────────────────────────────────────────────────────
@@ -27,7 +28,7 @@ ion-modal.edit-tipologias-banner {
   min-height: 0;
   max-height: 90vh;
   max-height: 90dvh;
-  border-radius: 0 0 16px 16px;
+  border-radius: 16px;
   overflow: hidden;
   background: #ffffff;
 }
@@ -137,41 +138,121 @@ ion-modal.edit-tipologias-banner {
 
 // ── Inline form ──────────────────────────────────────────────────────────────
 .user-form {
-  padding: 16px 18px;
-  background: $blue-light;
-  border: 1px solid rgba(30, 80, 216, 0.18);
-  border-radius: 14px;
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
   animation: fadeInDown 0.2s ease;
 
-  h3 {
-    margin: 0 0 14px;
-    font-size: 0.9rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+  .user-form-heading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .user-form-icon {
+    display: grid;
+    width: 42px;
+    height: 42px;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 10px;
+    background: #eff6ff;
     color: $blue-primary;
+    font-size: 1.25rem;
+  }
+
+  h3 {
+    margin: 0 0 3px;
+    color: #0f172a;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+  }
+
+  .user-form-heading p {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.82rem;
   }
 
   .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    gap: 14px;
+  }
 
-    ion-item {
-      --border-radius: 10px;
-      --background: #3a4dff;
+  .typology-field {
+    display: grid;
+    min-width: 0;
+    gap: 7px;
+    color: #1f2937;
+    font-size: 0.82rem;
+    font-weight: 600;
+
+    ion-input {
+      min-height: 44px;
+      box-sizing: border-box;
+      padding: 0 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      --background: #ffffff;
+      --color: #0f172a;
+      --placeholder-color: #94a3b8;
+      --placeholder-opacity: 1;
       --padding-start: 12px;
-      --inner-padding-end: 12px;
-      border: 1px solid $border;
-      border-radius: 10px;
+      --padding-end: 12px;
+      --highlight-color-focused: #1e50d8;
+      font-size: 0.9rem;
+      font-weight: 400;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    ion-input.has-focus {
+      border-color: #1e50d8;
+      box-shadow: 0 0 0 3px rgba(30, 80, 216, 0.12);
     }
   }
 
   .form-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 8px;
-    margin-top: 14px;
+    gap: 10px;
+    margin-top: 18px;
+
+    button {
+      min-height: 40px;
+      padding: 0.55rem 1rem;
+      border-radius: 8px;
+      font: inherit;
+      font-size: 0.86rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.18s ease, border-color 0.18s ease;
+
+      &:focus-visible {
+        outline: 3px solid rgba(30, 80, 216, 0.2);
+        outline-offset: 2px;
+      }
+    }
+
+    .form-cancel-btn {
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #334155;
+
+      &:hover { background: #f8fafc; }
+    }
+
+    .form-submit-btn {
+      border: 1px solid $blue-primary;
+      background: $blue-primary;
+      color: #ffffff;
+
+      &:hover { background: #1d4ed8; }
+    }
   }
 }
 
@@ -252,14 +333,13 @@ ion-modal.edit-tipologias-banner {
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  background: #f9fafb;
-  border: 1px solid $border;
+  background: var(--typology-background, #f9fafb);
+  border: 1px solid var(--typology-border, #d1d5db);
   border-radius: 12px;
   transition: background 0.15s ease, border-color 0.15s ease;
 
   &:hover {
-    background: #f3f4f6;
-    border-color: $border-hover;
+    filter: brightness(0.985);
   }
 }
 
@@ -267,8 +347,8 @@ ion-modal.edit-tipologias-banner {
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: rgba(30, 80, 216, 0.1);
-  color: $blue-primary;
+  background: var(--typology-border, rgba(30, 80, 216, 0.1));
+  color: var(--typology-color, #1e50d8);
   font-size: 1.25rem;
   display: flex;
   align-items: center;
@@ -285,7 +365,7 @@ ion-modal.edit-tipologias-banner {
 
   .user-name {
     font-size: 0.95rem;
-    color: $text-dark;
+    color: #000000;
     font-weight: 600;
   }
 }
@@ -305,21 +385,12 @@ ion-modal.edit-tipologias-banner {
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 14px;
-  background: rgba(30, 80, 216, 0.08);
-  color: $blue-primary;
+  background: var(--typology-background, rgba(30, 80, 216, 0.08));
+  color: var(--typology-color, #1e50d8);
 
   ion-icon {
     font-size: 0.8rem;
   }
-}
-
-.price-badge {
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 14px;
-  background: rgba(45, 211, 111, 0.12);
-  color: #198754;
 }
 
 .rooms-badge {
@@ -333,7 +404,7 @@ ion-modal.edit-tipologias-banner {
 
 .tipologia-desc {
   font-size: 0.8rem;
-  color: $text-muted;
+  color: #64748b;
   margin-top: 2px;
 }
 
@@ -436,6 +507,10 @@ ion-modal.edit-tipologias-banner {
 
   .user-form .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .user-form {
+    padding: 16px;
   }
 
   .tipologia-card {

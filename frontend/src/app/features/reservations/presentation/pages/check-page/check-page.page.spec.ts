@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { NgForm } from '@angular/forms';
 import { HostalService } from '../../../../guests/application/hostal.service';
 import { SedeService } from '../../../../locations/application/sede.service';
 import { CheckPagePage } from './check-page.page';
@@ -13,14 +14,306 @@ describe('CheckPagePage', () => {
       ['huespedes', 'reservas', 'habitaciones', 'tipologias'].forEach((entity) => {
         localStorage.removeItem(`hospal_db_sede_${sedeId}_${entity}`);
       });
+      localStorage.removeItem(`hospal.tarifas.sede.${sedeId}`);
+      localStorage.removeItem(`hospal.tarifas.abono.sede.${sedeId}`);
     }
     fixture = TestBed.createComponent(CheckPagePage);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
 
+  it('opens the check-in balance modal and collects the outstanding amount before processing', () => {
+    const sedeService = TestBed.inject(SedeService);
+    const hostalService = TestBed.inject(HostalService);
+    const sedeId = sedeService.selectedSede()!.id;
+    const today = localDateString(new Date());
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    sedeService.selectedSede.set({
+      id: sedeId,
+      nombre: 'Sede de prueba',
+      ciudad: 'Santiago',
+      tipologias: [{ id: 1, nombre: 'Doble', capacidad: 2, precioBase: 40000 }],
+      habitaciones: [{
+        id: 101,
+        numero: '101',
+        tipo: 'Doble',
+        tipologiaId: 1,
+        tamanoM2: 20,
+        disposicionMuebles: '',
+      }],
+    });
+    const registered = hostalService.registerEntry({
+      newGuest: {
+        documento: 'CHECKIN-BALANCE',
+        nombre: 'Ana',
+        apellido: 'Pérez',
+        nacionalidad: 'Chile',
+        telefono: '+56912345678',
+        email: 'ana-checkin-balance@example.com',
+      },
+      roomId: 101,
+      personCount: 1,
+      arrivalDate: today,
+      departureDate: localDateString(tomorrow),
+      arrivalTime: '15:00',
+      payment: {
+        totalAmount: 40000,
+        paidAmount: 10000,
+        depositPercentage: 25,
+        method: 'transferencia',
+        paidInFull: false,
+      },
+    });
+    component.refreshPendingChecks();
+    const pendingItem = component.pendingCheckIns.find((item) => item.id === registered.reservation.id_reserva);
+    expect(pendingItem?.outstandingBalance).toBe(30000);
+    if (!pendingItem) throw new Error('La reserva no apareció en los check-ins pendientes.');
+    component.realizarCheckIn(pendingItem);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.checkin-payment-modal')).toBeTruthy();
+    expect(
+      (fixture.nativeElement.querySelector('.checkin-payment-amount strong') as HTMLElement)
+        .textContent?.replace(/\D/g, '')
+    ).toBe('30000');
+    const confirmButton = fixture.nativeElement.querySelector('.checkin-payment-actions .entry-submit-button') as HTMLButtonElement;
+    expect(confirmButton.disabled).toBeTrue();
+
+    const cashButton = fixture.nativeElement.querySelector('.checkin-payment-methods button:last-child') as HTMLButtonElement;
+    cashButton.click();
+    fixture.detectChanges();
+    expect(confirmButton.disabled).toBeFalse();
+    confirmButton.click();
+    fixture.detectChanges();
+
+    const updatedReservation = hostalService.getReservations()
+      .find((item) => item.id_reserva === registered.reservation.id_reserva);
+    expect(updatedReservation).toEqual(jasmine.objectContaining({
+      estado_reserva: 'HOSPEDADO',
+      monto_pagado: 40000,
+      metodo_pago: 'efectivo',
+      pago_completo: true,
+    }));
+    expect(component.pendingCheckIns.some((item) => item.id === registered.reservation.id_reserva)).toBeFalse();
+    expect(component.checkInPaymentItem).toBeNull();
+  });
+
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('shows only the new-entry modal when used as a guest-page overlay', async () => {
+    component.modalOnly = true;
+    component.guestDraft = {
+      documentType: 'rut',
+      documento: '12.345.678-5',
+      nombre: 'Ana',
+      apellido: 'Pérez',
+      telefono: '912345678',
+      phoneCountry: 'cl',
+      email: 'ana@example.com',
+      nacionalidad: 'Chile',
+    };
+    component.openNewEntryForm(component.guestDraft);
+    fixture.detectChanges();
+    const hostalService = TestBed.inject(HostalService);
+    const searchRooms = spyOn(hostalService, 'getAvailableRooms').and.callThrough();
+
+    expect(component.showNewEntryForm).toBeTrue();
+    expect(fixture.nativeElement.querySelector('.entry-modal-backdrop')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.page-title')).toBeNull();
+    expect(component.entryForm.nombre).toBe('Ana');
+    expect(component.entryForm.apellido).toBe('Pérez');
+
+    const validForm = {
+      valid: true,
+      form: { markAllAsTouched: jasmine.createSpy('markAllAsTouched') },
+    } as unknown as NgForm;
+    component.goToReservationDetailsStep(validForm);
+    expect(component.entryStep).toBe(2);
+    const roomSearch = component.goToRoomSelectionStep(validForm);
+    expect(component.isSearchingRooms).toBeTrue();
+    expect(component.entryStep).toBe(3);
+    await roomSearch;
+    expect(component.isSearchingRooms).toBeFalse();
+    expect(searchRooms).toHaveBeenCalledWith(
+      component.entryForm.arrivalDate,
+      component.entryForm.departureDate,
+      component.entryForm.personCount
+    );
+  });
+
+  it('shows a designed confirmation and keeps the form open when cancelled', () => {
+    component.openNewEntryForm();
+    component.entryForm.nombre = 'Ana';
+    fixture.detectChanges();
+
+    const closeButton = fixture.nativeElement.querySelector('.entry-modal-close-button') as HTMLButtonElement;
+    closeButton.click();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[role="alertdialog"]')).toBeTruthy();
+    expect(fixture.nativeElement.textContent).toContain('Se perderá toda la información');
+    const keepButton = fixture.nativeElement.querySelector('.entry-close-keep-button') as HTMLButtonElement;
+    keepButton.click();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[role="alertdialog"]')).toBeNull();
+    expect(component.showNewEntryForm).toBeTrue();
+    expect(component.entryForm.nombre).toBe('Ana');
+  });
+
+  it('closes the modal and discards its data after confirmation', () => {
+    component.openNewEntryForm();
+    component.entryForm.nombre = 'Ana';
+    fixture.detectChanges();
+
+    const closeButton = fixture.nativeElement.querySelector('.entry-modal-close-button') as HTMLButtonElement;
+    closeButton.click();
+    fixture.detectChanges();
+    const discardButton = fixture.nativeElement.querySelector('.entry-close-discard-button') as HTMLButtonElement;
+    discardButton.click();
+
+    expect(component.showNewEntryForm).toBeFalse();
+  });
+
+  it('opens room details with description, inventory and photo sections', () => {
+    const sedeService = TestBed.inject(SedeService);
+    sedeService.selectedSede.set({
+      id: 1,
+      nombre: 'Sede de prueba',
+      ciudad: 'Santiago',
+      tipologias: [{ id: 1, nombre: 'Doble', capacidad: 2, color: '#2156a7' }],
+      habitaciones: [{
+        id: 101,
+        numero: '101',
+        tipo: 'Doble',
+        tipologiaId: 1,
+        tamanoM2: 20,
+        disposicionMuebles: 'Dos camas individuales',
+        descripcion: 'Habitación con vista al patio.',
+      }],
+    });
+    component.availableRooms = [{
+      id_habitacion: 101,
+      numero_habitacion: '101',
+      id_hostal: 1,
+      id_tipologia: 1,
+    }];
+    component.showNewEntryForm = true;
+    component.entryStep = 3;
+    fixture.detectChanges();
+
+    const detailsButton = fixture.nativeElement.querySelector('.room-selection-details-button') as HTMLButtonElement;
+    detailsButton.click();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('#room-selection-detail-title')?.textContent).toContain('101');
+    expect(fixture.nativeElement.textContent).toContain('Habitación con vista al patio.');
+    expect(fixture.nativeElement.textContent).toContain('Inventario (0)');
+
+    const photosTab = fixture.nativeElement.querySelector('.room-selection-detail-tabs button:last-child') as HTMLButtonElement;
+    photosTab.click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Esta habitación todavía no tiene fotos.');
+  });
+
+  it('calculates the stay total from applicable typology rates and the configured deposit', () => {
+    const sedeService = TestBed.inject(SedeService);
+    const hostalService = TestBed.inject(HostalService);
+    const sedeId = sedeService.selectedSede()!.id;
+    sedeService.selectedSede.set({
+      id: sedeId,
+      nombre: 'Sede de prueba',
+      ciudad: 'Santiago',
+      tipologias: [{ id: 1, nombre: 'Doble', capacidad: 2, precioBase: 20000 }],
+      habitaciones: [{
+        id: 101,
+        numero: '101',
+        tipo: 'Doble',
+        tipologiaId: 1,
+        tamanoM2: 20,
+        disposicionMuebles: '',
+      }],
+    });
+    const guest = hostalService.registerGuest({
+      documento: 'PAYMENT-TEST',
+      nombre: 'Ana',
+      apellido: 'Pérez',
+      nacionalidad: 'Chile',
+      telefono: '+56912345678',
+      email: 'ana-payment@example.com',
+    });
+    const reservationCount = hostalService.getReservations().length;
+    const registerEntry = spyOn(hostalService, 'registerEntry').and.callThrough();
+    component.availableGuests = [guest];
+    component.guestMode = 'existing';
+    component.selectedGuestId = String(guest.id_huesped);
+    component.availableRooms = [{
+      id_habitacion: 101,
+      numero_habitacion: '101',
+      id_hostal: sedeId,
+      id_tipologia: 1,
+    }];
+    component.entryForm.roomId = '101';
+    component.entryForm.arrivalDate = '2026-10-10';
+    component.entryForm.departureDate = '2026-10-12';
+    component.entryStep = 3;
+    localStorage.setItem(`hospal.tarifas.abono.sede.${sedeId}`, '35');
+    localStorage.setItem(`hospal.tarifas.sede.${sedeId}`, JSON.stringify([{
+      id: 'temporada-prueba',
+      nombre: 'Temporada de prueba',
+      periodos: [{
+        id: 'rango-prueba',
+        tipo: 'date-range',
+        meses: [],
+        diasSemana: [],
+        diasMes: [],
+        fechaInicio: '2026-10-10',
+        fechaFin: '2026-10-11',
+        fechas: [],
+      }],
+      precios: { 1: 40000 },
+    }]));
+    component.updateAvailableRooms();
+    expect(component.availableRooms.length).toBe(1);
+    expect(component.roomNightlyPrice(component.availableRooms[0])).toBe(40000);
+    component.entryForm.roomId = '101';
+    const validForm = {
+      valid: true,
+      form: { markAllAsTouched: jasmine.createSpy('markAllAsTouched') },
+    } as unknown as NgForm;
+
+    component.goToPaymentStep(validForm);
+
+    expect(Number(component.entryStep)).toBe(4);
+    expect(component.reservationQuote).toEqual({
+      nights: 2,
+      total: 80000,
+      depositPercentage: 35,
+      deposit: 28000,
+      typologyName: 'Doble',
+      roomNumber: '101',
+      guestName: 'Ana Pérez',
+    });
+    expect(component.paymentAmount).toBe(28000);
+    component.paymentOption = 'full';
+    expect(component.paymentAmount).toBe(80000);
+    expect(hostalService.getReservations().length).toBe(reservationCount);
+
+    component.paymentOption = 'deposit';
+    component.paymentMethod = 'transferencia';
+    component.registerEntry();
+
+    expect(registerEntry).toHaveBeenCalled();
+    expect(hostalService.getReservations()).toContain(jasmine.objectContaining({
+      precio_total: 80000,
+      porcentaje_abono: 35,
+      monto_pagado: 28000,
+      metodo_pago: 'transferencia',
+      pago_completo: false,
+    }));
   });
 
   it('does not show placeholder movements without reservations today', () => {
@@ -30,6 +323,22 @@ describe('CheckPagePage', () => {
 
   it('shows check-ins and check-outs from reservations registered for today', () => {
     const hostalService = TestBed.inject(HostalService);
+    const sedeService = TestBed.inject(SedeService);
+    const sedeId = sedeService.selectedSede()!.id;
+    sedeService.selectedSede.set({
+      id: sedeId,
+      nombre: 'Sede de prueba',
+      ciudad: 'Santiago',
+      tipologias: [{ id: 1, nombre: 'Doble', capacidad: 2 }],
+      habitaciones: ['101', '102'].map((numero, index) => ({
+        id: index + 1,
+        numero,
+        tipo: 'Doble',
+        tipologiaId: 1,
+        tamanoM2: 20,
+        disposicionMuebles: '',
+      })),
+    });
     const today = localDateString(new Date());
     const previousDay = new Date();
     previousDay.setDate(previousDay.getDate() - 1);
@@ -53,7 +362,7 @@ describe('CheckPagePage', () => {
       departureDate: localDateString(nextDay),
       arrivalTime: '15:30',
     });
-    hostalService.registerEntry({
+    const checkoutReservation = hostalService.registerEntry({
       newGuest: {
         documento: 'CHECKOUT-TEST',
         nombre: 'Luis',
@@ -68,6 +377,7 @@ describe('CheckPagePage', () => {
       departureDate: today,
       arrivalTime: '14:00',
     });
+    hostalService.processCheckIn(checkoutReservation.reservation.id_reserva);
 
     expect(component.pendingCheckIns).toContain(jasmine.objectContaining({
       guestName: 'Ana Pérez',

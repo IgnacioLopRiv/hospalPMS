@@ -1,68 +1,118 @@
-import {
-  Component,
-  OnInit,
-  OnDestroy,
-  DestroyRef,
-  inject,
-  signal,
-  computed,
-} from '@angular/core';
+import { Component, computed, DestroyRef, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
-  sunnyOutline,
-  snowOutline,
+  addOutline,
   calendarOutline,
-  timeOutline,
-  pricetagOutline,
   cashOutline,
-  settingsOutline,
-  closeOutline,
   checkmarkOutline,
+  closeOutline,
   informationCircleOutline,
-  sparklesOutline,
-  trendingUpOutline,
-  trendingDownOutline,
+  pricetagOutline,
+  trashOutline,
 } from 'ionicons/icons';
-import { SedeService, SedeTipologia } from '../../../application/sede.service';
-import { useEffect } from '../../../../../shared/presentation/clock/clock.component';
+import { SedeService } from '../../../application/sede.service';
 
-/** Meses del año (índice 0 = Enero) */
-const MONTH_NAMES = [
+export type PeriodType = 'months' | 'weekdays' | 'month-days' | 'specific-month-days' | 'date-range' | 'specific-dates';
+
+export interface TarifaPeriodo {
+  id: string;
+  tipo: PeriodType;
+  meses: number[];
+  diasSemana: number[];
+  diasMes: number[];
+  fechaInicio: string;
+  fechaFin: string;
+  fechas: string[];
+  anio?: number;
+  mes?: number;
+}
+
+export interface Tarifa {
+  id: string;
+  nombre: string;
+  periodos: TarifaPeriodo[];
+  precios: Record<number, number>;
+}
+
+const TARIFAS_STORAGE_KEY = 'hospal.tarifas';
+const ABONO_STORAGE_KEY = 'hospal.tarifas.abono';
+const DEFAULT_ABONO_PORCENTAJE = 20;
+const WEEKDAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+const PERIOD_TYPES: PeriodType[] = ['months', 'weekdays', 'month-days', 'specific-month-days', 'date-range', 'specific-dates'];
+const RECURRING_CYCLE_DAYS = 146_097;
+const MONTHS = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ];
 
-/** Tarifa por tipología para una temporada */
-export interface TarifaTipologia {
-  tipologiaId: number;
-  nombre: string;
-  color: string;
-  capacidad: number;
-  precioBase: number;
+function emptyPeriod(): TarifaPeriodo {
+  return {
+    id: crypto.randomUUID(),
+    tipo: 'months',
+    meses: [],
+    diasSemana: [],
+    diasMes: [],
+    fechaInicio: '',
+    fechaFin: '',
+    fechas: [],
+    anio: new Date().getFullYear(),
+    mes: new Date().getMonth(),
+  };
 }
 
-/** Configuración completa de tarifas de temporada */
-export interface ConfigTarifas {
-  /** Meses de temporada alta (0-indexed: 0=Enero, 11=Diciembre) */
-  mesesAlta: number[];
-  tarifasAlta: Record<number, number>;   // tipologiaId → precio noche
-  abonoPctAlta: number;                  // 1-100
-  tarifasBaja: Record<number, number>;
-  abonoPctBaja: number;
+function isValidPeriod(period: TarifaPeriodo): boolean {
+  switch (period.tipo) {
+    case 'months': return period.meses.length > 0;
+    case 'weekdays': return period.diasSemana.length > 0;
+    case 'month-days': return period.diasMes.length > 0;
+    case 'specific-month-days': {
+      const year = period.anio;
+      const month = period.mes;
+      if (!Number.isInteger(year) || !Number.isInteger(month) || (year ?? 0) < 1900 || (year ?? 10000) > 9999 || (month ?? -1) < 0 || (month ?? 12) > 11) {
+        return false;
+      }
+      const daysInMonth = new Date(year!, month! + 1, 0).getDate();
+      return period.diasMes.length > 0 && period.diasMes.every((day) => day <= daysInMonth);
+    }
+    case 'date-range': return !!period.fechaInicio && !!period.fechaFin && period.fechaInicio <= period.fechaFin;
+    case 'specific-dates': return period.fechas.length > 0;
+  }
 }
 
-const TARIFAS_STORAGE_KEY = 'hospal.tarifas';
+function isTarifaPeriod(value: unknown): value is TarifaPeriodo {
+  if (!value || typeof value !== 'object') return false;
+  const period = value as Partial<TarifaPeriodo>;
+  return typeof period.id === 'string'
+    && PERIOD_TYPES.includes(period.tipo as PeriodType)
+    && Array.isArray(period.meses)
+    && Array.isArray(period.diasSemana)
+    && Array.isArray(period.diasMes)
+    && typeof period.fechaInicio === 'string'
+    && typeof period.fechaFin === 'string'
+    && Array.isArray(period.fechas)
+    && period.meses.every((month) => Number.isInteger(month) && month >= 0 && month < 12)
+    && period.diasSemana.every((day) => Number.isInteger(day) && day >= 0 && day < 7)
+    && period.diasMes.every((day) => Number.isInteger(day) && day >= 1 && day <= 31)
+    && period.fechas.every((date) => typeof date === 'string')
+    && (period.tipo !== 'specific-month-days'
+      || (Number.isInteger(period.anio) && (period.anio ?? 0) >= 1900 && (period.anio ?? 10000) <= 9999
+        && Number.isInteger(period.mes) && (period.mes ?? -1) >= 0 && (period.mes ?? 12) <= 11));
+}
 
-const DEFAULT_CONFIG: ConfigTarifas = {
-  mesesAlta: [0, 1, 6, 7, 11],   // Enero, Febrero, Julio, Agosto, Diciembre
-  tarifasAlta: {},
-  abonoPctAlta: 30,
-  tarifasBaja: {},
-  abonoPctBaja: 20,
-};
+function isTarifa(value: unknown): value is Tarifa {
+  if (!value || typeof value !== 'object') return false;
+  const tarifa = value as Partial<Tarifa>;
+  return typeof tarifa.id === 'string'
+    && typeof tarifa.nombre === 'string'
+    && Array.isArray(tarifa.periodos)
+    && tarifa.periodos.every(isTarifaPeriod)
+    && !!tarifa.precios
+    && typeof tarifa.precios === 'object'
+    && Object.values(tarifa.precios).every((price) => typeof price === 'number' && Number.isFinite(price) && price >= 0);
+}
 
 @Component({
   selector: 'app-tarifas',
@@ -71,111 +121,66 @@ const DEFAULT_CONFIG: ConfigTarifas = {
   standalone: true,
   imports: [CommonModule, FormsModule, IonIcon],
 })
-export class TarifasPage implements OnInit, OnDestroy {
+export class TarifasPage {
   private readonly sedeService = inject(SedeService);
   private readonly destroyRef = inject(DestroyRef);
 
-  // ── Señales de datos ────────────────────────────────────────────────────────
   readonly sede = this.sedeService.selectedSede;
   readonly tipologias = this.sedeService.tipologias;
-
-  /** Reloj en vivo (se actualiza cada segundo) */
-  readonly now = signal<Date>(new Date());
-
-  /** Configuración de tarifas */
-  readonly config = signal<ConfigTarifas>(this.loadConfig());
-
-  /** Modal de configuración abierto */
+  readonly tarifas = signal<Tarifa[]>([]);
   readonly configOpen = signal(false);
+  readonly editingTarifaId = signal<string | null>(null);
+  readonly rateStep = signal<1 | 2>(1);
+  readonly abonoPorcentaje = signal(DEFAULT_ABONO_PORCENTAJE);
+  readonly periodSelectionError = signal('');
+  readonly now = signal(new Date());
+  readonly monthNames = MONTHS;
+  readonly weekdayNames = WEEKDAYS;
+  readonly calendarPlaceholders = Array.from({ length: 6 }, (_, index) => index);
 
-  /** Copia editable de la configuración (dentro del modal) */
-  editConfig: ConfigTarifas = { ...DEFAULT_CONFIG };
+  editTarifa: Tarifa = this.newTarifa();
+  abonoDraft = DEFAULT_ABONO_PORCENTAJE;
+  basePriceDraft: Record<number, number | null> = {};
 
-  // ── Computados ──────────────────────────────────────────────────────────────
-
-  /** Mes actual (0-indexed) */
-  readonly currentMonth = computed(() => this.now().getMonth());
-
-  /** ¿Es temporada alta ahora? */
-  readonly isHighSeason = computed(() =>
-    this.config().mesesAlta.includes(this.currentMonth())
-  );
-
-  /** Tarifas de temporada alta con datos de tipología */
-  readonly tarifasAlta = computed<TarifaTipologia[]>(() => {
-    const cfg = this.config();
-    return this.tipologias().map((t) => ({
-      tipologiaId: t.id,
-      nombre: t.nombre,
-      color: t.color ?? '#6366f1',
-      capacidad: t.capacidad,
-      precioBase: cfg.tarifasAlta[t.id] ?? t.precioBase ?? 0,
-    }));
+  readonly activeTarifas = computed(() => {
+    const today = this.now();
+    return this.tarifas().filter((tarifa) => tarifa.periodos.some((periodo) => this.periodMatches(periodo, today)));
   });
-
-  /** Tarifas de temporada baja con datos de tipología */
-  readonly tarifasBaja = computed<TarifaTipologia[]>(() => {
-    const cfg = this.config();
-    return this.tipologias().map((t) => ({
-      tipologiaId: t.id,
-      nombre: t.nombre,
-      color: t.color ?? '#6366f1',
-      capacidad: t.capacidad,
-      precioBase: cfg.tarifasBaja[t.id] ?? t.precioBase ?? 0,
-    }));
-  });
-
-  /** Meses de temporada baja (complemento de alta) */
-  readonly mesesBaja = computed(() =>
-    Array.from({ length: 12 }, (_, i) => i).filter(
-      (m) => !this.config().mesesAlta.includes(m)
-    )
-  );
-
-  /** Nombres de meses para la UI */
-  readonly monthNames = MONTH_NAMES;
 
   constructor() {
     addIcons({
-      sunnyOutline,
-      snowOutline,
+      addOutline,
       calendarOutline,
-      timeOutline,
-      pricetagOutline,
       cashOutline,
-      settingsOutline,
-      closeOutline,
       checkmarkOutline,
+      closeOutline,
       informationCircleOutline,
-      sparklesOutline,
-      trendingUpOutline,
-      trendingDownOutline,
+      pricetagOutline,
+      trashOutline,
     });
-
-    // Reloj en vivo — se actualiza cada segundo
-    useEffect(() => {
-      const id = setInterval(() => this.now.set(new Date()), 1000);
-      return () => clearInterval(id);
-    }, this.destroyRef);
+    const interval = setInterval(() => this.now.set(new Date()), 60_000);
+    this.destroyRef.onDestroy(() => clearInterval(interval));
+    effect(() => {
+      const sedeId = this.sede()?.id;
+      const currentTipologias = this.tipologias();
+      this.tarifas.set(this.loadTarifas(sedeId));
+      this.abonoPorcentaje.set(this.loadAbonoPorcentaje(sedeId));
+      this.abonoDraft = this.abonoPorcentaje();
+      this.basePriceDraft = Object.fromEntries(
+        currentTipologias.map((typology) => [typology.id, typology.precioBase ?? 0])
+      );
+    });
   }
-
-  ngOnInit(): void {
-    this.now.set(new Date());
-  }
-
-  ngOnDestroy(): void {}
-
-  // ── Modal de configuración ──────────────────────────────────────────────────
 
   openConfig(): void {
-    const cfg = this.config();
-    this.editConfig = {
-      mesesAlta: [...cfg.mesesAlta],
-      tarifasAlta: { ...cfg.tarifasAlta },
-      abonoPctAlta: cfg.abonoPctAlta,
-      tarifasBaja: { ...cfg.tarifasBaja },
-      abonoPctBaja: cfg.abonoPctBaja,
-    };
+    this.startNewTarifa();
+    this.configOpen.set(true);
+  }
+
+  editTarifaConfig(tarifa: Tarifa): void {
+    this.editingTarifaId.set(tarifa.id);
+    this.editTarifa = this.cloneTarifa(tarifa);
+    this.rateStep.set(1);
     this.configOpen.set(true);
   }
 
@@ -183,80 +188,551 @@ export class TarifasPage implements OnInit, OnDestroy {
     this.configOpen.set(false);
   }
 
-  saveConfig(): void {
-    const saved: ConfigTarifas = {
-      mesesAlta: [...this.editConfig.mesesAlta],
-      tarifasAlta: { ...this.editConfig.tarifasAlta },
-      abonoPctAlta: Math.max(1, Math.min(100, this.editConfig.abonoPctAlta)),
-      tarifasBaja: { ...this.editConfig.tarifasBaja },
-      abonoPctBaja: Math.max(1, Math.min(100, this.editConfig.abonoPctBaja)),
-    };
-    this.config.set(saved);
-    this.persistConfig(saved);
+  startNewTarifa(): void {
+    this.editingTarifaId.set(null);
+    this.editTarifa = this.newTarifa();
+    this.rateStep.set(1);
+  }
+
+  continueToPrices(): void {
+    if (!this.hasValidNameAndPeriods()) return;
+    this.rateStep.set(2);
+  }
+
+  backToPeriods(): void {
+    this.rateStep.set(1);
+  }
+
+  saveTarifa(): void {
+    if (this.rateStep() !== 2 || !this.canSaveTarifa()) return;
+
+    const nombre = this.editTarifa.nombre.trim();
+    const saved = this.cloneTarifa({
+      ...this.editTarifa,
+      nombre,
+    });
+    const currentTarifas = this.tarifas();
+    const updated = this.editingTarifaId()
+      ? currentTarifas.map((tarifa) => tarifa.id === this.editingTarifaId() ? saved : tarifa)
+      : [...currentTarifas, saved];
+    this.tarifas.set(updated);
+    this.persistTarifas(updated);
     this.configOpen.set(false);
   }
 
-  toggleMesAlta(mes: number): void {
-    const idx = this.editConfig.mesesAlta.indexOf(mes);
-    if (idx >= 0) {
-      this.editConfig.mesesAlta = this.editConfig.mesesAlta.filter((m) => m !== mes);
-    } else {
-      this.editConfig.mesesAlta = [...this.editConfig.mesesAlta, mes].sort((a, b) => a - b);
-    }
+  deleteTarifa(tarifaId: string): void {
+    const tarifa = this.tarifas().find((item) => item.id === tarifaId);
+    if (!tarifa || !globalThis.confirm(`¿Eliminar la tarifa "${tarifa.nombre}"?`)) return;
+    const updated = this.tarifas().filter((tarifa) => tarifa.id !== tarifaId);
+    this.tarifas.set(updated);
+    this.persistTarifas(updated);
   }
 
-  isMesAlta(mes: number): boolean {
-    return this.editConfig.mesesAlta.includes(mes);
+  saveAbonoPorcentaje(): void {
+    const porcentaje = Number(this.abonoDraft);
+    if (!this.isValidAbonoDraft()) return;
+
+    this.abonoPorcentaje.set(porcentaje);
+    this.persistAbonoPorcentaje(porcentaje);
   }
 
-  getEditPrecioAlta(tipologiaId: number): number {
-    const tipologia = this.tipologias().find((t) => t.id === tipologiaId);
-    return this.editConfig.tarifasAlta[tipologiaId] ?? tipologia?.precioBase ?? 0;
+  isValidAbonoDraft(): boolean {
+    const percentage = Number(this.abonoDraft);
+    return Number.isFinite(percentage) && percentage >= 1 && percentage <= 100;
   }
 
-  setEditPrecioAlta(tipologiaId: number, valor: number): void {
-    this.editConfig.tarifasAlta = { ...this.editConfig.tarifasAlta, [tipologiaId]: Math.max(0, valor) };
-  }
+  saveBasePrices(): void {
+    if (!this.isValidBasePriceDraft()) return;
 
-  getEditPrecioBaja(tipologiaId: number): number {
-    const tipologia = this.tipologias().find((t) => t.id === tipologiaId);
-    return this.editConfig.tarifasBaja[tipologiaId] ?? tipologia?.precioBase ?? 0;
-  }
-
-  setEditPrecioBaja(tipologiaId: number, valor: number): void {
-    this.editConfig.tarifasBaja = { ...this.editConfig.tarifasBaja, [tipologiaId]: Math.max(0, valor) };
-  }
-
-  monthName(idx: number): string {
-    return MONTH_NAMES[idx] ?? '';
-  }
-
-  // ── Persistencia ────────────────────────────────────────────────────────────
-
-  private loadConfig(): ConfigTarifas {
-    try {
-      const raw = localStorage.getItem(TARIFAS_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as ConfigTarifas;
-        return {
-          mesesAlta: Array.isArray(parsed.mesesAlta) ? parsed.mesesAlta : DEFAULT_CONFIG.mesesAlta,
-          tarifasAlta: parsed.tarifasAlta ?? {},
-          abonoPctAlta: Number(parsed.abonoPctAlta) || DEFAULT_CONFIG.abonoPctAlta,
-          tarifasBaja: parsed.tarifasBaja ?? {},
-          abonoPctBaja: Number(parsed.abonoPctBaja) || DEFAULT_CONFIG.abonoPctBaja,
-        };
+    const prices = this.basePriceDraft;
+    this.tipologias().forEach((typology) => {
+      const price = prices[typology.id];
+      if (typeof price === 'number') {
+        this.sedeService.updateTipologia(typology.id, { precioBase: price });
       }
-    } catch {
-      // fallback al default
-    }
-    return { ...DEFAULT_CONFIG };
+    });
+    this.basePriceDraft = Object.fromEntries(
+      this.tipologias().map((typology) => [typology.id, prices[typology.id]])
+    );
   }
 
-  private persistConfig(cfg: ConfigTarifas): void {
+  isValidBasePriceDraft(): boolean {
+    return this.tipologias().length > 0 && this.tipologias().every((typology) => {
+      const price = this.basePriceDraft[typology.id];
+      return typeof price === 'number' && Number.isFinite(price) && price >= 0;
+    });
+  }
+
+  addPeriod(): void {
+    this.editTarifa.periodos = [...this.editTarifa.periodos, emptyPeriod()];
+  }
+
+  removePeriod(periodId: string): void {
+    this.editTarifa.periodos = this.editTarifa.periodos.filter((period) => period.id !== periodId);
+  }
+
+  changePeriodType(period: TarifaPeriodo, type: PeriodType): void {
+    Object.assign(period, {
+      tipo: type,
+      meses: [],
+      diasSemana: [],
+      diasMes: [],
+      fechaInicio: '',
+      fechaFin: '',
+      fechas: [],
+      anio: new Date().getFullYear(),
+      mes: new Date().getMonth(),
+    });
+  }
+
+  toggleSelection(values: number[], value: number): number[] {
+    return values.includes(value)
+      ? values.filter((item) => item !== value)
+      : [...values, value].sort((a, b) => a - b);
+  }
+
+  toggleMonth(period: TarifaPeriodo, month: number): void {
+    if (!period.meses.includes(month) && this.isMonthUnavailable(period, month)) return;
+    period.meses = this.toggleSelection(period.meses, month);
+  }
+
+  toggleWeekday(period: TarifaPeriodo, day: number): void {
+    if (!period.diasSemana.includes(day) && this.isWeekdayUnavailable(period, day)) return;
+    period.diasSemana = this.toggleSelection(period.diasSemana, day);
+  }
+
+  toggleMonthDay(period: TarifaPeriodo, day: number): void {
+    if (period.tipo === 'specific-month-days' && this.isCalendarDayUnavailable(period, day)) return;
+    period.diasMes = this.toggleSelection(period.diasMes, day);
+  }
+
+  daysInSelectedMonth(period: TarifaPeriodo): number[] {
+    if (!Number.isInteger(period.anio) || !Number.isInteger(period.mes)) return [];
+    return Array.from({ length: new Date(period.anio!, period.mes! + 1, 0).getDate() }, (_, index) => index + 1);
+  }
+
+  calendarOffset(period: TarifaPeriodo): number {
+    if (!Number.isInteger(period.anio) || !Number.isInteger(period.mes)) return 0;
+    return (new Date(period.anio!, period.mes!, 1).getDay() + 6) % 7;
+  }
+
+  updateSpecificMonth(period: TarifaPeriodo, month: number): void {
+    if (this.isSpecificCalendarMonthUnavailable(period, month)) return;
+    if (period.mes === month) return;
+    period.mes = month;
+    period.diasMes = [];
+  }
+
+  updateSpecificYear(period: TarifaPeriodo, year: number): void {
+    if (period.anio === year) return;
+    period.anio = year;
+    period.diasMes = period.diasMes.filter((day) => day <= this.daysInSelectedMonth(period).length);
+  }
+
+  updateDateRange(period: TarifaPeriodo, field: 'fechaInicio' | 'fechaFin', value: string): void {
+    const candidate = { ...period, [field]: value };
+    if (candidate.fechaInicio && candidate.fechaFin
+      && (this.otherPeriods(period).some((other) => this.periodsOverlap(candidate, other))
+        || this.periodOverlapsAnotherSeason(candidate))) {
+      this.periodSelectionError.set('Ese rango incluye fechas que ya pertenecen a otro periodo.');
+      return;
+    }
+    period[field] = value;
+    this.periodSelectionError.set('');
+  }
+
+  isMonthUnavailable(period: TarifaPeriodo, month: number): boolean {
+    const candidate: TarifaPeriodo = {
+      ...emptyPeriod(),
+      tipo: 'months',
+      meses: [month],
+    };
+    return this.otherPeriods(period).some((other) => this.periodsOverlap(candidate, other))
+      || this.periodOverlapsAnotherSeason(candidate);
+  }
+
+  isSpecificCalendarMonthUnavailable(period: TarifaPeriodo, month: number): boolean {
+    return this.otherPeriods(period).some((other) =>
+      other.tipo === 'months' && other.meses.includes(month)
+    ) || this.tarifas()
+      .filter((tarifa) => tarifa.id !== this.editingTarifaId())
+      .some((tarifa) => tarifa.periodos.some((other) =>
+        other.tipo === 'months' && other.meses.includes(month)
+      ));
+  }
+
+  isWeekdayUnavailable(_period: TarifaPeriodo, _weekday: number): boolean {
+    const candidate: TarifaPeriodo = {
+      ...emptyPeriod(),
+      tipo: 'weekdays',
+      diasSemana: [_weekday],
+    };
+    return this.periodOverlapsAnotherSeason(candidate);
+  }
+
+  isCalendarDayUnavailable(period: TarifaPeriodo, day: number): boolean {
+    const candidate: TarifaPeriodo = {
+      ...period,
+      tipo: 'specific-month-days',
+      diasMes: [day],
+    };
+    return this.otherPeriods(period).some((other) => this.periodsOverlap(candidate, other))
+      || this.periodOverlapsAnotherSeason(candidate);
+  }
+
+  periodHasConflict(period: TarifaPeriodo): boolean {
+    return this.otherPeriods(period).some((other) => this.periodsOverlap(period, other))
+      || this.periodOverlapsAnotherSeason(period);
+  }
+
+  addSpecificDate(period: TarifaPeriodo, value: string): void {
+    if (!value || period.fechas.includes(value)) return;
+    const candidate: TarifaPeriodo = {
+      ...period,
+      tipo: 'specific-dates',
+      fechas: [value],
+    };
+    if (this.otherPeriods(period).some((other) => this.periodsOverlap(candidate, other))
+      || this.periodOverlapsAnotherSeason(candidate)) {
+      this.periodSelectionError.set('Esa fecha ya está incluida en otro periodo de esta tarifa.');
+      return;
+    }
+    period.fechas = [...period.fechas, value].sort();
+    this.periodSelectionError.set('');
+  }
+
+  removeSpecificDate(period: TarifaPeriodo, value: string): void {
+    period.fechas = period.fechas.filter((date) => date !== value);
+    this.periodSelectionError.set('');
+  }
+
+  periodIsValid(period: TarifaPeriodo): boolean {
+    return isValidPeriod(period);
+  }
+
+  periodSummary(period: TarifaPeriodo): string {
+    switch (period.tipo) {
+      case 'months': return period.meses.map((month) => MONTHS[month].slice(0, 3)).join(', ');
+      case 'weekdays': return period.diasSemana.map((day) => WEEKDAYS[day]).join(', ');
+      case 'month-days': return `Días ${period.diasMes.join(', ')} de cada mes`;
+      case 'specific-month-days': return `${period.diasMes.join(', ')} de ${MONTHS[period.mes ?? 0]} de ${period.anio}`;
+      case 'date-range': return `${period.fechaInicio} al ${period.fechaFin}`;
+      case 'specific-dates': return period.fechas.join(', ');
+    }
+  }
+
+  getRatePrice(tarifa: Tarifa, typologyId: number): number {
+    if (Object.prototype.hasOwnProperty.call(tarifa.precios, typologyId)) {
+      return tarifa.precios[typologyId];
+    }
+    return this.tipologias().find((typology) => typology.id === typologyId)?.precioBase ?? 0;
+  }
+
+  getAppliedTarifa(typologyId: number, date: Date = this.now()): Tarifa | undefined {
+    return this.tarifas()
+      .filter((tarifa) => tarifa.periodos.some((period) => this.periodMatches(period, date)))
+      .reduce<Tarifa | undefined>((highest, tarifa) =>
+        !highest || this.getRatePrice(tarifa, typologyId) > this.getRatePrice(highest, typologyId)
+          ? tarifa
+          : highest,
+      undefined);
+  }
+
+  hasPricesForAllTypologies(): boolean {
+    return this.tipologias().every((typology) =>
+      Number.isFinite(this.editTarifa.precios[typology.id]) && this.editTarifa.precios[typology.id] >= 0
+    );
+  }
+
+  canSaveTarifa(): boolean {
+    return this.hasValidNameAndPeriods()
+      && this.hasPricesForAllTypologies();
+  }
+
+  hasValidNameAndPeriods(): boolean {
+    return !!this.editTarifa.nombre.trim()
+      && this.editTarifa.periodos.length > 0
+      && this.editTarifa.periodos.every((period) => isValidPeriod(period) && !this.periodHasConflict(period));
+  }
+
+  private otherPeriods(period: TarifaPeriodo): TarifaPeriodo[] {
+    return this.editTarifa.periodos.filter((item) => item.id !== period.id);
+  }
+
+  private periodOverlapsAnotherSeason(period: TarifaPeriodo): boolean {
+    return this.tarifas()
+      .filter((tarifa) => tarifa.id !== this.editingTarifaId())
+      .some((tarifa) => tarifa.periodos.some((other) =>
+        !this.isAllowedMonthWeekdayOverlap(period, other)
+        && this.periodsOverlap(period, other, false)
+      ));
+  }
+
+  private isAllowedMonthWeekdayOverlap(first: TarifaPeriodo, second: TarifaPeriodo): boolean {
+    return (first.tipo === 'months' && second.tipo === 'weekdays')
+      || (first.tipo === 'weekdays' && second.tipo === 'months');
+  }
+
+  private periodsOverlap(first: TarifaPeriodo, second: TarifaPeriodo, allowWeekdayOverlap = true): boolean {
+    if (allowWeekdayOverlap && (first.tipo === 'weekdays' || second.tipo === 'weekdays')) return false;
+
+    const firstDates = this.explicitDates(first);
+    if (firstDates) return firstDates.some((date) => this.periodMatches(second, date));
+    const secondDates = this.explicitDates(second);
+    if (secondDates) return secondDates.some((date) => this.periodMatches(first, date));
+
+    if (first.tipo === 'date-range' && second.tipo === 'date-range') {
+      return first.fechaInicio <= second.fechaFin && second.fechaInicio <= first.fechaFin;
+    }
+
+    if (first.tipo === 'months' && second.tipo === 'months') {
+      return first.meses.some((month) => second.meses.includes(month));
+    }
+    if (first.tipo === 'weekdays' && second.tipo === 'weekdays') {
+      return first.diasSemana.some((day) => second.diasSemana.includes(day));
+    }
+    if (first.tipo === 'months' && second.tipo === 'weekdays'
+      || second.tipo === 'months' && first.tipo === 'weekdays') {
+      return first.tipo === 'months'
+        ? first.meses.length > 0 && second.diasSemana.length > 0
+        : second.meses.length > 0 && first.diasSemana.length > 0;
+    }
+    if (first.tipo === 'months' && second.tipo === 'month-days'
+      || second.tipo === 'months' && first.tipo === 'month-days') {
+      return (first.tipo === 'months' ? first.meses.length : second.meses.length) > 0
+        && (first.tipo === 'month-days' ? first.diasMes.length : second.diasMes.length) > 0;
+    }
+    if (first.tipo === 'weekdays' && second.tipo === 'month-days'
+      || second.tipo === 'weekdays' && first.tipo === 'month-days') {
+      return (first.tipo === 'weekdays' ? first.diasSemana.length : second.diasSemana.length) > 0
+        && (first.tipo === 'month-days' ? first.diasMes.length : second.diasMes.length) > 0;
+    }
+
+    const range = first.tipo === 'date-range' ? first : second.tipo === 'date-range' ? second : null;
+    if (range) {
+      const start = new Date(`${range.fechaInicio}T00:00:00`);
+      const end = new Date(`${range.fechaFin}T00:00:00`);
+      const days = Math.floor((end.getTime() - start.getTime()) / 86_400_000);
+      const daysToCheck = Math.min(days, RECURRING_CYCLE_DAYS - 1);
+      for (let offset = 0; offset <= daysToCheck; offset++) {
+        const date = new Date(start);
+        date.setDate(start.getDate() + offset);
+        if (this.periodMatches(first === range ? second : first, date)) return true;
+      }
+      return false;
+    }
+
+    const cycleStart = new Date(2000, 0, 1);
+    for (let offset = 0; offset < RECURRING_CYCLE_DAYS; offset++) {
+      const date = new Date(cycleStart);
+      date.setDate(cycleStart.getDate() + offset);
+      if (this.periodMatches(first, date) && this.periodMatches(second, date)) return true;
+    }
+    return false;
+  }
+
+  private explicitDates(period: TarifaPeriodo): Date[] | null {
+    if (period.tipo === 'specific-dates') {
+      return period.fechas.map((date) => new Date(`${date}T00:00:00`));
+    }
+    if (period.tipo === 'specific-month-days') {
+      return period.diasMes.map((day) => new Date(period.anio!, period.mes!, day));
+    }
+    return null;
+  }
+
+  private periodMatches(period: TarifaPeriodo, date: Date): boolean {
+    const dateString = this.toDateString(date);
+    switch (period.tipo) {
+      case 'months': return period.meses.includes(date.getMonth());
+      case 'weekdays': return period.diasSemana.includes((date.getDay() + 6) % 7);
+      case 'month-days': return period.diasMes.includes(date.getDate());
+      case 'specific-month-days': return period.anio === date.getFullYear()
+        && period.mes === date.getMonth()
+        && period.diasMes.includes(date.getDate());
+      case 'date-range': return dateString >= period.fechaInicio && dateString <= period.fechaFin;
+      case 'specific-dates': return period.fechas.includes(dateString);
+    }
+  }
+
+  private toDateString(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private newTarifa(): Tarifa {
+    return {
+      id: crypto.randomUUID(),
+      nombre: '',
+      periodos: [emptyPeriod()],
+      precios: Object.fromEntries(this.tipologias().map((typology) => [typology.id, typology.precioBase ?? 0])),
+    };
+  }
+
+  private cloneTarifa(tarifa: Tarifa): Tarifa {
+    return {
+      id: tarifa.id,
+      nombre: tarifa.nombre,
+      periodos: tarifa.periodos.map((period) => ({
+        ...period,
+        meses: [...period.meses],
+        diasSemana: [...period.diasSemana],
+        diasMes: [...period.diasMes],
+        fechas: [...period.fechas],
+      })),
+      precios: { ...tarifa.precios },
+    };
+  }
+
+  private loadTarifas(sedeId: number | undefined): Tarifa[] {
+    if (sedeId === undefined) return [];
+
+    const key = `${TARIFAS_STORAGE_KEY}.sede.${sedeId}`;
     try {
-      localStorage.setItem(TARIFAS_STORAGE_KEY, JSON.stringify(cfg));
-    } catch {
-      // ignorar error de almacenamiento
+      const stored = localStorage.getItem(key);
+      if (stored) {
+        const parsed: unknown = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.every(isTarifa)) {
+          this.migrateEmbeddedDeposit(sedeId);
+          return parsed.map((tarifa) => this.cloneTarifa(tarifa));
+        }
+        console.error(`Las tarifas guardadas para la sede ${sedeId} tienen un formato inválido.`);
+        return [];
+      }
+      const legacy = localStorage.getItem(TARIFAS_STORAGE_KEY);
+      if (legacy) {
+        const legacyConfig: unknown = JSON.parse(legacy);
+        const converted = this.migrateLegacyConfig(legacyConfig);
+        if (converted.length) {
+          localStorage.setItem(key, JSON.stringify(converted));
+          this.migrateLegacyDeposit(legacyConfig, sedeId);
+          return converted;
+        }
+      }
+    } catch (error) {
+      console.error('No se pudieron cargar las tarifas guardadas.', error);
+    }
+    return [];
+  }
+
+  private migrateLegacyConfig(value: unknown): Tarifa[] {
+    if (!value || typeof value !== 'object') return [];
+    const legacy = value as {
+      mesesAlta?: number[];
+      tarifasAlta?: Record<number, number>;
+      tarifasBaja?: Record<number, number>;
+    };
+    const allMonths = MONTHS.map((_, index) => index);
+    const highMonths = Array.isArray(legacy.mesesAlta) ? legacy.mesesAlta : [];
+    const lowMonths = allMonths.filter((month) => !highMonths.includes(month));
+    const rates: Tarifa[] = [];
+
+    if (highMonths.length) {
+      rates.push({
+        id: crypto.randomUUID(),
+        nombre: 'Temporada alta',
+        periodos: [{ ...emptyPeriod(), meses: highMonths }],
+        precios: legacy.tarifasAlta ?? {},
+      });
+    }
+    if (lowMonths.length) {
+      rates.push({
+        id: crypto.randomUUID(),
+        nombre: 'Temporada baja',
+        periodos: [{ ...emptyPeriod(), meses: lowMonths }],
+        precios: legacy.tarifasBaja ?? {},
+      });
+    }
+    return rates;
+  }
+
+  private loadAbonoPorcentaje(sedeId: number | undefined): number {
+    if (sedeId === undefined) return DEFAULT_ABONO_PORCENTAJE;
+    const key = `${ABONO_STORAGE_KEY}.sede.${sedeId}`;
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved !== null) {
+        const porcentaje = Number(saved);
+        if (Number.isFinite(porcentaje) && porcentaje >= 1 && porcentaje <= 100) return porcentaje;
+        console.error(`El porcentaje de abono guardado para la sede ${sedeId} no es válido.`);
+      }
+    } catch (error) {
+      console.error('No se pudo cargar el porcentaje de abono guardado.', error);
+    }
+
+    const migrated = this.readEmbeddedDeposit(sedeId) ?? this.readLegacyDeposit();
+    const percentage = Number.isFinite(migrated) && migrated !== undefined && migrated >= 1 && migrated <= 100
+      ? migrated
+      : DEFAULT_ABONO_PORCENTAJE;
+    this.persistAbonoPorcentaje(percentage, sedeId);
+    return percentage;
+  }
+
+  private readEmbeddedDeposit(sedeId: number): number | undefined {
+    try {
+      const stored = localStorage.getItem(`${TARIFAS_STORAGE_KEY}.sede.${sedeId}`);
+      if (!stored) return undefined;
+      const rates: unknown = JSON.parse(stored);
+      if (!Array.isArray(rates)) return undefined;
+      const rate = rates.find((item) =>
+        !!item && typeof item === 'object' && 'abonoPorcentaje' in item
+      ) as { abonoPorcentaje?: unknown } | undefined;
+      return typeof rate?.abonoPorcentaje === 'number' ? rate.abonoPorcentaje : undefined;
+    } catch (error) {
+      console.error('No se pudo migrar el porcentaje de abono de las tarifas guardadas.', error);
+      return undefined;
+    }
+  }
+
+  private readLegacyDeposit(): number | undefined {
+    try {
+      const stored = localStorage.getItem(TARIFAS_STORAGE_KEY);
+      if (!stored) return undefined;
+      const config: unknown = JSON.parse(stored);
+      if (!config || typeof config !== 'object') return undefined;
+      const legacy = config as { abonoPctAlta?: unknown; abonoPctBaja?: unknown };
+      if (typeof legacy.abonoPctAlta === 'number') return legacy.abonoPctAlta;
+      return typeof legacy.abonoPctBaja === 'number' ? legacy.abonoPctBaja : undefined;
+    } catch (error) {
+      console.error('No se pudo migrar el porcentaje de abono anterior.', error);
+      return undefined;
+    }
+  }
+
+  private migrateEmbeddedDeposit(sedeId: number): void {
+    if (localStorage.getItem(`${ABONO_STORAGE_KEY}.sede.${sedeId}`) !== null) return;
+    const migrated = this.readEmbeddedDeposit(sedeId);
+    if (migrated !== undefined) this.persistAbonoPorcentaje(migrated, sedeId);
+  }
+
+  private migrateLegacyDeposit(config: unknown, sedeId: number): void {
+    if (localStorage.getItem(`${ABONO_STORAGE_KEY}.sede.${sedeId}`) !== null) return;
+    if (!config || typeof config !== 'object') return;
+    const legacy = config as { abonoPctAlta?: unknown; abonoPctBaja?: unknown };
+    const migrated = typeof legacy.abonoPctAlta === 'number'
+      ? legacy.abonoPctAlta
+      : legacy.abonoPctBaja;
+    if (typeof migrated === 'number') this.persistAbonoPorcentaje(migrated, sedeId);
+  }
+
+  private persistAbonoPorcentaje(porcentaje: number, sedeId = this.sede()?.id): void {
+    if (sedeId === undefined) return;
+    try {
+      localStorage.setItem(`${ABONO_STORAGE_KEY}.sede.${sedeId}`, String(porcentaje));
+    } catch (error) {
+      console.error('No se pudo guardar el porcentaje de abono.', error);
+    }
+  }
+
+  private persistTarifas(tarifas: Tarifa[]): void {
+    const sedeId = this.sedeService.selectedSede()?.id;
+    if (sedeId === undefined) return;
+    try {
+      localStorage.setItem(`${TARIFAS_STORAGE_KEY}.sede.${sedeId}`, JSON.stringify(tarifas));
+    } catch (error) {
+      console.error('No se pudieron guardar las tarifas.', error);
     }
   }
 }

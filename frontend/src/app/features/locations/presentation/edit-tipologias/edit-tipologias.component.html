@@ -57,24 +57,28 @@
         <!-- Formulario inline (agregar / editar) -->
         @if (formMode() !== null) {
           <section class="user-form" aria-label="Formulario de tipología">
-            <h3>{{ formMode() === 'add' ? 'Nueva tipología' : 'Editar tipología' }}</h3>
+            <header class="user-form-heading">
+              <span class="user-form-icon"><ion-icon name="bed-outline"></ion-icon></span>
+              <div>
+                <h3>{{ formMode() === 'add' ? 'Nueva tipología' : 'Editar tipología' }}</h3>
+                <p>Completa las características de la habitación.</p>
+              </div>
+            </header>
 
             <div class="form-grid">
-              <ion-item lines="none">
+              <label class="typology-field">
+                <span>Nombre de tipología</span>
                 <ion-input
-                  label="Nombre de tipología"
-                  labelPlacement="stacked"
                   type="text"
                   placeholder="Ej. Doble Superior, Suite Deluxe..."
                   [value]="form().nombre"
                   (ionInput)="patchForm('nombre', $any($event.target).value)"
                 ></ion-input>
-              </ion-item>
+              </label>
 
-              <ion-item lines="none">
+              <label class="typology-field">
+                <span>Capacidad (personas)</span>
                 <ion-input
-                  label="Capacidad (personas)"
-                  labelPlacement="stacked"
                   type="number"
                   min="1"
                   max="50"
@@ -82,30 +86,17 @@
                   [value]="form().capacidad"
                   (ionInput)="patchForm('capacidad', $any($event.target).value)"
                 ></ion-input>
-              </ion-item>
+              </label>
 
-              <ion-item lines="none">
+              <label class="typology-field">
+                <span>Descripción breve</span>
                 <ion-input
-                  label="Precio base sugerido / noche ($)"
-                  labelPlacement="stacked"
-                  type="number"
-                  min="0"
-                  placeholder="Ej. 45000"
-                  [value]="form().precioBase"
-                  (ionInput)="patchForm('precioBase', $any($event.target).value)"
-                ></ion-input>
-              </ion-item>
-
-              <ion-item lines="none">
-                <ion-input
-                  label="Descripción breve"
-                  labelPlacement="stacked"
                   type="text"
                   placeholder="Ej. Balcón, vista al jardín..."
                   [value]="form().descripcion"
                   (ionInput)="patchForm('descripcion', $any($event.target).value)"
                 ></ion-input>
-              </ion-item>
+              </label>
             </div>
 
             @if (errorMessage()) {
@@ -113,10 +104,10 @@
             }
 
             <div class="form-actions">
-              <ion-button fill="outline" (click)="cancelForm()">Cancelar</ion-button>
-              <ion-button (click)="saveForm()">
+              <button type="button" class="form-cancel-btn" (click)="cancelForm()">Cancelar</button>
+              <button type="button" class="form-submit-btn" (click)="saveForm()">
                 {{ formMode() === 'add' ? 'Agregar tipología' : 'Guardar cambios' }}
-              </ion-button>
+              </button>
             </div>
           </section>
         }
@@ -139,7 +130,14 @@
           } @else {
             <ul class="user-list" role="list">
               @for (tipologia of tipologias(); track tipologia.id) {
-                <li class="user-card tipologia-card" role="listitem">
+                @let theme = getThemeForColor(tipologia.color);
+                <li
+                  class="user-card tipologia-card"
+                  role="listitem"
+                  [style.--typology-color]="theme.primary"
+                  [style.--typology-background]="theme.background"
+                  [style.--typology-border]="theme.border"
+                >
 
                   <div class="user-avatar tipologia-avatar">
                     <ion-icon name="bed-outline"></ion-icon>
@@ -153,11 +151,6 @@
                           <ion-icon name="people-outline"></ion-icon>
                           {{ tipologia.capacidad }} {{ tipologia.capacidad === 1 ? 'huésped' : 'huéspedes' }}
                         </span>
-                        @if (tipologia.precioBase) {
-                          <span class="price-badge">
-                            ${{ tipologia.precioBase.toLocaleString('es-CL') }}
-                          </span>
-                        }
                         <span class="rooms-badge">
                           {{ getRoomsCount(tipologia) }} {{ getRoomsCount(tipologia) === 1 ? 'habitación' : 'habitaciones' }}
                         </span>
