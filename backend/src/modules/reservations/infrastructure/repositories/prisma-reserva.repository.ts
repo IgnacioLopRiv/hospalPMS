@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type {
+  Prisma,
   EstadoReserva as PrismaEstado,
   Reserva as PrismaReserva,
 } from '@prisma/client';
@@ -16,20 +17,20 @@ export class PrismaReservaRepository implements ReservaRepository {
 
   private mapEstado(estado: PrismaEstado): EstadoReserva {
     const map: Record<PrismaEstado, EstadoReserva> = {
-      HOSPEDADO: EstadoReserva.HOSPEDADO,
-      CHECK_IN_HOY: EstadoReserva.CHECK_IN_HOY,
-      CHECK_OUT_HOY: EstadoReserva.CHECK_OUT_HOY,
       CONFIRMADA: EstadoReserva.CONFIRMADA,
+      EN_CURSO: EstadoReserva.EN_CURSO,
+      FINALIZADA: EstadoReserva.FINALIZADA,
+      CANCELADA: EstadoReserva.CANCELADA,
     };
     return map[estado];
   }
 
   private mapEstadoToPrisma(estado: EstadoReserva): PrismaEstado {
     const map: Record<EstadoReserva, PrismaEstado> = {
-      [EstadoReserva.HOSPEDADO]: 'HOSPEDADO',
-      [EstadoReserva.CHECK_IN_HOY]: 'CHECK_IN_HOY',
-      [EstadoReserva.CHECK_OUT_HOY]: 'CHECK_OUT_HOY',
       [EstadoReserva.CONFIRMADA]: 'CONFIRMADA',
+      [EstadoReserva.EN_CURSO]: 'EN_CURSO',
+      [EstadoReserva.FINALIZADA]: 'FINALIZADA',
+      [EstadoReserva.CANCELADA]: 'CANCELADA',
     };
     return map[estado];
   }
@@ -39,19 +40,16 @@ export class PrismaReservaRepository implements ReservaRepository {
       raw.id,
       raw.huespedId,
       raw.habitacionId,
-      raw.fechaLlegada,
-      raw.fechaSalida,
-      raw.horaLlegada,
-      raw.cantidadPersonas,
+      raw.fechaReserva,
+      raw.fechaCheckIn,
+      raw.fechaCheckOut,
       this.mapEstado(raw.estado),
-      raw.createdAt,
-      raw.updatedAt,
     );
   }
 
   async findAll(): Promise<Reserva[]> {
     const rows = await this.prisma.reserva.findMany({
-      orderBy: { fechaLlegada: 'asc' },
+      orderBy: { fechaCheckIn: 'asc' },
     });
     return rows.map((r) => this.toEntity(r));
   }
@@ -64,7 +62,7 @@ export class PrismaReservaRepository implements ReservaRepository {
   async findByHuespedId(huespedId: number): Promise<Reserva[]> {
     const rows = await this.prisma.reserva.findMany({
       where: { huespedId },
-      orderBy: { fechaLlegada: 'desc' },
+      orderBy: { fechaCheckIn: 'desc' },
     });
     return rows.map((r) => this.toEntity(r));
   }
@@ -72,7 +70,7 @@ export class PrismaReservaRepository implements ReservaRepository {
   async findByHabitacionId(habitacionId: number): Promise<Reserva[]> {
     const rows = await this.prisma.reserva.findMany({
       where: { habitacionId },
-      orderBy: { fechaLlegada: 'desc' },
+      orderBy: { fechaCheckIn: 'desc' },
     });
     return rows.map((r) => this.toEntity(r));
   }
@@ -80,19 +78,21 @@ export class PrismaReservaRepository implements ReservaRepository {
   async create(data: {
     huespedId: number;
     habitacionId: number;
-    fechaLlegada: Date;
-    fechaSalida: Date;
-    horaLlegada?: string;
-    cantidadPersonas?: number;
+    fechaCheckIn: Date;
+    fechaCheckOut: Date;
     estado?: EstadoReserva;
   }): Promise<Reserva> {
+    const prismaData: Prisma.ReservaUncheckedCreateInput = {
+      huespedId: data.huespedId,
+      habitacionId: data.habitacionId,
+      fechaCheckIn: data.fechaCheckIn,
+      fechaCheckOut: data.fechaCheckOut,
+      estado: data.estado
+        ? this.mapEstadoToPrisma(data.estado)
+        : 'CONFIRMADA',
+    };
     const raw = await this.prisma.reserva.create({
-      data: {
-        ...data,
-        estado: data.estado
-          ? this.mapEstadoToPrisma(data.estado)
-          : 'CONFIRMADA',
-      },
+      data: prismaData,
     });
     return this.toEntity(raw);
   }
@@ -100,17 +100,18 @@ export class PrismaReservaRepository implements ReservaRepository {
   async update(
     id: number,
     data: Partial<{
-      fechaLlegada: Date;
-      fechaSalida: Date;
-      horaLlegada: string;
-      cantidadPersonas: number;
+      fechaCheckIn: Date;
+      fechaCheckOut: Date;
       estado: EstadoReserva;
     }>,
   ): Promise<Reserva> {
-    const prismaData: any = { ...data };
-    if (data.estado !== undefined) {
-      prismaData.estado = this.mapEstadoToPrisma(data.estado);
-    }
+    const prismaData: Prisma.ReservaUncheckedUpdateInput = {
+      ...data,
+      estado:
+        data.estado === undefined
+          ? undefined
+          : this.mapEstadoToPrisma(data.estado),
+    };
     const raw = await this.prisma.reserva.update({ where: { id }, data: prismaData });
     return this.toEntity(raw);
   }

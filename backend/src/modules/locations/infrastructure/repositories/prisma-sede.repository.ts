@@ -17,15 +17,18 @@ export class PrismaSedeRepository implements SedeRepository {
   private toEntity(raw: PrismaSede): Sede {
     return new Sede(
       raw.id,
-      raw.nombre,
+      raw.hostalId,
+      raw.nombreSede,
+      raw.direccion,
       raw.ciudad,
-      raw.createdAt,
-      raw.updatedAt,
+      raw.telefono,
     );
   }
 
   async findAll(): Promise<Sede[]> {
-    const rows = await this.prisma.sede.findMany({ orderBy: { nombre: 'asc' } });
+    const rows = await this.prisma.sede.findMany({
+      orderBy: { nombreSede: 'asc' },
+    });
     return rows.map((r) => this.toEntity(r));
   }
 
@@ -34,14 +37,26 @@ export class PrismaSedeRepository implements SedeRepository {
     return raw ? this.toEntity(raw) : null;
   }
 
-  async create(data: { nombre: string; ciudad: string }): Promise<Sede> {
+  async create(data: {
+    hostalId: number;
+    nombreSede: string;
+    direccion: string;
+    ciudad: string;
+    telefono?: string;
+  }): Promise<Sede> {
     const raw = await this.prisma.sede.create({ data });
     return this.toEntity(raw);
   }
 
   async update(
     id: number,
-    data: Partial<{ nombre: string; ciudad: string }>,
+    data: Partial<{
+      hostalId: number;
+      nombreSede: string;
+      direccion: string;
+      ciudad: string;
+      telefono: string | null;
+    }>,
   ): Promise<Sede> {
     const raw = await this.prisma.sede.update({ where: { id }, data });
     return this.toEntity(raw);
