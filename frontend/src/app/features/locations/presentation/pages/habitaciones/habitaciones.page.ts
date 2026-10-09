@@ -9,11 +9,8 @@ import {
   businessOutline,
   checkmarkCircleOutline,
   closeOutline,
-  sparklesOutline,
   personOutline,
   timeOutline,
-  checkmarkOutline,
-  logInOutline,
   waterOutline,
   refreshOutline,
   createOutline,
@@ -132,11 +129,8 @@ export class HabitacionesPage implements OnInit, OnDestroy {
       businessOutline,
       closeOutline,
       checkmarkCircleOutline,
-      sparklesOutline,
       personOutline,
       timeOutline,
-      checkmarkOutline,
-      logInOutline,
       waterOutline,
       refreshOutline,
       createOutline,
@@ -735,20 +729,5 @@ export class HabitacionesPage implements OnInit, OnDestroy {
     }
     const diffMin = Math.floor((Date.now() - habitacion.aseoIniciado) / (60 * 1000));
     return diffMin <= 0 ? 'Recién iniciado' : `Hace ${diffMin} min`;
-  }
-
-  marcarLibre(habitacion: Habitacion, event?: Event): void {
-    event?.stopPropagation();
-    this.sedeService.marcarLibre(habitacion.numero);
-  }
-
-  marcarEnAseo(habitacion: Habitacion, event?: Event): void {
-    event?.stopPropagation();
-    this.sedeService.marcarEnAseo(habitacion.numero);
-  }
-
-  marcarOcupada(habitacion: Habitacion, event?: Event): void {
-    event?.stopPropagation();
-    this.sedeService.marcarOcupada(habitacion.numero, 'Check-in manual');
   }
 }

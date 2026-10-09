@@ -87,6 +87,16 @@ describe('HabitacionesPage', () => {
     expect(titleLine.contains(capacity)).toBeTrue();
   });
 
+  it('displays room status without manual state change action buttons', () => {
+    const card = fixture.nativeElement.querySelector('.room-summary') as HTMLElement;
+    expect(card).not.toBeNull();
+    const statusTab = card.querySelector('.room-status-tab') as HTMLElement;
+    expect(statusTab).not.toBeNull();
+    expect(statusTab.querySelector('.status-name')?.textContent?.trim()).toBe('Libre');
+    expect(card.querySelector('.status-tab-actions')).toBeNull();
+    expect(card.querySelector('.btn-tab-action')).toBeNull();
+  });
+
   it('should not open the new room modal when user is not admin', () => {
     authService.currentUser.set({
       id: 2,

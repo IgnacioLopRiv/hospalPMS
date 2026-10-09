@@ -15,6 +15,9 @@
   @if (guestSuccessMessage) {
   <div class="entry-success" role="status">{{ guestSuccessMessage }}</div>
   }
+  @if (guestError && !showNewGuestForm && !showReservationAssignment && editingGuestId === null && deletingGuestId === null) {
+  <p class="entry-error" role="alert">{{ guestError }}</p>
+  }
 
   @if (showNewGuestForm && !showReservationAssignment) {
   <div class="entry-modal-backdrop">
@@ -115,7 +118,9 @@
   @if (showReservationAssignment) {
   <app-check-page
     [modalOnly]="true"
-    [guestDraft]="guestForm"
+    [guestDraft]="reservationAssignmentGuestId === null ? guestForm : undefined"
+    [existingGuestId]="reservationAssignmentGuestId"
+    [startAtReservationDetails]="reservationAssignmentGuestId !== null"
     (entryModalClosed)="closeReservationAssignment()"
     (entryRegistered)="completeReservationAssignment($event)">
   </app-check-page>
@@ -230,6 +235,10 @@
             Modificar reserva
           </button>
           }
+          <button type="button" (click)="assignReservationToGuest(guest.id_huesped)">
+            <ion-icon name="calendar-outline"></ion-icon>
+            Asignar reserva
+          </button>
           <button type="button" class="delete-action" (click)="requestGuestDeletion(guest.id_huesped)">
             <ion-icon name="trash-outline"></ion-icon>
             Eliminar huésped
@@ -322,6 +331,10 @@
                 Modificar reserva
               </button>
               }
+              <button type="button" (click)="assignReservationToGuest(guest.id_huesped)">
+                <ion-icon name="calendar-outline"></ion-icon>
+                Asignar reserva
+              </button>
               <button type="button" class="delete-action" (click)="requestGuestDeletion(guest.id_huesped)">
                 <ion-icon name="trash-outline"></ion-icon>
                 Eliminar huésped

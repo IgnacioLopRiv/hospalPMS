@@ -323,68 +323,6 @@ $blue-dark: #172554;
             }
           }
 
-          .status-tab-actions {
-            display: inline-flex;
-            align-items: center;
-
-            .btn-tab-action {
-              display: inline-flex;
-              align-items: center;
-              gap: 0.25rem;
-              padding: 0.22rem 0.55rem;
-              border-radius: 6px;
-              font-size: 0.7rem;
-              font-weight: 700;
-              cursor: pointer;
-              outline: none;
-              transition: all 0.18s ease;
-              white-space: nowrap;
-
-              ion-icon {
-                font-size: 0.85rem;
-              }
-
-              &.btn-finish-cleaning {
-                background: #ffffff;
-                color: #047857;
-                border: 1px solid #86efac;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-
-                &:hover {
-                  background: #dcfce7;
-                  border-color: #34d399;
-                  transform: translateY(-1px);
-                }
-              }
-
-              &.btn-send-cleaning {
-                background: #ffffff;
-                color: #b45309;
-                border: 1px solid #fcd34d;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-
-                &:hover {
-                  background: #fef3c7;
-                  border-color: #f59e0b;
-                  transform: translateY(-1px);
-                }
-              }
-
-              &.btn-mark-occupied {
-                background: #ffffff;
-                color: #1e40af;
-                border: 1px solid #bfdbfe;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-
-                &:hover {
-                  background: #dbeafe;
-                  border-color: #60a5fa;
-                  transform: translateY(-1px);
-                }
-              }
-            }
-          }
-
           /* Colores de pestañas */
           &.tab-libre {
             background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);

@@ -1,9 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { By } from '@angular/platform-browser';
+import { HostalService } from '../../../application/hostal.service';
 import { CheckPagePage } from '../../../../reservations/presentation/pages/check-page/check-page.page';
 import { GuestsViewPage } from './guests-view.page';
-import { GuestCardView } from '../../../../../shared/domain/hostal.model';
+import { GuestCardView, Huesped } from '../../../../../shared/domain/hostal.model';
 
 describe('GuestsViewPage', () => {
   let component: GuestsViewPage;
@@ -122,6 +123,42 @@ describe('GuestsViewPage', () => {
     expect(fixture.nativeElement.querySelector('#guest-modal-title')).toBeTruthy();
     expect(component.guestForm.nombre).toBe('Ana');
     expect(component.guestForm.apellido).toBe('Pérez');
+  });
+
+  it('opens reservation assignment for a registered guest at the reservation details step', () => {
+    const guest: Huesped = {
+      id_huesped: 77,
+      id_sede: 1,
+      documento: 'GUEST-77',
+      nombre: 'Ana',
+      apellido: 'Pérez',
+      nacionalidad: 'Chile',
+      telefono: '+56 9 1234 5678',
+      email: 'ana@example.com',
+    };
+    component.guests = [createGuestCard(guest.id_huesped, false)];
+    component.applyFilters();
+    spyOn(TestBed.inject(HostalService), 'getGuests').and.returnValue([guest]);
+    fixture.detectChanges();
+
+    (fixture.nativeElement.querySelector('.guest-card .menu-icon') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    const assignButton = Array.from(
+      fixture.nativeElement.querySelectorAll('.guest-card-menu button') as NodeListOf<HTMLButtonElement>
+    ).find((button) => button.textContent?.includes('Asignar reserva'));
+    expect(assignButton).toBeDefined();
+    assignButton!.click();
+    fixture.detectChanges();
+    fixture.detectChanges();
+
+    const entryPage = fixture.debugElement.query(By.directive(CheckPagePage)).componentInstance as CheckPagePage;
+    expect(component.showReservationAssignment).toBeTrue();
+    expect(entryPage.showNewEntryForm).toBeTrue();
+    expect(entryPage.entryStep).toBe(2);
+    expect(entryPage.guestMode).toBe('existing');
+    expect(entryPage.selectedGuestId).toBe(String(guest.id_huesped));
+
+    entryPage.closeNewEntryForm();
   });
 });
 

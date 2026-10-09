@@ -114,6 +114,8 @@ export class CheckPagePage implements OnInit, OnDestroy {
   private readonly inventarioService = inject(InventarioService);
   @Input() modalOnly = false;
   @Input() guestDraft?: GuestDraft;
+  @Input() existingGuestId: number | null = null;
+  @Input() startAtReservationDetails = false;
   @Output() entryModalClosed = new EventEmitter<void>();
   @Output() entryRegistered = new EventEmitter<string>();
   readonly sede = this.sedeService.selectedSede;
@@ -162,7 +164,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
       this.refreshPendingChecks();
     });
     this.clockInterval = setInterval(() => this.updateCurrentDateKey(), 1000);
-    if (this.modalOnly && this.guestDraft) {
+    if (this.modalOnly && (this.guestDraft || this.existingGuestId !== null)) {
       this.openNewEntryForm(this.guestDraft);
     }
   }
@@ -255,7 +257,17 @@ export class CheckPagePage implements OnInit, OnDestroy {
         this.selectedGuestId = String(existingGuest.id_huesped);
       }
     }
-    this.entryError = '';
+    const selectedExistingGuest = this.existingGuestId === null
+      ? undefined
+      : this.availableGuests.find((guest) => guest.id_huesped === this.existingGuestId);
+    if (selectedExistingGuest) {
+      this.guestMode = 'existing';
+      this.selectedGuestId = String(selectedExistingGuest.id_huesped);
+    }
+    this.entryStep = this.startAtReservationDetails && selectedExistingGuest ? 2 : 1;
+    this.entryError = this.existingGuestId !== null && !selectedExistingGuest
+      ? 'No se encontró el huésped. Cierra el modal y vuelve a intentarlo.'
+      : '';
     this.entrySuccessMessage = '';
     this.documentFieldFocused = false;
     this.emailFieldFocused = false;

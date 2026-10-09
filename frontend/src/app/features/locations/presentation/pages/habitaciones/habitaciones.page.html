@@ -80,38 +80,6 @@
                   <span class="status-extra">· {{ getTiempoEnAseo(habitacion) }}</span>
                 }
               </div>
-
-              <!-- Acciones reactivas en la pestaña -->
-              <div class="status-tab-actions">
-                @if (habitacion.estado === 'en aseo') {
-                  <button
-                    type="button"
-                    class="btn-tab-action btn-finish-cleaning"
-                    (click)="marcarLibre(habitacion, $event)"
-                    title="Terminar aseo y dejar la habitación Libre">
-                    <ion-icon name="checkmark-outline"></ion-icon>
-                    <span>Terminar aseo</span>
-                  </button>
-                } @else if (habitacion.estado === 'ocupada') {
-                  <button
-                    type="button"
-                    class="btn-tab-action btn-send-cleaning"
-                    (click)="marcarEnAseo(habitacion, $event)"
-                    title="Procesar check-out / Pasar habitación a aseo">
-                    <ion-icon name="sparkles-outline"></ion-icon>
-                    <span>Pasar a aseo</span>
-                  </button>
-                } @else {
-                  <button
-                    type="button"
-                    class="btn-tab-action btn-mark-occupied"
-                    (click)="marcarOcupada(habitacion, $event)"
-                    title="Registrar check-in / Ocupar habitación">
-                    <ion-icon name="log-in-outline"></ion-icon>
-                    <span>Ocupar</span>
-                  </button>
-                }
-              </div>
             </header>
 
             <!-- Contenido principal de la tarjeta -->

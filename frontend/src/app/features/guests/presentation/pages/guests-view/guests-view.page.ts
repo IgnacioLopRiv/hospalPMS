@@ -58,6 +58,7 @@ export class GuestsViewPage implements OnInit, OnDestroy {
   searchTerm: string = '';
   showNewGuestForm = false;
   showReservationAssignment = false;
+  reservationAssignmentGuestId: number | null = null;
   guestError = '';
   guestSuccessMessage = '';
   documentFieldFocused = false;
@@ -380,17 +381,40 @@ export class GuestsViewPage implements OnInit, OnDestroy {
 
   assignReservation(): void {
     this.guestError = '';
+    this.reservationAssignmentGuestId = null;
     this.showReservationAssignment = true;
+  }
+
+  assignReservationToGuest(guestId: number): void {
+    const guest = this.hostalService.getGuests().find((item) => item.id_huesped === guestId);
+    if (!guest) {
+      this.guestError = 'No se encontró el huésped. Actualiza la lista e inténtalo otra vez.';
+      this.openMenuCardIndex = null;
+      return;
+    }
+
+    this.guestError = '';
+    this.reservationAssignmentGuestId = guest.id_huesped;
+    this.showNewGuestForm = false;
+    this.showReservationAssignment = true;
+    this.openMenuCardIndex = null;
+    this.setPageScrollLocked(true);
   }
 
   closeReservationAssignment(): void {
     this.showReservationAssignment = false;
-    this.setPageScrollLocked(true);
+    if (this.reservationAssignmentGuestId !== null) {
+      this.reservationAssignmentGuestId = null;
+      this.setPageScrollLocked(false);
+    } else {
+      this.setPageScrollLocked(true);
+    }
   }
 
   completeReservationAssignment(message: string): void {
     this.showReservationAssignment = false;
     this.showNewGuestForm = false;
+    this.reservationAssignmentGuestId = null;
     this.guestSuccessMessage = message;
     this.setPageScrollLocked(false);
   }

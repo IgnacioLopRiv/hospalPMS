@@ -1,9 +1,24 @@
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonButton, IonIcon, IonInput, IonItem, IonModal, IonSelect, IonSelectOption } from '@ionic/angular/standalone';
+import { IonIcon, IonModal } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { addOutline, briefcaseOutline, businessOutline, closeOutline, createOutline, peopleOutline, shieldCheckmarkOutline, trashOutline } from 'ionicons/icons';
+import {
+  addOutline,
+  alertCircleOutline,
+  briefcaseOutline,
+  businessOutline,
+  checkmarkOutline,
+  closeOutline,
+  createOutline,
+  lockClosedOutline,
+  mailOutline,
+  peopleOutline,
+  personAddOutline,
+  personOutline,
+  shieldCheckmarkOutline,
+  trashOutline,
+} from 'ionicons/icons';
 import { AuthService } from '../../../auth/application/auth.service';
 import { StoredUser, UserRole } from '../../../auth/domain/auth.roles';
 import { SedeService } from '../../../../features/locations/application/sede.service';
@@ -28,11 +43,6 @@ interface UserForm {
     CommonModule,
     FormsModule,
     IonModal,
-    IonButton,
-    IonItem,
-    IonInput,
-    IonSelect,
-    IonSelectOption,
     IonIcon,
   ],
 })
@@ -71,13 +81,19 @@ export class EditPerfilesComponent {
   constructor() {
     addIcons({
       addOutline,
+      alertCircleOutline,
+      briefcaseOutline,
       businessOutline,
+      checkmarkOutline,
       closeOutline,
       createOutline,
-      trashOutline,
+      lockClosedOutline,
+      mailOutline,
       peopleOutline,
+      personAddOutline,
+      personOutline,
       shieldCheckmarkOutline,
-      briefcaseOutline,
+      trashOutline,
     });
 
     effect(() => {
@@ -166,8 +182,12 @@ export class EditPerfilesComponent {
   }
 
   patchForm(field: keyof UserForm, value: string | number | null): void {
+    let finalValue = value;
+    if (field === 'sedeId' && value !== null && value !== '') {
+      finalValue = Number(value);
+    }
     this.form.update((f) => {
-      const updated = { ...f, [field]: value };
+      const updated = { ...f, [field]: finalValue };
       // Si cambia el rol a admin, limpiar la sede asignada
       if (field === 'role' && value === 'admin') {
         updated.sedeId = null;

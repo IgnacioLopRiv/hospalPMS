@@ -75,6 +75,18 @@ body.entry-modal-open .app-main-viewport .ion-page {
   overscroll-behavior-y: contain;
 }
 
+/* Ocultar flechas de incremento y decremento (spin-button) en inputs tipo number */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
 /* ==========================================================================
    ESTILOS PERSONALIZADOS PARA ALERTAS Y BANNERS CRUD (HOSPAL PMS)
    ========================================================================== */

@@ -1,31 +1,37 @@
 <ion-modal
-  class="edit-perfiles-banner"
+  class="edit-perfiles-modal edit-perfiles-banner"
   [isOpen]="isOpen()"
   [backdropDismiss]="false"
   (didDismiss)="dismiss()"
 >
   <ng-template>
-    <div class="banner">
+    <div class="modal-container banner">
 
       <!-- ── Header ── -->
-      <header class="banner-header">
-        <div class="banner-title">
-          <ion-icon name="people-outline" class="title-icon"></ion-icon>
-          <h2>Gestionar perfiles</h2>
+      <header class="modal-header banner-header">
+        <div class="modal-header-title banner-title">
+          <div class="modal-header-icon title-icon">
+            <ion-icon name="people-outline"></ion-icon>
+          </div>
+          <div>
+            <h2>Gestionar perfiles</h2>
+            <p>Administra los usuarios, roles y accesos del sistema</p>
+          </div>
         </div>
-        <div class="banner-header-actions">
+        <div class="modal-header-actions banner-header-actions">
           <button
             type="button"
-            class="add-btn"
+            class="btn-add-user add-btn"
             id="add-user-btn"
             (click)="openAdd()"
             aria-label="Agregar nuevo usuario"
           >
             <ion-icon name="add-outline"></ion-icon>
+            <span>Nuevo usuario</span>
           </button>
           <button
             type="button"
-            class="close-btn"
+            class="btn-close-modal close-btn"
             id="close-perfiles-btn"
             (click)="dismiss()"
             aria-label="Cerrar panel de perfiles"
@@ -36,7 +42,7 @@
       </header>
 
       <!-- ── Body ── -->
-      <div class="banner-body">
+      <div class="modal-body banner-body">
 
         <!-- Toast de éxito -->
         @if (successMessage()) {
@@ -46,92 +52,128 @@
         <!-- Formulario inline (agregar / editar) -->
         @if (formMode() !== null) {
           <section class="user-form" aria-label="Formulario de usuario">
-            <h3>{{ formMode() === 'add' ? 'Nuevo usuario' : 'Editar usuario' }}</h3>
+            <header class="user-form-heading">
+              <span class="user-form-icon">
+                <ion-icon [name]="formMode() === 'add' ? 'person-add-outline' : 'create-outline'"></ion-icon>
+              </span>
+              <div class="user-form-heading-text">
+                <h3>{{ formMode() === 'add' ? 'Nuevo usuario' : 'Editar usuario' }}</h3>
+                <p>{{ formMode() === 'add' ? 'Ingresa los datos para registrar un nuevo perfil en el sistema.' : 'Modifica la información y accesos de este perfil.' }}</p>
+              </div>
+              <button
+                type="button"
+                class="form-close-btn"
+                (click)="cancelForm()"
+                aria-label="Cerrar formulario"
+                title="Cerrar formulario"
+              >
+                <ion-icon name="close-outline"></ion-icon>
+              </button>
+            </header>
 
             <div class="form-grid">
-              <ion-item lines="none">
-                <ion-input
-                  label="Nombre completo"
-                  labelPlacement="stacked"
-                  type="text"
-                  placeholder="Ej. Juan García"
-                  [value]="form().name"
-                  (ionInput)="patchForm('name', $any($event.target).value)"
-                ></ion-input>
-              </ion-item>
+              <label class="form-field">
+                <span class="field-label">Nombre completo</span>
+                <div class="field-input-box">
+                  <ion-icon name="person-outline" class="field-icon"></ion-icon>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ej. Juan García"
+                    [value]="form().name"
+                    (input)="patchForm('name', $any($event.target).value)"
+                  />
+                </div>
+              </label>
 
-              <ion-item lines="none">
-                <ion-input
-                  label="Correo electrónico"
-                  labelPlacement="stacked"
-                  type="email"
-                  placeholder="correo@ejemplo.com"
-                  [value]="form().email"
-                  (ionInput)="patchForm('email', $any($event.target).value)"
-                ></ion-input>
-              </ion-item>
+              <label class="form-field">
+                <span class="field-label">Correo electrónico</span>
+                <div class="field-input-box">
+                  <ion-icon name="mail-outline" class="field-icon"></ion-icon>
+                  <input
+                    type="email"
+                    required
+                    placeholder="correo@ejemplo.com"
+                    [value]="form().email"
+                    (input)="patchForm('email', $any($event.target).value)"
+                  />
+                </div>
+              </label>
 
-              <ion-item lines="none">
-                <ion-input
-                  [label]="formMode() === 'add' ? 'Contraseña' : 'Contraseña (vacío = sin cambio)'"
-                  labelPlacement="stacked"
-                  type="password"
-                  [placeholder]="formMode() === 'add' ? 'Mínimo 6 caracteres' : 'Sin cambios'"
-                  [value]="form().password"
-                  (ionInput)="patchForm('password', $any($event.target).value)"
-                ></ion-input>
-              </ion-item>
+              <label class="form-field">
+                <span class="field-label">{{ formMode() === 'add' ? 'Contraseña' : 'Nueva contraseña (opcional)' }}</span>
+                <div class="field-input-box">
+                  <ion-icon name="lock-closed-outline" class="field-icon"></ion-icon>
+                  <input
+                    type="password"
+                    [placeholder]="formMode() === 'add' ? 'Mínimo 6 caracteres' : 'Dejar en blanco para mantener actual'"
+                    [value]="form().password"
+                    (input)="patchForm('password', $any($event.target).value)"
+                  />
+                </div>
+              </label>
 
-              <ion-item lines="none">
-                <ion-select
-                  label="Rol"
-                  labelPlacement="stacked"
-                  [value]="form().role"
-                  (ionChange)="patchForm('role', $any($event.detail.value))"
-                >
-                  @for (rol of roles; track rol) {
-                    <ion-select-option [value]="rol">
-                      {{ rol === 'admin' ? 'Administrador' : 'Personal (Staff)' }}
-                    </ion-select-option>
-                  }
-                </ion-select>
-              </ion-item>
+              <label class="form-field">
+                <span class="field-label">Rol del usuario</span>
+                <div class="field-input-box">
+                  <ion-icon name="shield-checkmark-outline" class="field-icon"></ion-icon>
+                  <select
+                    [value]="form().role"
+                    (change)="patchForm('role', $any($event.target).value)"
+                  >
+                    @for (rol of roles; track rol) {
+                      <option [value]="rol">
+                        {{ rol === 'admin' ? 'Administrador' : 'Personal (Staff)' }}
+                      </option>
+                    }
+                  </select>
+                </div>
+              </label>
 
               @if (requiresSede()) {
-                <ion-item lines="none" class="sede-picker-item">
-                  <ion-select
-                    label="Sede asignada"
-                    labelPlacement="stacked"
-                    placeholder="Selecciona una sede"
-                    [value]="form().sedeId"
-                    (ionChange)="patchForm('sedeId', $any($event.detail.value))"
-                  >
-                    @for (sede of sedes(); track sede.id) {
-                      <ion-select-option [value]="sede.id">
-                        {{ sede.nombre }} — {{ sede.ciudad }}
-                      </ion-select-option>
-                    }
-                  </ion-select>
-                </ion-item>
+                <label class="form-field full-width">
+                  <span class="field-label">Sede asignada (Personal / Staff)</span>
+                  <div class="field-input-box">
+                    <ion-icon name="business-outline" class="field-icon"></ion-icon>
+                    <select
+                      [value]="form().sedeId ?? ''"
+                      (change)="patchForm('sedeId', $any($event.target).value)"
+                    >
+                      <option value="" disabled>Selecciona una sede para este usuario</option>
+                      @for (sede of sedes(); track sede.id) {
+                        <option [value]="sede.id">
+                          {{ sede.nombre }} — {{ sede.ciudad }}
+                        </option>
+                      }
+                    </select>
+                  </div>
+                </label>
               }
             </div>
 
             @if (errorMessage()) {
-              <p class="error-msg" role="alert">{{ errorMessage() }}</p>
+              <div class="form-error-alert" role="alert">
+                <ion-icon name="alert-circle-outline"></ion-icon>
+                <span>{{ errorMessage() }}</span>
+              </div>
             }
 
             <div class="form-actions">
-              <ion-button fill="outline" (click)="cancelForm()">Cancelar</ion-button>
-              <ion-button (click)="saveForm()">
-                {{ formMode() === 'add' ? 'Agregar usuario' : 'Guardar cambios' }}
-              </ion-button>
+              <button type="button" class="btn-cancel" (click)="cancelForm()">Cancelar</button>
+              <button type="button" class="btn-submit" (click)="saveForm()">
+                <ion-icon [name]="formMode() === 'add' ? 'add-outline' : 'checkmark-outline'"></ion-icon>
+                <span>{{ formMode() === 'add' ? 'Agregar usuario' : 'Guardar cambios' }}</span>
+              </button>
             </div>
           </section>
         }
 
         <!-- Error standalone (fuera del formulario, p.ej. al eliminar) -->
         @if (errorMessage() && formMode() === null) {
-          <p class="error-msg standalone" role="alert">{{ errorMessage() }}</p>
+          <div class="form-error-alert standalone" role="alert">
+            <ion-icon name="alert-circle-outline"></ion-icon>
+            <span>{{ errorMessage() }}</span>
+          </div>
         }
 
         <!-- ── Sección Administradores ── -->
@@ -164,9 +206,12 @@
                   <!-- Confirmación de eliminación inline -->
                   @if (deleteConfirmId() === user.id) {
                     <div class="confirm-delete" role="alert">
-                      <span>¿Eliminar?</span>
-                      <button class="icon-btn danger" (click)="confirmDelete(user.id)" title="Confirmar eliminación">✓</button>
-                      <button class="icon-btn" (click)="cancelDelete()" title="Cancelar">✕</button>
+                      <span class="confirm-label">¿Eliminar usuario?</span>
+                      <button class="confirm-btn danger" (click)="confirmDelete(user.id)" title="Confirmar eliminación">
+                        <ion-icon name="trash-outline"></ion-icon>
+                        <span>Sí, eliminar</span>
+                      </button>
+                      <button class="confirm-btn cancel" (click)="cancelDelete()" title="Cancelar">Cancelar</button>
                     </div>
                   } @else {
                     <div class="user-actions">
@@ -230,9 +275,12 @@
 
                   @if (deleteConfirmId() === user.id) {
                     <div class="confirm-delete" role="alert">
-                      <span>¿Eliminar?</span>
-                      <button class="icon-btn danger" (click)="confirmDelete(user.id)" title="Confirmar eliminación">✓</button>
-                      <button class="icon-btn" (click)="cancelDelete()" title="Cancelar">✕</button>
+                      <span class="confirm-label">¿Eliminar usuario?</span>
+                      <button class="confirm-btn danger" (click)="confirmDelete(user.id)" title="Confirmar eliminación">
+                        <ion-icon name="trash-outline"></ion-icon>
+                        <span>Sí, eliminar</span>
+                      </button>
+                      <button class="confirm-btn cancel" (click)="cancelDelete()" title="Cancelar">Cancelar</button>
                     </div>
                   } @else {
                     <div class="user-actions">
