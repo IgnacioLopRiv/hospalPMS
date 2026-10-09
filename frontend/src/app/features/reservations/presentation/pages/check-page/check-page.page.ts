@@ -22,10 +22,12 @@ import {
   swapHorizontalOutline,
   closeOutline,
   cashOutline,
+  chevronDownOutline,
+  searchOutline,
 } from 'ionicons/icons';
 import { SedeService } from '../../../../locations/application/sede.service';
 import { HostalService, ReservationCalendarEntry } from '../../../../guests/application/hostal.service';
-import { Huesped, Habitacion, SedeHabitacion, SedeTipologia } from '../../../../../shared/domain/hostal.model';
+import { GuestCardView, Huesped, Habitacion, SedeHabitacion, SedeTipologia } from '../../../../../shared/domain/hostal.model';
 import { COUNTRY_OPTIONS } from '../../../../../shared/domain/country-options';
 import { CountryPickerComponent } from '../../../../../shared/presentation/country-picker/country-picker.component';
 import { FotoHabitacionService } from '../../../../locations/application/foto-habitacion.service';
@@ -116,6 +118,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
   @Output() entryRegistered = new EventEmitter<string>();
   readonly sede = this.sedeService.selectedSede;
   availableGuests: Huesped[] = [];
+  guestCardColors = new Map<number, GuestCardView['cardColor']>();
   availableRooms: Habitacion[] = [];
   roomNightlyPrices = new Map<number, number | null>();
   isSearchingRooms = false;
@@ -134,6 +137,8 @@ export class CheckPagePage implements OnInit, OnDestroy {
   emailFieldFocused = false;
   guestMode: 'new' | 'existing' = 'new';
   selectedGuestId = '';
+  guestPickerOpen = false;
+  guestSearchQuery = '';
   entryStep: 1 | 2 | 3 | 4 = 1;
   entryForm = this.createEmptyEntryForm();
   paymentOption: 'deposit' | 'full' = 'deposit';
@@ -147,7 +152,13 @@ export class CheckPagePage implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.updateCurrentDateKey();
-    this.reservationSubscription = this.hostalService.guestsView$.subscribe(() => {
+    this.reservationSubscription = this.hostalService.guestsView$.subscribe((guestCards) => {
+      this.guestCardColors.clear();
+      guestCards.forEach((guestCard) => {
+        if (!this.guestCardColors.has(guestCard.id_huesped)) {
+          this.guestCardColors.set(guestCard.id_huesped, guestCard.cardColor);
+        }
+      });
       this.refreshPendingChecks();
     });
     this.clockInterval = setInterval(() => this.updateCurrentDateKey(), 1000);
@@ -158,6 +169,18 @@ export class CheckPagePage implements OnInit, OnDestroy {
 
   get selectedGuest(): Huesped | undefined {
     return this.availableGuests.find((guest) => guest.id_huesped === Number(this.selectedGuestId));
+  }
+
+  get filteredGuests(): Huesped[] {
+    const query = this.guestSearchQuery.trim().toLocaleLowerCase();
+    if (!query) return this.availableGuests;
+    return this.availableGuests.filter((guest) =>
+      [guest.nombre, guest.apellido, guest.documento, guest.nacionalidad, guest.telefono, guest.email]
+        .filter(Boolean)
+        .join(' ')
+        .toLocaleLowerCase()
+        .includes(query)
+    );
   }
 
   get duplicateGuest(): Huesped | undefined {
@@ -200,6 +223,8 @@ export class CheckPagePage implements OnInit, OnDestroy {
       swapHorizontalOutline,
       closeOutline,
       cashOutline,
+      chevronDownOutline,
+      searchOutline,
     });
   }
 
@@ -208,6 +233,8 @@ export class CheckPagePage implements OnInit, OnDestroy {
     this.entryForm = this.createEmptyEntryForm();
     this.guestMode = 'new';
     this.selectedGuestId = '';
+    this.guestPickerOpen = false;
+    this.guestSearchQuery = '';
     this.entryStep = 1;
     this.paymentOption = 'deposit';
     this.paymentMethod = '';
@@ -297,7 +324,28 @@ export class CheckPagePage implements OnInit, OnDestroy {
   setGuestMode(mode: 'new' | 'existing'): void {
     this.guestMode = mode;
     this.selectedGuestId = '';
+    this.guestPickerOpen = false;
+    this.guestSearchQuery = '';
     this.entryError = '';
+  }
+
+  toggleGuestPicker(): void {
+    this.guestPickerOpen = !this.guestPickerOpen;
+    if (this.guestPickerOpen) this.guestSearchQuery = '';
+  }
+
+  selectRegisteredGuest(guest: Huesped): void {
+    this.selectedGuestId = String(guest.id_huesped);
+    this.guestPickerOpen = false;
+    this.guestSearchQuery = '';
+  }
+
+  getGuestInitials(guest: Huesped): string {
+    return `${guest.nombre.charAt(0)}${guest.apellido.charAt(0)}`.toLocaleUpperCase();
+  }
+
+  getGuestCardColor(guest: Huesped): GuestCardView['cardColor'] {
+    return this.guestCardColors.get(guest.id_huesped) ?? 'blue';
   }
 
   isGuestStepValid(form: NgForm): boolean {

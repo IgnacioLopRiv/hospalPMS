@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NgForm } from '@angular/forms';
 import { HostalService } from '../../../../guests/application/hostal.service';
 import { SedeService } from '../../../../locations/application/sede.service';
+import { Huesped } from '../../../../../shared/domain/hostal.model';
 import { CheckPagePage } from './check-page.page';
 
 describe('CheckPagePage', () => {
@@ -142,6 +143,44 @@ describe('CheckPagePage', () => {
       component.entryForm.departureDate,
       component.entryForm.personCount
     );
+  });
+
+  it('shows registered guest contact details in the picker and selects the guest', () => {
+    const guest: Huesped = {
+      id_huesped: 17,
+      id_sede: 1,
+      documento: '12.345.678-5',
+      nombre: 'Ana',
+      apellido: 'Pérez',
+      nacionalidad: 'Chile',
+      telefono: '+56 9 1234 5678',
+      email: 'ana@example.com',
+      es_recurrente: true,
+    };
+    component.availableGuests = [guest];
+    component.guestCardColors.set(guest.id_huesped, 'purple');
+    component.showNewEntryForm = true;
+    component.guestMode = 'existing';
+    fixture.detectChanges();
+
+    (fixture.nativeElement.querySelector('.registered-guest-trigger') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const option = fixture.nativeElement.querySelector('.registered-guest-option') as HTMLButtonElement;
+    expect(option.textContent).toContain('AP');
+    expect(option.textContent).toContain('ana@example.com');
+    expect(option.textContent).toContain('+56 9 1234 5678');
+    expect(option.textContent).toContain('12.345.678-5');
+    expect(option.textContent).toContain('Chile');
+    expect(option.textContent).toContain('Recurrente');
+    expect(option.querySelector('.registered-guest-avatar')?.classList).toContain('color-purple');
+
+    option.click();
+    fixture.detectChanges();
+
+    expect(component.selectedGuestId).toBe('17');
+    expect(fixture.nativeElement.querySelector('.registered-guest-picker')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.registered-guest-trigger').textContent).toContain('ana@example.com');
   });
 
   it('shows a designed confirmation and keeps the form open when cancelled', () => {

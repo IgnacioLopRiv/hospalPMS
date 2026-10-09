@@ -69,24 +69,79 @@
           </div>
 
           @if (guestMode === 'existing') {
-          <label class="entry-field full-width">
+          <div class="entry-field full-width registered-guest-field">
             <span>Seleccionar huésped</span>
-            <select name="selectedGuestId" required [(ngModel)]="selectedGuestId">
-              <option value="" disabled>Selecciona un huésped registrado</option>
-              @for (guest of availableGuests; track guest.id_huesped) {
-              <option [value]="guest.id_huesped">{{ guest.nombre }} {{ guest.apellido }}{{ guest.documento ? ' · ' + guest.documento : '' }}</option>
+            <input type="hidden" name="selectedGuestId" required [(ngModel)]="selectedGuestId">
+            <button
+              type="button"
+              class="registered-guest-trigger"
+              [class.is-open]="guestPickerOpen"
+              [attr.aria-expanded]="guestPickerOpen"
+              aria-haspopup="listbox"
+              aria-controls="registered-guest-options"
+              (click)="toggleGuestPicker()">
+              @if (selectedGuest; as guest) {
+              <span class="registered-guest-avatar" [class]="'registered-guest-avatar color-' + getGuestCardColor(guest)" aria-hidden="true">{{ getGuestInitials(guest) }}</span>
+              <span class="registered-guest-trigger-copy">
+                <strong>{{ guest.nombre }} {{ guest.apellido }}</strong>
+                <small>{{ guest.email || 'Sin correo registrado' }}</small>
+              </span>
+              } @else {
+              <span class="registered-guest-placeholder">Selecciona un huésped registrado</span>
               }
-            </select>
-          </label>
+              <ion-icon name="chevron-down-outline" aria-hidden="true"></ion-icon>
+            </button>
+            @if (guestPickerOpen) {
+            <div class="registered-guest-picker" id="registered-guest-options">
+              <label class="registered-guest-search">
+                <ion-icon name="search-outline" aria-hidden="true"></ion-icon>
+                <input
+                  type="search"
+                  name="guestSearchQuery"
+                  autocomplete="off"
+                  aria-label="Buscar huésped por nombre, correo, documento o teléfono"
+                  placeholder="Buscar huésped..."
+                  [(ngModel)]="guestSearchQuery"
+                  (keydown.escape)="guestPickerOpen = false">
+              </label>
+              <div class="registered-guest-options" role="listbox" aria-label="Huéspedes registrados">
+                @for (guest of filteredGuests; track guest.id_huesped) {
+                <button
+                  type="button"
+                  class="registered-guest-option"
+                  role="option"
+                  [class.selected]="selectedGuest?.id_huesped === guest.id_huesped"
+                  [attr.aria-selected]="selectedGuest?.id_huesped === guest.id_huesped"
+                  (click)="selectRegisteredGuest(guest)">
+                  <span class="registered-guest-avatar" [class]="'registered-guest-avatar color-' + getGuestCardColor(guest)" aria-hidden="true">{{ getGuestInitials(guest) }}</span>
+                  <span class="registered-guest-option-content">
+                    <span class="registered-guest-option-heading">
+                      <strong>{{ guest.nombre }} {{ guest.apellido }}</strong>
+                      @if (guest.es_recurrente) {
+                      <span class="registered-guest-returning">Recurrente</span>
+                      }
+                    </span>
+                    <span class="registered-guest-details">
+                      <span><ion-icon name="mail-outline" aria-hidden="true"></ion-icon>{{ guest.email || 'Sin correo' }}</span>
+                      <span><ion-icon name="call-outline" aria-hidden="true"></ion-icon>{{ guest.telefono || 'Sin teléfono' }}</span>
+                    </span>
+                    <span class="registered-guest-tags">
+                      <span>{{ guest.documento || 'Sin documento' }}</span>
+                      <span>{{ guest.nacionalidad || 'Nacionalidad no indicada' }}</span>
+                    </span>
+                  </span>
+                </button>
+                } @empty {
+                <p class="registered-guest-empty">
+                  {{ guestSearchQuery ? 'No se encontraron huéspedes con esa búsqueda.' : 'No hay huéspedes registrados.' }}
+                </p>
+                }
+              </div>
+            </div>
+            }
+          </div>
           @if (availableGuests.length === 0) {
           <p class="entry-hint">Aún no hay huéspedes registrados. Selecciona “Nuevo huésped” para crear uno.</p>
-          }
-          @if (selectedGuest; as guest) {
-          <div class="selected-guest-card">
-            <strong>{{ guest.nombre }} {{ guest.apellido }}</strong>
-            <span>{{ guest.documento || 'Sin documento' }} · {{ guest.nacionalidad }}</span>
-            <span>{{ guest.telefono }} · {{ guest.email }}</span>
-          </div>
           }
           } @else {
           <div class="entry-fields-grid">
