@@ -9,26 +9,23 @@ import { Huesped as PrismaHuesped } from '@prisma/client';
  */
 @Injectable()
 export class PrismaHuespedRepository implements HuespedRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   private toEntity(raw: PrismaHuesped): Huesped {
     return new Huesped(
       raw.id,
-      raw.documento,
-      raw.nombre,
-      raw.apellido,
-      raw.nacionalidad,
+      raw.rutPasaporte,
+      raw.nombres,
+      raw.apellidos,
+      raw.paisResidencia,
       raw.telefono,
       raw.email,
-      raw.esRecurrente,
-      raw.createdAt,
-      raw.updatedAt,
     );
   }
 
   async findAll(): Promise<Huesped[]> {
     const rows = await this.prisma.huesped.findMany({
-      orderBy: [{ apellido: 'asc' }, { nombre: 'asc' }],
+      orderBy: [{ apellidos: 'asc' }, { nombres: 'asc' }],
     });
     return rows.map((r) => this.toEntity(r));
   }
@@ -38,19 +35,18 @@ export class PrismaHuespedRepository implements HuespedRepository {
     return raw ? this.toEntity(raw) : null;
   }
 
-  async findByEmail(email: string): Promise<Huesped | null> {
-    const raw = await this.prisma.huesped.findUnique({ where: { email } });
+  async findByRutPasaporte(rutPasaporte: string): Promise<Huesped | null> {
+    const raw = await this.prisma.huesped.findUnique({ where: { rutPasaporte } });
     return raw ? this.toEntity(raw) : null;
   }
 
   async create(data: {
-    documento?: string;
-    nombre: string;
-    apellido: string;
-    nacionalidad: string;
+    rutPasaporte: string;
+    nombres: string;
+    apellidos: string;
+    paisResidencia: string;
     telefono: string;
     email: string;
-    esRecurrente?: boolean;
   }): Promise<Huesped> {
     const raw = await this.prisma.huesped.create({ data });
     return this.toEntity(raw);
@@ -59,13 +55,12 @@ export class PrismaHuespedRepository implements HuespedRepository {
   async update(
     id: number,
     data: Partial<{
-      documento: string;
-      nombre: string;
-      apellido: string;
-      nacionalidad: string;
+      rutPasaporte: string;
+      nombres: string;
+      apellidos: string;
+      paisResidencia: string;
       telefono: string;
       email: string;
-      esRecurrente: boolean;
     }>,
   ): Promise<Huesped> {
     const raw = await this.prisma.huesped.update({ where: { id }, data });

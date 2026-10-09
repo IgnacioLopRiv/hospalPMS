@@ -16,12 +16,9 @@ export class PrismaTipologiaRepository implements TipologiaRepository {
       raw.id,
       raw.sedeId,
       raw.nombre,
-      raw.capacidad,
-      raw.color,
-      raw.precioBase ? Number(raw.precioBase) : null,
+      raw.capacidadMax,
+      raw.numCamas,
       raw.descripcion,
-      raw.createdAt,
-      raw.updatedAt,
     );
   }
 
@@ -41,10 +38,9 @@ export class PrismaTipologiaRepository implements TipologiaRepository {
   async create(data: {
     sedeId: number;
     nombre: string;
-    capacidad: number;
-    color?: string;
-    precioBase?: number;
-    descripcion?: string;
+    capacidadMax: number;
+    numCamas: number;
+    descripcion?: string | null;
   }): Promise<Tipologia> {
     const raw = await this.prisma.tipologia.create({ data });
     return this.toEntity(raw);
@@ -54,10 +50,9 @@ export class PrismaTipologiaRepository implements TipologiaRepository {
     id: number,
     data: Partial<{
       nombre: string;
-      capacidad: number;
-      color: string;
-      precioBase: number;
-      descripcion: string;
+      capacidadMax: number;
+      numCamas: number;
+      descripcion: string | null;
     }>,
   ): Promise<Tipologia> {
     const raw = await this.prisma.tipologia.update({ where: { id }, data });
