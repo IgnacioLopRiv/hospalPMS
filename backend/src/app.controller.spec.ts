@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaService } from './database/prisma.service';
+import { jest, describe, beforeEach, expect, it } from '@jest/globals';
 
 describe('AppController', () => {
   let appController: AppController;
