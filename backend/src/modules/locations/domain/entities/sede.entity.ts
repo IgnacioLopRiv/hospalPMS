@@ -7,9 +7,10 @@
 export class Sede {
   constructor(
     public readonly id: number,
-    public nombre: string,
+    public readonly hostalId: number,
+    public nombreSede: string,
+    public direccion: string,
     public ciudad: string,
-    public readonly createdAt: Date,
-    public readonly updatedAt: Date,
+    public telefono: string | null,
   ) {}
 }

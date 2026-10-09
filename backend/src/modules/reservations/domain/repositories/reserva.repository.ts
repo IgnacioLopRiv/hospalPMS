@@ -11,19 +11,15 @@ export abstract class ReservaRepository {
   abstract create(data: {
     huespedId: number;
     habitacionId: number;
-    fechaLlegada: Date;
-    fechaSalida: Date;
-    horaLlegada?: string;
-    cantidadPersonas?: number;
+    fechaCheckIn: Date;
+    fechaCheckOut: Date;
     estado?: EstadoReserva;
   }): Promise<Reserva>;
   abstract update(
     id: number,
     data: Partial<{
-      fechaLlegada: Date;
-      fechaSalida: Date;
-      horaLlegada: string;
-      cantidadPersonas: number;
+      fechaCheckIn: Date;
+      fechaCheckOut: Date;
       estado: EstadoReserva;
     }>,
   ): Promise<Reserva>;

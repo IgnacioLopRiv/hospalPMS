@@ -9,18 +9,16 @@ export abstract class TipologiaRepository {
   abstract create(data: {
     sedeId: number;
     nombre: string;
-    capacidad: number;
-    color?: string;
-    precioBase?: number;
-    descripcion?: string;
+    capacidadMax: number;
+    numCamas: number;
+    descripcion?: string | null;
   }): Promise<Tipologia>;
   abstract update(
     id: number,
     data: Partial<{
       nombre: string;
-      capacidad: number;
-      color: string;
-      precioBase: number;
+      capacidadMax: number;
+      numCamas: number;
       descripcion: string;
     }>,
   ): Promise<Tipologia>;

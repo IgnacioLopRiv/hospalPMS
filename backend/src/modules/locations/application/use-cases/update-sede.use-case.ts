@@ -3,8 +3,11 @@ import { SedeRepository } from '../../domain/repositories/sede.repository';
 import { Sede } from '../../domain/entities/sede.entity';
 
 export interface UpdateSedeDto {
-  nombre?: string;
+  hostalId?: number;
+  nombreSede?: string;
+  direccion?: string;
   ciudad?: string;
+  telefono?: string | null;
 }
 
 /**

@@ -5,9 +5,11 @@
  * para que la lógica de negocio no dependa de la infraestructura.
  */
 export enum EstadoHabitacion {
-  LIBRE = 'libre',
-  OCUPADA = 'ocupada',
-  EN_ASEO = 'en_aseo',
+  DISPONIBLE = 'DISPONIBLE',
+  RESERVADA = 'RESERVADA',
+  OCUPADA = 'OCUPADA',
+  EN_LIMPIEZA = 'EN_LIMPIEZA',
+  MANTENIMIENTO = 'MANTENIMIENTO',
 }
 
 /**
@@ -17,13 +19,9 @@ export class Habitacion {
   constructor(
     public readonly id: number,
     public readonly sedeId: number,
-    public tipologiaId: number | null,
+    public tipologiaId: number,
     public numero: string,
-    public tamanoM2: number | null,
-    public disposicionMuebles: string | null,
-    public descripcion: string | null,
+    public cantidadPersonas: number,
     public estado: EstadoHabitacion,
-    public readonly createdAt: Date,
-    public readonly updatedAt: Date,
   ) {}
 }

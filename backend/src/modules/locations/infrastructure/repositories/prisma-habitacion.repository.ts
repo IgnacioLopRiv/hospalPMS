@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type {
+  Prisma,
   EstadoHabitacion as PrismaEstado,
   Habitacion as PrismaHabitacion,
 } from '@prisma/client';
@@ -19,18 +20,22 @@ export class PrismaHabitacionRepository implements HabitacionRepository {
 
   private mapEstado(estado: PrismaEstado): EstadoHabitacion {
     const map: Record<PrismaEstado, EstadoHabitacion> = {
-      libre: EstadoHabitacion.LIBRE,
-      ocupada: EstadoHabitacion.OCUPADA,
-      en_aseo: EstadoHabitacion.EN_ASEO,
+      DISPONIBLE: EstadoHabitacion.DISPONIBLE,
+      RESERVADA: EstadoHabitacion.RESERVADA,
+      OCUPADA: EstadoHabitacion.OCUPADA,
+      EN_LIMPIEZA: EstadoHabitacion.EN_LIMPIEZA,
+      MANTENIMIENTO: EstadoHabitacion.MANTENIMIENTO,
     };
     return map[estado];
   }
 
   private mapEstadoToPrisma(estado: EstadoHabitacion): PrismaEstado {
     const map: Record<EstadoHabitacion, PrismaEstado> = {
-      [EstadoHabitacion.LIBRE]: 'libre',
-      [EstadoHabitacion.OCUPADA]: 'ocupada',
-      [EstadoHabitacion.EN_ASEO]: 'en_aseo',
+      [EstadoHabitacion.DISPONIBLE]: 'DISPONIBLE',
+      [EstadoHabitacion.RESERVADA]: 'RESERVADA',
+      [EstadoHabitacion.OCUPADA]: 'OCUPADA',
+      [EstadoHabitacion.EN_LIMPIEZA]: 'EN_LIMPIEZA',
+      [EstadoHabitacion.MANTENIMIENTO]: 'MANTENIMIENTO',
     };
     return map[estado];
   }
@@ -41,12 +46,8 @@ export class PrismaHabitacionRepository implements HabitacionRepository {
       raw.sedeId,
       raw.tipologiaId,
       raw.numero,
-      raw.tamanoM2 ? Number(raw.tamanoM2) : null,
-      raw.disposicionMuebles,
-      raw.descripcion,
+      raw.cantidadPersonas,
       this.mapEstado(raw.estado),
-      raw.createdAt,
-      raw.updatedAt,
     );
   }
 
@@ -65,13 +66,18 @@ export class PrismaHabitacionRepository implements HabitacionRepository {
 
   async create(data: {
     sedeId: number;
+    tipologiaId: number;
     numero: string;
-    tipologiaId?: number;
-    tamanoM2?: number;
-    disposicionMuebles?: string;
-    descripcion?: string;
+    cantidadPersonas: number;
+    estado?: EstadoHabitacion;
   }): Promise<Habitacion> {
-    const raw = await this.prisma.habitacion.create({ data });
+    const prismaData: Prisma.HabitacionUncheckedCreateInput = {
+      ...data,
+      estado: data.estado
+        ? this.mapEstadoToPrisma(data.estado)
+        : 'DISPONIBLE',
+    };
+    const raw = await this.prisma.habitacion.create({ data: prismaData });
     return this.toEntity(raw);
   }
 
@@ -79,17 +85,18 @@ export class PrismaHabitacionRepository implements HabitacionRepository {
     id: number,
     data: Partial<{
       numero: string;
-      tipologiaId: number | null;
-      tamanoM2: number | null;
-      disposicionMuebles: string;
-      descripcion: string;
+      tipologiaId: number;
+      cantidadPersonas: number;
       estado: EstadoHabitacion;
     }>,
   ): Promise<Habitacion> {
-    const prismaData: any = { ...data };
-    if (data.estado !== undefined) {
-      prismaData.estado = this.mapEstadoToPrisma(data.estado);
-    }
+    const prismaData: Prisma.HabitacionUncheckedUpdateInput = {
+      ...data,
+      estado:
+        data.estado === undefined
+          ? undefined
+          : this.mapEstadoToPrisma(data.estado),
+    };
     const raw = await this.prisma.habitacion.update({ where: { id }, data: prismaData });
     return this.toEntity(raw);
   }

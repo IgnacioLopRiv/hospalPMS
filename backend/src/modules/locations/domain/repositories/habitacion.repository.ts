@@ -8,20 +8,17 @@ export abstract class HabitacionRepository {
   abstract findById(id: number): Promise<Habitacion | null>;
   abstract create(data: {
     sedeId: number;
+    tipologiaId: number;
     numero: string;
-    tipologiaId?: number;
-    tamanoM2?: number;
-    disposicionMuebles?: string;
-    descripcion?: string;
+    cantidadPersonas: number;
+    estado?: EstadoHabitacion;
   }): Promise<Habitacion>;
   abstract update(
     id: number,
     data: Partial<{
       numero: string;
-      tipologiaId: number | null;
-      tamanoM2: number | null;
-      disposicionMuebles: string;
-      descripcion: string;
+      tipologiaId: number;
+      cantidadPersonas: number;
       estado: EstadoHabitacion;
     }>,
   ): Promise<Habitacion>;

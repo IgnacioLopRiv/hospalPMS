@@ -6,26 +6,24 @@ import { Huesped } from '../entities/huesped.entity';
 export abstract class HuespedRepository {
   abstract findAll(): Promise<Huesped[]>;
   abstract findById(id: number): Promise<Huesped | null>;
-  abstract findByEmail(email: string): Promise<Huesped | null>;
+  abstract findByRutPasaporte(rutPasaporte: string): Promise<Huesped | null>;
   abstract create(data: {
-    documento?: string;
-    nombre: string;
-    apellido: string;
-    nacionalidad: string;
+    rutPasaporte: string;
+    nombres: string;
+    apellidos: string;
+    paisResidencia: string;
     telefono: string;
     email: string;
-    esRecurrente?: boolean;
   }): Promise<Huesped>;
   abstract update(
     id: number,
     data: Partial<{
-      documento: string;
-      nombre: string;
-      apellido: string;
-      nacionalidad: string;
+      rutPasaporte: string;
+      nombres: string;
+      apellidos: string;
+      paisResidencia: string;
       telefono: string;
       email: string;
-      esRecurrente: boolean;
     }>,
   ): Promise<Huesped>;
   abstract delete(id: number): Promise<void>;

@@ -4,18 +4,15 @@
 export class Huesped {
   constructor(
     public readonly id: number,
-    public documento: string | null,
-    public nombre: string,
-    public apellido: string,
-    public nacionalidad: string,
+    public rutPasaporte: string,
+    public nombres: string,
+    public apellidos: string,
+    public paisResidencia: string,
     public telefono: string,
     public email: string,
-    public esRecurrente: boolean,
-    public readonly createdAt: Date,
-    public readonly updatedAt: Date,
   ) {}
 
   get nombreCompleto(): string {
-    return `${this.nombre} ${this.apellido}`.trim();
+    return `${this.nombres} ${this.apellidos}`.trim();
   }
 }
