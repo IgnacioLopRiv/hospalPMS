@@ -548,7 +548,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
     return this.roomNightlyPrices.get(room.id_tipologia) ?? null;
   }
 
-  registerEntry(): void {
+  async registerEntry(): Promise<void> {
     this.entryError = '';
     if (!this.isPaymentStepValid() || !this.reservationQuote) {
       this.entryError = 'Selecciona el medio de pago para confirmar la reserva.';
@@ -570,7 +570,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
     }
 
     try {
-      const registered = this.hostalService.registerEntry({
+      const registered = await this.hostalService.registerEntry({
         ...(this.guestMode === 'existing'
           ? { guestId: Number(this.selectedGuestId) }
           : {
@@ -622,7 +622,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
     this.checkInPaymentError = '';
   }
 
-  confirmCheckInPayment(): void {
+  async confirmCheckInPayment(): Promise<void> {
     const item = this.checkInPaymentItem;
     if (!item) return;
     if (item.outstandingBalance > 0 &&
@@ -633,7 +633,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
     }
 
     try {
-      this.hostalService.processCheckIn(item.id, this.checkInPaymentMethod || undefined);
+      await this.hostalService.processCheckIn(item.id, this.checkInPaymentMethod || undefined);
       this.sedeService.marcarOcupada(item.roomNumber, item.guestName);
       this.entrySuccessMessage = item.outstandingBalance > 0
         ? `Check-in completado para ${item.guestName}. Se cobraron ${item.outstandingBalance.toLocaleString('es-CL')} CLP por ${this.checkInPaymentMethod}. La habitación ${item.roomNumber} ahora está OCUPADA.`
@@ -647,10 +647,10 @@ export class CheckPagePage implements OnInit, OnDestroy {
     }
   }
 
-  realizarCheckOut(item: CheckItemPlaceholder): void {
+  async realizarCheckOut(item: CheckItemPlaceholder): Promise<void> {
     this.movementError = '';
     try {
-      this.hostalService.processCheckOut(item.id);
+      await this.hostalService.processCheckOut(item.id);
       this.sedeService.marcarEnAseo(item.roomNumber);
       this.movementError = '';
       this.entrySuccessMessage = `Check-out procesado para ${item.guestName}. La habitación ${item.roomNumber} pasa a estado EN ASEO.`;

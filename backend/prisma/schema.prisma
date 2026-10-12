@@ -206,6 +206,8 @@ model Huesped {
   paisResidencia String
   email          String
   telefono       String    @db.VarChar(20)
+  esRecurrente   Boolean   @default(false)
+  diasUltimoRegistro Int?
   reservas       Reserva[]
 
   @@map("huesped")
@@ -218,6 +220,13 @@ model Reserva {
   fechaReserva  DateTime               @default(now())
   fechaCheckIn  DateTime
   fechaCheckOut DateTime
+  horaLlegada   String?                @db.VarChar(5)
+  cantidadPersonas Int                 @default(1)
+  precioTotal   Int?
+  porcentajeAbono Int?
+  montoPagado   Int?
+  metodoPago    MetodoPago?
+  pagoCompleto  Boolean                @default(false)
   estado        EstadoReserva          @default(CONFIRMADA)
   huesped       Huesped                @relation(fields: [huespedId], references: [id])
   habitacion    Habitacion             @relation(fields: [habitacionId], references: [id])

@@ -68,9 +68,9 @@ describe('ReservasPage', () => {
     ].join('-');
   }
 
-  function addReservation(arrivalOffset: number, departureOffset: number): Reserva {
+  async function addReservation(arrivalOffset: number, departureOffset: number): Promise<Reserva> {
     const typology = addInventory();
-    const guest = hostalService.registerGuest({
+    const guest = await hostalService.registerGuest({
       documento: 'TEST-123',
       nombre: 'Huésped',
       apellido: 'Prueba',
@@ -78,14 +78,14 @@ describe('ReservasPage', () => {
       telefono: '123456',
       email: 'test@example.com',
     });
-    return hostalService.registerEntry({
+    return (await hostalService.registerEntry({
       guestId: guest.id_huesped,
       roomId: sedeService.selectedSede()!.habitaciones[0].id,
       personCount: 1,
       arrivalDate: dateAfter(arrivalOffset),
       departureDate: dateAfter(departureOffset),
       arrivalTime: '15:00',
-    }).reservation;
+    })).reservation;
   }
 
   it('creates', () => {
@@ -124,8 +124,8 @@ describe('ReservasPage', () => {
     expect(component.categories()[0].theme.primary).toBe(typology.color!);
   });
 
-  it('connects the calendar and selected-day counters to persisted reservations', () => {
-    const reservation = addReservation(0, 2);
+  it('connects the calendar and selected-day counters to persisted reservations', async () => {
+    const reservation = await addReservation(0, 2);
     fixture.detectChanges();
 
     expect(component.reservations().some((entry) => entry.id === reservation.id_reserva)).toBeTrue();
@@ -140,8 +140,8 @@ describe('ReservasPage', () => {
     expect(component.reservationCount()).toBe(0);
   });
 
-  it('shows the reservation bar from arrival through departure day', () => {
-    const reservation = addReservation(1, 3);
+  it('shows the reservation bar from arrival through departure day', async () => {
+    const reservation = await addReservation(1, 3);
     fixture.detectChanges();
     const block = component.reservations().find((entry) => entry.id === reservation.id_reserva)!;
 
@@ -149,8 +149,8 @@ describe('ReservasPage', () => {
     expect(component.getGridColumnSpan(block)).toBe(3);
   });
 
-  it('keeps the checkout day visible when it is the first day of the calendar', () => {
-    const reservation = addReservation(-1, 0);
+  it('keeps the checkout day visible when it is the first day of the calendar', async () => {
+    const reservation = await addReservation(-1, 0);
     fixture.detectChanges();
     const block = component.reservations().find((entry) => entry.id === reservation.id_reserva)!;
 

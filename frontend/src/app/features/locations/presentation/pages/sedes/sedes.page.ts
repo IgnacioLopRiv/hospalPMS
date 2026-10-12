@@ -101,6 +101,7 @@ export class SedesPage {
     const alert = await this.alertCtrl.create({
       header: 'Nueva Sede',
       subHeader: 'Ingresa los datos del establecimiento',
+      message: '',
       cssClass: 'hospal-custom-alert',
       inputs: [
         {
@@ -122,15 +123,17 @@ export class SedesPage {
         {
           text: 'Guardar',
           cssClass: 'btn-confirm',
-          handler: (data) => {
+          handler: async (data) => {
             if (!data.nombre?.trim() || !data.ciudad?.trim()) {
               return false;
             }
-            this.sedeService.createSede({
-              nombre: data.nombre,
-              ciudad: data.ciudad,
-            });
-            return true;
+            try {
+              await this.sedeService.createSede({ nombre: data.nombre, ciudad: data.ciudad });
+              return true;
+            } catch {
+              alert.message = 'No se pudo guardar la sede. Verifica la conexión y que exista un hostal registrado en la base de datos.';
+              return false;
+            }
           },
         },
       ],
@@ -150,6 +153,7 @@ export class SedesPage {
     const alert = await this.alertCtrl.create({
       header: 'Editar Sede',
       subHeader: 'Modifica los datos del establecimiento',
+      message: '',
       cssClass: 'hospal-custom-alert',
       inputs: [
         {
@@ -173,15 +177,17 @@ export class SedesPage {
         {
           text: 'Actualizar',
           cssClass: 'btn-confirm',
-          handler: (data) => {
+          handler: async (data) => {
             if (!data.nombre?.trim() || !data.ciudad?.trim()) {
               return false;
             }
-            this.sedeService.updateSedeInfo(sede.id, {
-              nombre: data.nombre,
-              ciudad: data.ciudad,
-            });
-            return true;
+            try {
+              await this.sedeService.updateSedeInfo(sede.id, { nombre: data.nombre, ciudad: data.ciudad });
+              return true;
+            } catch {
+              alert.message = 'No se pudieron actualizar los datos de la sede. Verifica la conexión con el servidor.';
+              return false;
+            }
           },
         },
       ],
@@ -210,8 +216,17 @@ export class SedesPage {
         {
           text: 'Eliminar',
           role: 'destructive',
-          handler: () => {
-            this.sedeService.deleteSede(sede.id);
+          handler: async () => {
+            try {
+              await this.sedeService.deleteSede(sede.id);
+            } catch {
+              const errorAlert = await this.alertCtrl.create({
+                header: 'No se pudo eliminar la sede',
+                message: 'Comprueba que la sede no tenga registros asociados y vuelve a intentarlo.',
+                buttons: ['Aceptar'],
+              });
+              await errorAlert.present();
+            }
           },
         },
       ],

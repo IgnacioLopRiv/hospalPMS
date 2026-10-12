@@ -1,7 +1,10 @@
+import { HttpClient } from '@angular/common/http';
 import { effect, Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 import { Huesped, Habitacion, Tipologia, Reserva, GuestCardView } from '../../../shared/domain/hostal.model';
 import { SedeService } from '../../locations/application/sede.service';
+import { environment } from '../../../../environments/environment';
 
 export interface RegisterEntryInput {
   guestId?: number;
@@ -43,17 +46,32 @@ export interface ReservationCalendarEntry {
 })
 export class HostalService {
   private readonly BASE_PREFIX = 'hospal_db_';
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = environment.apiUrl;
   private guestsViewSubject = new BehaviorSubject<GuestCardView[]>([]);
   public guestsView$: Observable<GuestCardView[]> = this.guestsViewSubject.asObservable();
 
   private readonly sedeService = inject(SedeService);
+  private guests: Huesped[] = [];
+  private reservations: Reserva[] = [];
+  private loadedSedeId: number | null = null;
+  private loadingSede: { id: number; promise: Promise<void> } | null = null;
+  readonly ready: Promise<void>;
 
   constructor() {
-    this.initDatabase();
+    this.ready = this.sedeService.ready
+      .then(() => this.loadForSelectedSede())
+      .catch(() => this.guestsViewSubject.next([]));
     effect(() => {
       const sede = this.sedeService.selectedSede();
-      if (sede) this.onSedeChanged();
-      else this.guestsViewSubject.next([]);
+      if (!sede) {
+        this.guests = [];
+        this.reservations = [];
+        this.loadedSedeId = null;
+        this.guestsViewSubject.next([]);
+      } else if (sede.id !== this.loadedSedeId) {
+        void this.loadForSelectedSede(sede.id).catch(() => this.guestsViewSubject.next([]));
+      }
     });
   }
 
@@ -67,40 +85,40 @@ export class HostalService {
     return sede.id;
   }
 
-  private storageKey(entity: string): string {
-    return `${this.BASE_PREFIX}sede_${this.sedeId}_${entity}`;
+  private loadForSelectedSede(sedeId = this.sedeService.selectedSede()?.id): Promise<void> {
+    if (!sedeId) return Promise.resolve();
+    if (this.loadedSedeId === sedeId) return Promise.resolve();
+    if (this.loadingSede?.id === sedeId) return this.loadingSede.promise;
+
+    const promise = Promise.all([
+      firstValueFrom(this.http.get<Omit<Huesped, 'id_sede'>[]>(`${this.apiUrl}/huespedes`)),
+      firstValueFrom(this.http.get<Reserva[]>(`${this.apiUrl}/reservas`, { params: { sedeId } })),
+    ]).then(([guests, reservations]) => {
+      if (this.sedeService.selectedSede()?.id !== sedeId) return;
+      this.guests = guests.map((guest) => ({ ...guest, id_sede: sedeId }));
+      this.reservations = reservations.map((reservation) => this.normalizeReservation(reservation));
+      this.loadedSedeId = sedeId;
+      this.refreshView();
+    }).finally(() => {
+      if (this.loadingSede?.id === sedeId) this.loadingSede = null;
+    });
+    this.loadingSede = { id: sedeId, promise };
+    return promise;
   }
 
-  // ── Initialization ─────────────────────────────────────────────────────────
-
-  private initDatabase(): void {
-    this.ensureSedeStorage();
-    this.refreshView();
-  }
-
-  /**
-   * Ensures the current sede has its storage entries initialized.
-   * Called when sede changes to set up empty collections if needed.
-   */
-  ensureSedeStorage(): void {
-    const sede = this.sedeService.selectedSede();
-    if (!sede) return;
-
-    for (const entity of ['huespedes', 'reservas']) {
-      const key = `${this.BASE_PREFIX}sede_${sede.id}_${entity}`;
-      if (!localStorage.getItem(key)) {
-        localStorage.setItem(key, '[]');
-      }
+  private normalizeReservation(reservation: Reserva): Reserva {
+    const today = new Date().toISOString().slice(0, 10);
+    if (reservation.estado_reserva === 'CONFIRMADA' && reservation.fecha_llegada === today) {
+      return { ...reservation, estado_reserva: 'CHECK-IN HOY' };
     }
+    if (reservation.estado_reserva === 'HOSPEDADO' && reservation.fecha_salida === today) {
+      return { ...reservation, estado_reserva: 'CHECK-OUT HOY' };
+    }
+    return reservation;
   }
 
-  /**
-   * Called when the selected sede changes so the view
-   * refreshes with the new sede's data.
-   */
   onSedeChanged(): void {
-    this.ensureSedeStorage();
-    this.refreshView();
+    void this.loadForSelectedSede().catch(() => this.guestsViewSubject.next([]));
   }
 
   // ── View projection ────────────────────────────────────────────────────────
@@ -220,11 +238,11 @@ export class HostalService {
   // ── Guest CRUD (scoped to active sede) ─────────────────────────────────────
 
   getGuests(): Huesped[] {
-    return JSON.parse(localStorage.getItem(this.storageKey('huespedes')) || '[]') as Huesped[];
+    return this.guests;
   }
 
   getReservations(): Reserva[] {
-    return JSON.parse(localStorage.getItem(this.storageKey('reservas')) || '[]') as Reserva[];
+    return this.reservations;
   }
 
   getReservationCalendarData(): ReservationCalendarEntry[] {
@@ -266,7 +284,7 @@ export class HostalService {
     return entries;
   }
 
-  updateGuest(guestId: number, changes: Omit<Huesped, 'id_huesped' | 'id_sede'>): Huesped {
+  async updateGuest(guestId: number, changes: Omit<Huesped, 'id_huesped' | 'id_sede'>): Promise<Huesped> {
     const guests = this.getGuests();
     const existingGuest = guests.find((guest) => guest.id_huesped === guestId);
     if (!existingGuest) {
@@ -298,25 +316,28 @@ export class HostalService {
       throw new Error('Ya existe un huésped registrado con ese RUT o número de pasaporte.');
     }
 
-    const updatedGuests = guests.map((guest) => guest.id_huesped === guestId ? updatedGuest : guest);
-    localStorage.setItem(this.storageKey('huespedes'), JSON.stringify(updatedGuests));
+    const response = await firstValueFrom(this.http.patch<Omit<Huesped, 'id_sede'>>(
+      `${this.apiUrl}/huespedes/${guestId}`, this.toGuestRequest(updatedGuest)
+    ));
+    const savedGuest = { ...response, id_sede: existingGuest.id_sede };
+    this.guests = guests.map((guest) => guest.id_huesped === guestId ? savedGuest : guest);
     this.refreshView();
-    return updatedGuest;
+    return savedGuest;
   }
 
-  deleteGuest(guestId: number): void {
+  async deleteGuest(guestId: number): Promise<void> {
     const guests = this.getGuests();
     if (!guests.some((guest) => guest.id_huesped === guestId)) {
       throw new Error('El huésped ya no está registrado. Actualiza la lista e inténtalo otra vez.');
     }
 
-    const reservations = this.getReservations().filter((reservation) => reservation.id_huesped !== guestId);
-    localStorage.setItem(this.storageKey('huespedes'), JSON.stringify(guests.filter((guest) => guest.id_huesped !== guestId)));
-    localStorage.setItem(this.storageKey('reservas'), JSON.stringify(reservations));
+    await firstValueFrom(this.http.delete(`${this.apiUrl}/huespedes/${guestId}`));
+    this.guests = guests.filter((guest) => guest.id_huesped !== guestId);
+    this.reservations = this.getReservations().filter((reservation) => reservation.id_huesped !== guestId);
     this.refreshView();
   }
 
-  registerGuest(input: Omit<Huesped, 'id_huesped' | 'id_sede'>): Huesped {
+  async registerGuest(input: Omit<Huesped, 'id_huesped' | 'id_sede'>): Promise<Huesped> {
     const document = input.documento?.trim().toUpperCase();
     const guestDetails = {
       ...input,
@@ -342,19 +363,21 @@ export class HostalService {
       throw new Error('Ya existe un huésped registrado con ese RUT o número de pasaporte.');
     }
 
-    const nextGuestId = guests.reduce((max, item) => Math.max(max, item.id_huesped), 0) + 1;
-    const guest: Huesped = { ...guestDetails, id_huesped: nextGuestId, id_sede: this.sedeId };
-    localStorage.setItem(this.storageKey('huespedes'), JSON.stringify([...guests, guest]));
+    const response = await firstValueFrom(this.http.post<Omit<Huesped, 'id_sede'>>(
+      `${this.apiUrl}/huespedes`, this.toGuestRequest(guestDetails)
+    ));
+    const guest: Huesped = { ...response, id_sede: this.sedeId };
+    this.guests = [...guests, guest];
     this.refreshView();
     return guest;
   }
 
   // ── Reservation CRUD (scoped to active sede) ──────────────────────────────
 
-  updateReservation(
+  async updateReservation(
     reservationId: number,
     changes: Pick<Reserva, 'id_habitacion' | 'fecha_llegada' | 'fecha_salida' | 'hora_llegada' | 'cantidad_personas'>
-  ): Reserva {
+  ): Promise<Reserva> {
     const reservations = this.getReservations();
     const existingReservation = reservations.find((reservation) => reservation.id_reserva === reservationId);
     if (!existingReservation) {
@@ -388,30 +411,31 @@ export class HostalService {
       throw new Error('La cantidad de personas supera la capacidad de la habitación seleccionada.');
     }
 
-    const updatedReservation: Reserva = { ...existingReservation, ...changes };
-    localStorage.setItem(this.storageKey('reservas'), JSON.stringify(
-      reservations.map((reservation) => reservation.id_reserva === reservationId ? updatedReservation : reservation)
+    const updatedReservation = await firstValueFrom(this.http.patch<Reserva>(
+      `${this.apiUrl}/reservas/${reservationId}`, changes
     ));
+    this.reservations = reservations.map((reservation) =>
+      reservation.id_reserva === reservationId ? this.normalizeReservation(updatedReservation) : reservation
+    );
     this.refreshView();
-    return updatedReservation;
+    return this.normalizeReservation(updatedReservation);
   }
 
-  cancelReservation(reservationId: number): void {
+  async cancelReservation(reservationId: number): Promise<void> {
     const reservations = this.getReservations();
     if (!reservations.some((reservation) => reservation.id_reserva === reservationId)) {
       throw new Error('La reserva ya no existe. Actualiza la lista e inténtalo otra vez.');
     }
 
-    localStorage.setItem(this.storageKey('reservas'), JSON.stringify(
-      reservations.filter((reservation) => reservation.id_reserva !== reservationId)
-    ));
+    await firstValueFrom(this.http.delete(`${this.apiUrl}/reservas/${reservationId}`));
+    this.reservations = reservations.filter((reservation) => reservation.id_reserva !== reservationId);
     this.refreshView();
   }
 
-  processCheckIn(
+  async processCheckIn(
     reservationId: number,
     paymentMethod?: 'transferencia' | 'efectivo'
-  ): Reserva {
+  ): Promise<Reserva> {
     const reservations = this.getReservations();
     const reservation = reservations.find((item) => item.id_reserva === reservationId);
     if (!reservation) {
@@ -426,7 +450,7 @@ export class HostalService {
       throw new Error('Selecciona transferencia o efectivo para cobrar el saldo pendiente.');
     }
 
-    const updatedReservation: Reserva = {
+    return this.persistReservationUpdate(reservations, {
       ...reservation,
       estado_reserva: 'HOSPEDADO',
       ...(balance > 0 ? {
@@ -434,12 +458,10 @@ export class HostalService {
         metodo_pago: paymentMethod,
         pago_completo: true,
       } : {}),
-    };
-    this.persistReservationUpdate(reservations, updatedReservation);
-    return updatedReservation;
+    });
   }
 
-  processCheckOut(reservationId: number): Reserva {
+  async processCheckOut(reservationId: number): Promise<Reserva> {
     const reservations = this.getReservations();
     const reservation = reservations.find((item) => item.id_reserva === reservationId);
     if (!reservation) {
@@ -449,18 +471,19 @@ export class HostalService {
       throw new Error('Esta reserva no está pendiente de check-out.');
     }
 
-    const updatedReservation: Reserva = { ...reservation, estado_reserva: 'FINALIZADA' };
-    this.persistReservationUpdate(reservations, updatedReservation);
-    return updatedReservation;
+    return this.persistReservationUpdate(reservations, { ...reservation, estado_reserva: 'FINALIZADA' });
   }
 
-  private persistReservationUpdate(reservations: Reserva[], updatedReservation: Reserva): void {
-    localStorage.setItem(this.storageKey('reservas'), JSON.stringify(
-      reservations.map((reservation) =>
-        reservation.id_reserva === updatedReservation.id_reserva ? updatedReservation : reservation
-      )
+  private async persistReservationUpdate(reservations: Reserva[], updatedReservation: Reserva): Promise<Reserva> {
+    const saved = await firstValueFrom(this.http.patch<Reserva>(
+      `${this.apiUrl}/reservas/${updatedReservation.id_reserva}`, updatedReservation
     ));
+    const normalized = this.normalizeReservation(saved);
+    this.reservations = reservations.map((reservation) =>
+      reservation.id_reserva === normalized.id_reserva ? normalized : reservation
+    );
     this.refreshView();
+    return normalized;
   }
 
   getAvailableRooms(
@@ -478,7 +501,7 @@ export class HostalService {
       personCount === undefined ||
       (tipologias.find((tipologia) => tipologia.id_tipologia === habitacion.id_tipologia)?.capacidad ?? 0) >= personCount
     );
-    const reservas: Reserva[] = JSON.parse(localStorage.getItem(this.storageKey('reservas')) || '[]');
+    const reservas = this.getReservations();
 
     return habitacionesCandidatas.filter((habitacion) =>
       !reservas.some((reserva) =>
@@ -491,7 +514,7 @@ export class HostalService {
     );
   }
 
-  registerEntry(input: RegisterEntryInput): { guest: Huesped; reservation: Reserva } {
+  async registerEntry(input: RegisterEntryInput): Promise<{ guest: Huesped; reservation: Reserva }> {
     if (!Number.isInteger(input.personCount) || input.personCount < 1) {
       throw new Error('La cantidad de personas debe ser al menos 1.');
     }
@@ -522,7 +545,7 @@ export class HostalService {
     const guests = this.getGuests();
     const rooms = this.getManagedRooms();
     const tipologias = this.getManagedTypologies();
-    const reservations: Reserva[] = JSON.parse(localStorage.getItem(this.storageKey('reservas')) || '[]');
+    const reservations = this.getReservations();
     let guest: Huesped;
     let updatedGuests = guests;
 
@@ -552,8 +575,7 @@ export class HostalService {
       )) {
         throw new Error('Ya existe un huésped registrado con ese RUT o número de pasaporte.');
       }
-      const nextGuestId = guests.reduce((max, item) => Math.max(max, item.id_huesped), 0) + 1;
-      guest = { ...guestDetails, id_huesped: nextGuestId, id_sede: this.sedeId };
+      guest = { ...guestDetails, id_huesped: 0, id_sede: this.sedeId };
       updatedGuests = [...guests, guest];
     } else {
       throw new Error('Selecciona un huésped o ingresa sus datos.');
@@ -569,9 +591,15 @@ export class HostalService {
       throw new Error('La cantidad de personas supera la capacidad de la habitación seleccionada.');
     }
 
-    const nextReservationId = reservations.reduce((max, item) => Math.max(max, item.id_reserva), 0) + 1;
-    const reservation: Reserva = {
-      id_reserva: nextReservationId,
+    if (input.newGuest) {
+      const response = await firstValueFrom(this.http.post<Omit<Huesped, 'id_sede'>>(
+        `${this.apiUrl}/huespedes`, this.toGuestRequest(guest)
+      ));
+      guest = { ...response, id_sede: this.sedeId };
+      updatedGuests = [...guests, guest];
+    }
+
+    const reservationInput: Omit<Reserva, 'id_reserva'> = {
       id_huesped: guest.id_huesped,
       id_habitacion: room.id_habitacion,
       fecha_llegada: input.arrivalDate,
@@ -587,9 +615,10 @@ export class HostalService {
         pago_completo: input.payment.paidInFull,
       } : {}),
     };
-
-    localStorage.setItem(this.storageKey('huespedes'), JSON.stringify(updatedGuests));
-    localStorage.setItem(this.storageKey('reservas'), JSON.stringify([...reservations, reservation]));
+    const savedReservation = await firstValueFrom(this.http.post<Reserva>(`${this.apiUrl}/reservas`, reservationInput));
+    const reservation = this.normalizeReservation(savedReservation);
+    this.guests = updatedGuests;
+    this.reservations = [...reservations, reservation];
     this.refreshView();
 
     return { guest, reservation };
@@ -606,6 +635,19 @@ export class HostalService {
     for (const key of legacyKeys) {
       localStorage.removeItem(`${this.BASE_PREFIX}${key}`);
     }
+  }
+
+  private toGuestRequest(guest: Partial<Huesped>) {
+    return {
+      documento: guest.documento,
+      nombre: guest.nombre,
+      apellido: guest.apellido,
+      nacionalidad: guest.nacionalidad,
+      telefono: guest.telefono,
+      email: guest.email,
+      es_recurrente: guest.es_recurrente,
+      dias_ultimo_registro: guest.dias_ultimo_registro,
+    };
   }
 
   private isValidDate(value: string): boolean {
