@@ -7,6 +7,7 @@ import { GuestsModule } from './modules/guests/guests.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { LocationsModule } from './modules/locations/locations.module';
 import { ReservationsModule } from './modules/reservations/reservations.module';
+import { HostalModule } from './modules/hostal/hostal.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { ReservationsModule } from './modules/reservations/reservations.module';
     GuestsModule,
     ReservationsModule,
     InventoryModule,
+    HostalModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -48,6 +48,11 @@ export class PrismaHabitacionRepository implements HabitacionRepository {
       raw.numero,
       raw.cantidadPersonas,
       this.mapEstado(raw.estado),
+      raw.tamanoM2,
+      raw.disposicionMuebles,
+      raw.descripcion,
+      raw.huespedActual,
+      raw.aseoIniciado,
     );
   }
 
@@ -70,6 +75,11 @@ export class PrismaHabitacionRepository implements HabitacionRepository {
     numero: string;
     cantidadPersonas: number;
     estado?: EstadoHabitacion;
+    tamanoM2?: number | null;
+    disposicionMuebles?: string | null;
+    descripcion?: string | null;
+    huespedActual?: string | null;
+    aseoIniciado?: Date | null;
   }): Promise<Habitacion> {
     const prismaData: Prisma.HabitacionUncheckedCreateInput = {
       ...data,
@@ -88,6 +98,11 @@ export class PrismaHabitacionRepository implements HabitacionRepository {
       tipologiaId: number;
       cantidadPersonas: number;
       estado: EstadoHabitacion;
+      tamanoM2: number | null;
+      disposicionMuebles: string | null;
+      descripcion: string | null;
+      huespedActual: string | null;
+      aseoIniciado: Date | null;
     }>,
   ): Promise<Habitacion> {
     const prismaData: Prisma.HabitacionUncheckedUpdateInput = {
