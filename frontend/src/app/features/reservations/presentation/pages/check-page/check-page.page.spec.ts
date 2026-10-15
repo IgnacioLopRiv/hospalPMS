@@ -23,7 +23,7 @@ describe('CheckPagePage', () => {
     fixture.detectChanges();
   });
 
-  it('opens the check-in balance modal and collects the outstanding amount before processing', () => {
+  it('opens the check-in balance modal and collects the outstanding amount before processing', async () => {
     const sedeService = TestBed.inject(SedeService);
     const hostalService = TestBed.inject(HostalService);
     const sedeId = sedeService.selectedSede()!.id;
@@ -44,7 +44,7 @@ describe('CheckPagePage', () => {
         disposicionMuebles: '',
       }],
     });
-    const registered = hostalService.registerEntry({
+    const registered = await hostalService.registerEntry({
       newGuest: {
         documento: 'CHECKIN-BALANCE',
         nombre: 'Ana',
@@ -86,6 +86,7 @@ describe('CheckPagePage', () => {
     fixture.detectChanges();
     expect(confirmButton.disabled).toBeFalse();
     confirmButton.click();
+    await fixture.whenStable();
     fixture.detectChanges();
 
     const updatedReservation = hostalService.getReservations()
@@ -258,7 +259,7 @@ describe('CheckPagePage', () => {
     expect(fixture.nativeElement.textContent).toContain('Esta habitación todavía no tiene fotos.');
   });
 
-  it('calculates the stay total from applicable typology rates and the configured deposit', () => {
+  it('calculates the stay total from applicable typology rates and the configured deposit', async () => {
     const sedeService = TestBed.inject(SedeService);
     const hostalService = TestBed.inject(HostalService);
     const sedeId = sedeService.selectedSede()!.id;
@@ -276,7 +277,7 @@ describe('CheckPagePage', () => {
         disposicionMuebles: '',
       }],
     });
-    const guest = hostalService.registerGuest({
+    const guest = await hostalService.registerGuest({
       documento: 'PAYMENT-TEST',
       nombre: 'Ana',
       apellido: 'Pérez',
@@ -343,7 +344,7 @@ describe('CheckPagePage', () => {
 
     component.paymentOption = 'deposit';
     component.paymentMethod = 'transferencia';
-    component.registerEntry();
+    await component.registerEntry();
 
     expect(registerEntry).toHaveBeenCalled();
     expect(hostalService.getReservations()).toContain(jasmine.objectContaining({
@@ -360,7 +361,7 @@ describe('CheckPagePage', () => {
     expect(component.pendingCheckOuts).toEqual([]);
   });
 
-  it('shows check-ins and check-outs from reservations registered for today', () => {
+  it('shows check-ins and check-outs from reservations registered for today', async () => {
     const hostalService = TestBed.inject(HostalService);
     const sedeService = TestBed.inject(SedeService);
     const sedeId = sedeService.selectedSede()!.id;
@@ -386,7 +387,7 @@ describe('CheckPagePage', () => {
     const todayReservationRooms = hostalService.getAvailableRooms(today, localDateString(nextDay));
     const checkoutReservationRooms = hostalService.getAvailableRooms(localDateString(previousDay), today);
 
-    hostalService.registerEntry({
+    await hostalService.registerEntry({
       newGuest: {
         documento: 'CHECKIN-TEST',
         nombre: 'Ana',
@@ -401,7 +402,7 @@ describe('CheckPagePage', () => {
       departureDate: localDateString(nextDay),
       arrivalTime: '15:30',
     });
-    const checkoutReservation = hostalService.registerEntry({
+    const checkoutReservation = await hostalService.registerEntry({
       newGuest: {
         documento: 'CHECKOUT-TEST',
         nombre: 'Luis',
@@ -416,7 +417,7 @@ describe('CheckPagePage', () => {
       departureDate: today,
       arrivalTime: '14:00',
     });
-    hostalService.processCheckIn(checkoutReservation.reservation.id_reserva);
+    await hostalService.processCheckIn(checkoutReservation.reservation.id_reserva);
 
     expect(component.pendingCheckIns).toContain(jasmine.objectContaining({
       guestName: 'Ana Pérez',

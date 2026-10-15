@@ -9,6 +9,7 @@ import { GetSedesUseCase } from './application/use-cases/get-sedes.use-case';
 import { CreateSedeUseCase } from './application/use-cases/create-sede.use-case';
 import { UpdateSedeUseCase } from './application/use-cases/update-sede.use-case';
 import { DeleteSedeUseCase } from './application/use-cases/delete-sede.use-case';
+import { SedesController } from './infrastructure/controllers/sedes.controller';
 
 const USE_CASES = [
   GetSedesUseCase,
@@ -24,6 +25,7 @@ const USE_CASES = [
  * (infraestructura Prisma) mediante inyección de dependencias de NestJS.
  */
 @Module({
+  controllers: [SedesController],
   providers: [
     // Implementaciones de repositorios (adaptadores de infraestructura)
     { provide: SedeRepository, useClass: PrismaSedeRepository },

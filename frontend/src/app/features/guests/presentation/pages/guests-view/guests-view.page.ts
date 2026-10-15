@@ -188,10 +188,10 @@ export class GuestsViewPage implements OnInit, OnDestroy {
     this.openGuestEditDialog();
   }
 
-  saveGuestChanges(): void {
+  async saveGuestChanges(): Promise<void> {
     if (this.editingGuestId === null) return;
     try {
-      const guest = this.hostalService.updateGuest(this.editingGuestId, this.editGuestForm);
+      const guest = await this.hostalService.updateGuest(this.editingGuestId, this.editGuestForm);
       this.guestSuccessMessage = `Datos actualizados para ${guest.nombre} ${guest.apellido}.`;
       this.closeGuestEditor();
     } catch (error) {
@@ -214,12 +214,12 @@ export class GuestsViewPage implements OnInit, OnDestroy {
     this.openGuestDeleteDialog();
   }
 
-  deleteGuest(): void {
+  async deleteGuest(): Promise<void> {
     if (this.deletingGuestId === null) return;
     try {
       const guestId = this.deletingGuestId;
       const guest = this.hostalService.getGuests().find((item) => item.id_huesped === guestId);
-      this.hostalService.deleteGuest(guestId);
+      await this.hostalService.deleteGuest(guestId);
       this.guestSuccessMessage = `Se eliminó a ${guest ? `${guest.nombre} ${guest.apellido}` : 'el huésped'} y sus reservas asignadas.`;
       this.closeGuestDeleteDialog();
       this.deletingGuestId = null;
@@ -271,10 +271,10 @@ export class GuestsViewPage implements OnInit, OnDestroy {
     );
   }
 
-  saveReservationChanges(): void {
+  async saveReservationChanges(): Promise<void> {
     if (this.editingReservationId === null) return;
     try {
-      this.hostalService.updateReservation(this.editingReservationId, {
+      await this.hostalService.updateReservation(this.editingReservationId, {
         id_habitacion: Number(this.editReservationForm.id_habitacion),
         fecha_llegada: this.editReservationForm.fecha_llegada,
         fecha_salida: this.editReservationForm.fecha_salida,
@@ -288,14 +288,14 @@ export class GuestsViewPage implements OnInit, OnDestroy {
     }
   }
 
-  cancelReservation(): void {
+  async cancelReservation(): Promise<void> {
     if (this.editingReservationId === null) return;
     if (!this.document.defaultView?.confirm('¿Confirmas que quieres cancelar esta reserva? El huésped permanecerá registrado.')) {
       return;
     }
 
     try {
-      this.hostalService.cancelReservation(this.editingReservationId);
+      await this.hostalService.cancelReservation(this.editingReservationId);
       this.guestSuccessMessage = 'Reserva cancelada. El huésped continúa registrado.';
       this.closeReservationEditor();
     } catch (error) {
@@ -350,7 +350,7 @@ export class GuestsViewPage implements OnInit, OnDestroy {
     this.cancelGuestDeletion();
   }
 
-  registerGuest(): void {
+  async registerGuest(): Promise<void> {
     this.guestError = '';
     if (!this.isValidEmail(this.guestForm.email)) {
       this.guestError = 'Ingresa un email válido, por ejemplo nombre@dominio.com.';
@@ -362,7 +362,7 @@ export class GuestsViewPage implements OnInit, OnDestroy {
     }
 
     try {
-      const guest = this.hostalService.registerGuest({
+      const guest = await this.hostalService.registerGuest({
         documento: this.guestForm.documento.trim(),
         nombre: this.guestForm.nombre.trim(),
         apellido: this.guestForm.apellido.trim(),

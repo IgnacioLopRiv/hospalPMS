@@ -1,4 +1,7 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { environment } from '../../../../environments/environment';
 import {
   Sede,
   SedeHabitacion as Habitacion,
@@ -8,14 +11,9 @@ import {
 
 export type { Sede, SedeHabitacion as Habitacion, SedeTipologia, EstadoHabitacion } from '../../../shared/domain/hostal.model';
 
-const INITIAL_SEDES: Sede[] = [
-  { id: 1, nombre: 'Hotel Centro', ciudad: 'Santiago', tipologias: [], habitaciones: [] },
-  { id: 2, nombre: 'Hotel Playa', ciudad: 'Viña del Mar', tipologias: [], habitaciones: [] },
-  { id: 3, nombre: 'Hotel Montaña', ciudad: 'Pucón', tipologias: [], habitaciones: [] },
-];
-
-const SEDES_STORAGE_KEY = 'hospal.sedes';
 const SELECTED_SEDE_KEY = 'hospal.selectedSede';
+const LOCAL_SEDE_CONFIG_KEY = 'hospal.sedes.config';
+const LEGACY_SEDES_KEY = 'hospal.sedes';
 const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
 
 function colorHue(color: string): number {
@@ -51,14 +49,42 @@ function hueToHex(hue: number): string {
 
 @Injectable({ providedIn: 'root' })
 export class SedeService {
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = `${environment.apiUrl}/sedes`;
   private nextHabitacionId = 1;
 
-  readonly sedes = signal<Sede[]>(this.readSavedSedes());
-  readonly selectedSede = signal<Sede | null>(this.readInitialSede());
+  readonly sedes = signal<Sede[]>([]);
+  readonly selectedSede = signal<Sede | null>(null);
+  readonly loadError = signal('');
+  readonly ready: Promise<void>;
   readonly habitaciones = computed(() => this.selectedSede()?.habitaciones ?? []);
   readonly tipologias = computed(() => this.selectedSede()?.tipologias ?? []);
 
   constructor() {
+    this.ready = this.loadSedes().catch((error: unknown) => {
+      this.loadError.set(error instanceof Error ? error.message : 'No se pudieron cargar las sedes.');
+    });
+  }
+
+  private async loadSedes(): Promise<void> {
+    const sedes = await firstValueFrom(this.http.get<Sede[]>(this.apiUrl));
+    const localConfigs = this.readLocalSedeConfigs();
+    const normalized = sedes.map((sede) => {
+      const localConfig = localConfigs.get(sede.id);
+      return {
+        ...sede,
+        habitaciones: (localConfig?.habitaciones ?? sede.habitaciones ?? []).map((room) => ({
+          ...room,
+          estado: room.estado || 'libre' as EstadoHabitacion,
+        })),
+        tipologias: this.assignMissingTypologyColors(localConfig?.tipologias ?? sede.tipologias ?? []),
+      };
+    });
+    this.sedes.set(normalized);
+    const selectedId = this.readSelectedSedeId();
+    const selected = normalized.find((sede) => sede.id === selectedId) ?? normalized[0] ?? null;
+    this.selectedSede.set(selected);
+    if (selected) this.saveSelectedSede(selected);
     this.syncNextHabitacionId();
   }
 
@@ -80,41 +106,27 @@ export class SedeService {
   /**
    * C (Crear): Agrega una nueva sede al listado
    */
-  createSede(data: { nombre: string; ciudad: string }): Sede {
-    const nextId = this.sedes().length > 0 
-      ? Math.max(...this.sedes().map((s) => s.id)) + 1 
-      : 1;
-
-    const nuevaSede: Sede = {
-      id: nextId,
+  async createSede(data: { nombre: string; ciudad: string }): Promise<Sede> {
+    const created = await firstValueFrom(this.http.post<Sede>(this.apiUrl, {
       nombre: data.nombre.trim(),
       ciudad: data.ciudad.trim(),
-      tipologias: [],
-      habitaciones: [],
-    };
-
-    this.sedes.update((list) => {
-      const nextList = [...list, nuevaSede];
-      this.saveSedes(nextList);
-      return nextList;
-    });
-
+    }));
+    const nuevaSede: Sede = { ...created, tipologias: [], habitaciones: [] };
+    this.sedes.update((list) => [...list, nuevaSede]);
     return nuevaSede;
   }
 
   /**
    * U (Actualizar datos generales): Modifica nombre y ciudad de una sede
    */
-  updateSedeInfo(id: number, data: { nombre: string; ciudad: string }): void {
-    this.sedes.update((list) => {
-      const nextList = list.map((sede) =>
-        sede.id === id
-          ? { ...sede, nombre: data.nombre.trim(), ciudad: data.ciudad.trim() }
-          : sede
-      );
-      this.saveSedes(nextList);
-      return nextList;
-    });
+  async updateSedeInfo(id: number, data: { nombre: string; ciudad: string }): Promise<void> {
+    await firstValueFrom(this.http.patch<Sede>(`${this.apiUrl}/${id}`, {
+      nombre: data.nombre.trim(),
+      ciudad: data.ciudad.trim(),
+    }));
+    this.sedes.update((list) => list.map((sede) =>
+      sede.id === id ? { ...sede, nombre: data.nombre.trim(), ciudad: data.ciudad.trim() } : sede
+    ));
 
     // Si la sede editada es la seleccionada, actualizarla
     const selected = this.selectedSede();
@@ -128,12 +140,9 @@ export class SedeService {
   /**
    * D (Eliminar): Elimina una sede por su ID
    */
-  deleteSede(id: number): void {
-    this.sedes.update((list) => {
-      const nextList = list.filter((sede) => sede.id !== id);
-      this.saveSedes(nextList);
-      return nextList;
-    });
+  async deleteSede(id: number): Promise<void> {
+    await firstValueFrom(this.http.delete(`${this.apiUrl}/${id}`));
+    this.sedes.update((list) => list.filter((sede) => sede.id !== id));
 
     // Si se eliminó la sede activa, limpiar o reasignar
     const selected = this.selectedSede();
@@ -253,7 +262,7 @@ export class SedeService {
     this.selectedSede.set(updated);
     this.sedes.update((list) => {
       const nextList = list.map((sede) => (sede.id === updated.id ? updated : sede));
-      this.saveSedes(nextList);
+      this.saveLocalSedeConfigs(nextList);
       return nextList;
     });
     this.saveSelectedSede(updated);
@@ -274,7 +283,7 @@ export class SedeService {
     this.selectedSede.set(updated);
     this.sedes.update((list) => {
       const nextList = list.map((sede) => (sede.id === updated.id ? updated : sede));
-      this.saveSedes(nextList);
+      this.saveLocalSedeConfigs(nextList);
       return nextList;
     });
     this.saveSelectedSede(updated);
@@ -366,31 +375,6 @@ export class SedeService {
     }
   }
 
-  private readSavedSedes(): Sede[] {
-    try {
-      const raw = localStorage.getItem(SEDES_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const sedes = (parsed as Sede[]).map((sede) => ({
-            ...sede,
-            habitaciones: (sede.habitaciones ?? []).map((room) => ({
-              ...room,
-              estado: room.estado || 'libre' as EstadoHabitacion,
-            })),
-            tipologias: this.assignMissingTypologyColors(sede.tipologias ?? []),
-          }));
-          this.saveSedes(sedes);
-          return sedes;
-        }
-      }
-    } catch {
-      // Usar sedes iniciales si falla lectura
-    }
-    this.saveSedes(INITIAL_SEDES);
-    return INITIAL_SEDES;
-  }
-
   private assignMissingTypologyColors(tipologias: SedeTipologia[]): SedeTipologia[] {
     const usedColors = new Set<string>();
     return tipologias.map((typology) => {
@@ -422,34 +406,47 @@ export class SedeService {
     throw new Error('No se pudo generar un color único para la tipología.');
   }
 
-  private readInitialSede(): Sede | null {
-    const allSedes = this.readSavedSedes();
+  private readSelectedSedeId(): number | null {
     try {
       const raw = localStorage.getItem(SELECTED_SEDE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        const match = allSedes.find((s) => s.id === parsed.id);
-        if (match) {
-          return match;
-        }
-      }
+      if (raw) return Number(JSON.parse(raw)?.id) || null;
     } catch {
-      // Fallback
+      return null;
     }
-    return allSedes[0] ?? null;
+    return null;
   }
 
-  private saveSedes(sedes: Sede[]): void {
+  private readLocalSedeConfigs(): Map<number, Pick<Sede, 'habitaciones' | 'tipologias'>> {
     try {
-      localStorage.setItem(SEDES_STORAGE_KEY, JSON.stringify(sedes));
+      const raw = localStorage.getItem(LOCAL_SEDE_CONFIG_KEY) ?? localStorage.getItem(LEGACY_SEDES_KEY);
+      const parsed: unknown = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(parsed)) return new Map();
+      return new Map(parsed
+        .filter((item): item is Sede => typeof item?.id === 'number')
+        .map((sede) => [sede.id, {
+          habitaciones: sede.habitaciones ?? [],
+          tipologias: sede.tipologias ?? [],
+        }]));
     } catch {
-      // Ignorar error de almacenamiento
+      return new Map();
+    }
+  }
+
+  private saveLocalSedeConfigs(sedes: Sede[]): void {
+    try {
+      localStorage.setItem(LOCAL_SEDE_CONFIG_KEY, JSON.stringify(sedes.map((sede) => ({
+        id: sede.id,
+        habitaciones: sede.habitaciones,
+        tipologias: sede.tipologias,
+      }))));
+    } catch {
+      // Ignorar error de almacenamiento local para la configuración no conectada.
     }
   }
 
   private saveSelectedSede(sede: Sede): void {
     try {
-      localStorage.setItem(SELECTED_SEDE_KEY, JSON.stringify(sede));
+      localStorage.setItem(SELECTED_SEDE_KEY, JSON.stringify({ id: sede.id }));
     } catch {
       // Ignorar error de almacenamiento
     }
