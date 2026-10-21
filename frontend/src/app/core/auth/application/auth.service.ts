@@ -1,12 +1,12 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { environment } from '../../../../environments/environment';
 import {
   AuthUser,
   Permission,
   ROLE_PERMISSIONS,
   StoredUser,
-  UsersFile,
 } from '../domain/auth.roles';
 
 export type LoginErrorCode = 'empty' | 'format' | 'email' | 'password';
@@ -30,13 +30,12 @@ const LOGIN_MESSAGES: Record<LoginErrorCode, string> = {
 };
 
 const CURRENT_USER_STORAGE_KEY = 'hospal.currentUser';
-const USERS_STORAGE_KEY = 'hospal.users';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
+  private readonly apiUrl = `${environment.apiUrl}/funcionarios`;
   private loaded = false;
-  private loadPromise: Promise<void> | null = null;
 
   // Recovery tokens stored in memory only (Map: email → entry)
   private readonly recoveryTokens = new Map<string, RecoveryEntry>();
@@ -45,19 +44,23 @@ export class AuthService {
   /** Usuario con sesión activa. Persistido en localStorage para sobrevivir a recargas de página. */
   readonly currentUser = signal<AuthUser | null>(this.readSavedCurrentUser());
 
-  /** Lista reactiva de todos los usuarios cargados desde localStorage o JSON. */
-  readonly users = signal<StoredUser[]>(this.readSavedUsers());
+  /** Lista reactiva de todos los funcionarios cargados desde el backend. */
+  readonly users = signal<StoredUser[]>([]);
 
   readonly isAuthenticated = computed(() => this.currentUser() !== null);
   readonly canEditSede = computed(() => this.can('editSede'));
   readonly canViewReports = computed(() => this.can('viewReports'));
   readonly canManageUsers = computed(() => this.can('manageUsers'));
 
+  constructor() {
+    this.ensureUsers();
+  }
+
   // ── Permissions ───────────────────────────────────────────────────────────
   can(permission: Permission): boolean {
     const user = this.currentUser();
     if (!user) return false;
-    return ROLE_PERMISSIONS[user.role].includes(permission);
+    return ROLE_PERMISSIONS[user.role]?.includes(permission) ?? false;
   }
 
   // ── Auth ──────────────────────────────────────────────────────────────────
@@ -73,21 +76,30 @@ export class AuthService {
       return { ok: false, error: 'format', message: LOGIN_MESSAGES.format };
     }
 
-    await this.ensureUsers();
-    const user = this.findUser(trimmedEmail);
-
-    if (!user) {
-      return { ok: false, error: 'email', message: LOGIN_MESSAGES.email };
+    try {
+      const publicUser = await firstValueFrom(
+        this.http.post<AuthUser>(`${this.apiUrl}/login`, {
+          email: trimmedEmail,
+          password: trimmedPassword,
+        }),
+      );
+      this.currentUser.set(publicUser);
+      this.saveCurrentUser(publicUser);
+      await this.ensureUsers();
+      return { ok: true };
+    } catch (error: any) {
+      const status = error?.status;
+      if (status === 404) {
+        return { ok: false, error: 'email', message: LOGIN_MESSAGES.email };
+      }
+      if (status === 400) {
+        return { ok: false, error: 'password', message: LOGIN_MESSAGES.password };
+      }
+      return {
+        ok: false,
+        message: error?.error?.message || 'Error de conexión con el servidor.',
+      };
     }
-
-    if (user.password !== trimmedPassword) {
-      return { ok: false, error: 'password', message: LOGIN_MESSAGES.password };
-    }
-
-    const publicUser = this.toPublicUser(user);
-    this.currentUser.set(publicUser);
-    this.saveCurrentUser(publicUser);
-    return { ok: true };
   }
 
   logout(): void {
@@ -95,67 +107,84 @@ export class AuthService {
     this.saveCurrentUser(null);
   }
 
-  /** Actualiza el usuario activo en la sesión y sincroniza la lista en memoria y localStorage. */
+  /** Actualiza el usuario activo en la sesión y sincroniza la lista en memoria. */
   updateCurrentUser(updatedUser: AuthUser): void {
     this.currentUser.set(updatedUser);
     this.saveCurrentUser(updatedUser);
-    this.users.update((list) => {
-      const nextList = list.map((u) => (u.id === updatedUser.id ? { ...u, ...updatedUser } : u));
-      this.saveUsers(nextList);
-      return nextList;
-    });
+    this.users.update((list) =>
+      list.map((u) => (u.id === updatedUser.id ? { ...u, ...updatedUser } : u)),
+    );
   }
 
   // ── User CRUD ─────────────────────────────────────────────────────────────
 
-  /** Garantiza que la lista de usuarios está cargada desde el JSON o localStorage. */
+  /** Garantiza que la lista de usuarios está cargada desde el backend. */
   async ensureUsersLoaded(): Promise<void> {
     await this.ensureUsers();
   }
 
   /**
-   * Agrega un nuevo usuario a la lista en memoria y persiste en localStorage.
+   * Agrega un nuevo funcionario enviando la petición al backend.
    */
-  addUser(data: Omit<StoredUser, 'id'>): void {
-    const list = this.users();
-    const maxId = list.length > 0 ? Math.max(...list.map((u) => u.id)) : 0;
-    const newUser: StoredUser = { id: maxId + 1, ...data };
-    const nextList = [...list, newUser];
-    this.users.set(nextList);
-    this.saveUsers(nextList);
-  }
-
-  /**
-   * Edita los campos del usuario indicado. Si es el usuario activo, sincroniza la sesión.
-   */
-  updateUser(id: number, patch: Partial<StoredUser>): void {
-    const nextList = this.users().map((u) => (u.id === id ? { ...u, ...patch } : u));
-    this.users.set(nextList);
-    this.saveUsers(nextList);
-
-    // Sincronizar sesión si editamos al usuario actual
-    const current = this.currentUser();
-    if (current && current.id === id) {
-      const updated = nextList.find((u) => u.id === id);
-      if (updated) {
-        const publicUser = this.toPublicUser(updated);
-        this.currentUser.set(publicUser);
-        this.saveCurrentUser(publicUser);
-      }
+  async addUser(data: Omit<StoredUser, 'id'>): Promise<void> {
+    try {
+      const created = await firstValueFrom(
+        this.http.post<StoredUser>(this.apiUrl, {
+          name: data.name,
+          email: data.email,
+          password: data.password,
+          role: data.role,
+          sedeId: data.sedeId,
+        }),
+      );
+      this.users.update((list) => [...list, created]);
+    } catch (error) {
+      console.error('Error al crear funcionario en el backend:', error);
+      throw error;
     }
   }
 
   /**
-   * Elimina un usuario. Retorna error si se intenta eliminar la sesión activa.
+   * Edita los campos del funcionario en el backend. Si es el usuario activo, sincroniza la sesión.
+   */
+  async updateUser(id: number, patch: Partial<StoredUser>): Promise<void> {
+    try {
+      const updated = await firstValueFrom(
+        this.http.patch<StoredUser>(`${this.apiUrl}/${id}`, patch),
+      );
+      this.users.update((list) => list.map((u) => (u.id === id ? { ...u, ...updated } : u)));
+
+      const current = this.currentUser();
+      if (current && current.id === id) {
+        const publicUser = this.toPublicUser(updated);
+        this.currentUser.set(publicUser);
+        this.saveCurrentUser(publicUser);
+      }
+    } catch (error) {
+      console.error('Error al actualizar funcionario en el backend:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Elimina un funcionario en el backend. Retorna error si se intenta eliminar la sesión activa.
    */
   deleteUser(id: number): { ok: boolean; message?: string } {
     const current = this.currentUser();
     if (current && current.id === id) {
       return { ok: false, message: 'No puedes eliminar al usuario con sesión activa.' };
     }
-    const nextList = this.users().filter((u) => u.id !== id);
-    this.users.set(nextList);
-    this.saveUsers(nextList);
+
+    this.http.delete(`${this.apiUrl}/${id}`).subscribe({
+      next: () => {
+        this.users.update((list) => list.filter((u) => u.id !== id));
+      },
+      error: (err) => {
+        console.error('Error al eliminar funcionario en el backend:', err);
+      },
+    });
+
+    this.users.update((list) => list.filter((u) => u.id !== id));
     return { ok: true };
   }
 
@@ -251,24 +280,13 @@ export class AuthService {
 
   // ── Private helpers ───────────────────────────────────────────────────────
   private async ensureUsers(): Promise<void> {
-    if (this.users().length > 0) {
+    try {
+      const rows = await firstValueFrom(this.http.get<StoredUser[]>(this.apiUrl));
+      this.users.set(rows);
       this.loaded = true;
-      return;
+    } catch (err) {
+      console.warn('No se pudieron cargar los funcionarios desde el backend:', err);
     }
-
-    if (this.loaded) return;
-
-    if (!this.loadPromise) {
-      this.loadPromise = firstValueFrom(
-        this.http.get<UsersFile>('assets/data/users.json'),
-      ).then((file) => {
-        this.users.set(file.users);
-        this.saveUsers(file.users);
-        this.loaded = true;
-      });
-    }
-
-    await this.loadPromise;
   }
 
   private readSavedCurrentUser(): AuthUser | null {
@@ -290,29 +308,6 @@ export class AuthService {
       } else {
         localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
       }
-    } catch {
-      // Ignorar error de almacenamiento
-    }
-  }
-
-  private readSavedUsers(): StoredUser[] {
-    try {
-      const raw = localStorage.getItem(USERS_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
-        }
-      }
-    } catch {
-      // Ignorar error de almacenamiento
-    }
-    return [];
-  }
-
-  private saveUsers(users: StoredUser[]): void {
-    try {
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
     } catch {
       // Ignorar error de almacenamiento
     }
