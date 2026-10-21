@@ -12,7 +12,7 @@ import {
   logOutOutline,
 } from 'ionicons/icons';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { HostalService, ReservationCalendarEntry } from '../../../../guests/application/hostal.service';
+import { HostalService, ReservationCalendarEntry } from '../../../../huespedes/application/hostal.service';
 import { SedeService } from '../../../../locations/application/sede.service';
 
 const VISIBLE_DAYS = 14;

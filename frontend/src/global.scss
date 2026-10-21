@@ -964,12 +964,12 @@ dialog.entry-modal-backdrop.guest-edit-dialog::backdrop {
     overscroll-behavior: contain;
   }
 
-  .guests-page-container .toolbar .filters {
+  .huespedes-page-container .toolbar .filters {
     align-items: center;
     gap: 0.6rem;
   }
 
-  .guests-page-container .guests-view-toggle {
+  .huespedes-page-container .huespedes-view-toggle {
     display: inline-flex;
     min-height: 38px;
     align-items: center;
@@ -986,11 +986,11 @@ dialog.entry-modal-backdrop.guest-edit-dialog::backdrop {
     cursor: pointer;
   }
 
-  .guests-page-container .guests-view-toggle:hover { background: #f8fafc; }
-  .guests-page-container .menu-icon,
-  .guests-page-container .menu-icon:hover,
-  .guests-page-container .menu-icon[aria-expanded='true'] { background: transparent !important; }
-  .guests-page-container .guest-list .menu-icon {
+  .huespedes-page-container .huespedes-view-toggle:hover { background: #f8fafc; }
+  .huespedes-page-container .menu-icon,
+  .huespedes-page-container .menu-icon:hover,
+  .huespedes-page-container .menu-icon[aria-expanded='true'] { background: transparent !important; }
+  .huespedes-page-container .guest-list .menu-icon {
     display: inline-flex;
     width: 2rem;
     height: 2rem;
@@ -1002,9 +1002,9 @@ dialog.entry-modal-backdrop.guest-edit-dialog::backdrop {
     color: #64748b;
     cursor: pointer;
   }
-  .guests-page-container .menu-icon ion-icon { display: block; font-size: 1.25rem; }
+  .huespedes-page-container .menu-icon ion-icon { display: block; font-size: 1.25rem; }
 
-  .guests-page-container .guest-list-container {
+  .huespedes-page-container .guest-list-container {
     width: 100%;
     overflow-x: auto;
     border: 1px solid #e5e9f2;
@@ -1012,20 +1012,20 @@ dialog.entry-modal-backdrop.guest-edit-dialog::backdrop {
     background: #ffffff;
   }
 
-  .guests-page-container .guest-list {
+  .huespedes-page-container .guest-list {
     width: 100%;
     border-collapse: collapse;
     text-align: left;
   }
 
-  .guests-page-container .guest-list th,
-  .guests-page-container .guest-list td {
+  .huespedes-page-container .guest-list th,
+  .huespedes-page-container .guest-list td {
     padding: 0.8rem 1rem;
     border-bottom: 1px solid #eef2f7;
     white-space: nowrap;
   }
 
-  .guests-page-container .guest-list th {
+  .huespedes-page-container .guest-list th {
     background: #f8fafc;
     color: #64748b;
     font-size: 0.72rem;
@@ -1033,12 +1033,12 @@ dialog.entry-modal-backdrop.guest-edit-dialog::backdrop {
     text-transform: uppercase;
   }
 
-  .guests-page-container .guest-list td { color: #1f2937; font-size: 0.82rem; }
-  .guests-page-container .guest-list tbody tr:last-child td { border-bottom: 0; }
-  .guests-page-container .guest-list tbody tr:hover { background: #f8fafc; }
+  .huespedes-page-container .guest-list td { color: #1f2937; font-size: 0.82rem; }
+  .huespedes-page-container .guest-list tbody tr:last-child td { border-bottom: 0; }
+  .huespedes-page-container .guest-list tbody tr:hover { background: #f8fafc; }
 
-  .guests-page-container .list-guest-name { display: flex; align-items: center; gap: 0.55rem; font-weight: 600; }
-  .guests-page-container .list-avatar {
+  .huespedes-page-container .list-guest-name { display: flex; align-items: center; gap: 0.55rem; font-weight: 600; }
+  .huespedes-page-container .list-avatar {
     display: inline-flex;
     width: 32px;
     height: 32px;
@@ -1049,13 +1049,13 @@ dialog.entry-modal-backdrop.guest-edit-dialog::backdrop {
     font-size: 0.75rem;
   }
 
-  .guests-page-container .list-avatar.color-purple { background: #f3e8ff; color: #7c3aed; }
-  .guests-page-container .list-avatar.color-orange { background: #ffedd5; color: #ea580c; }
-  .guests-page-container .list-avatar.color-green { background: #dcfce7; color: #16a34a; }
-  .guests-page-container .list-avatar.color-blue { background: #e0f2fe; color: #0284c7; }
-  .guests-page-container .list-guest-name .star-icon { color: #eab308; }
+  .huespedes-page-container .list-avatar.color-purple { background: #f3e8ff; color: #7c3aed; }
+  .huespedes-page-container .list-avatar.color-orange { background: #ffedd5; color: #ea580c; }
+  .huespedes-page-container .list-avatar.color-green { background: #dcfce7; color: #16a34a; }
+  .huespedes-page-container .list-avatar.color-blue { background: #e0f2fe; color: #0284c7; }
+  .huespedes-page-container .list-guest-name .star-icon { color: #eab308; }
 
-  .guests-page-container .list-status {
+  .huespedes-page-container .list-status {
     display: inline-flex;
     padding: 0.3rem 0.55rem;
     border: 1px solid transparent;
@@ -1064,14 +1064,14 @@ dialog.entry-modal-backdrop.guest-edit-dialog::backdrop {
     font-weight: 700;
   }
 
-  .guests-page-container .list-status.status-confirmada { background: #f0f4ff; border-color: #dbeafe; color: #2563eb; }
-  .guests-page-container .list-status.status-checkin_hoy { background: #f0fdf4; border-color: #dcfce7; color: #16a34a; }
-  .guests-page-container .list-status.status-checkout_hoy { background: #fffbeb; border-color: #fef3c7; color: #d97706; }
-  .guests-page-container .list-status.status-hospedado { background: #faf5ff; border-color: #f3e8ff; color: #7c3aed; }
-  .guests-page-container .list-status.status-inactivo { background: #f8fafc; border-color: #e2e8f0; color: #64748b; }
+  .huespedes-page-container .list-status.status-confirmada { background: #f0f4ff; border-color: #dbeafe; color: #2563eb; }
+  .huespedes-page-container .list-status.status-checkin_hoy { background: #f0fdf4; border-color: #dcfce7; color: #16a34a; }
+  .huespedes-page-container .list-status.status-checkout_hoy { background: #fffbeb; border-color: #fef3c7; color: #d97706; }
+  .huespedes-page-container .list-status.status-hospedado { background: #faf5ff; border-color: #f3e8ff; color: #7c3aed; }
+  .huespedes-page-container .list-status.status-inactivo { background: #f8fafc; border-color: #e2e8f0; color: #64748b; }
 
-  .guests-page-container .list-actions-cell { position: relative; width: 1%; text-align: right; }
-  .guests-page-container .guest-list-menu {
+  .huespedes-page-container .list-actions-cell { position: relative; width: 1%; text-align: right; }
+  .huespedes-page-container .guest-list-menu {
     position: absolute;
     z-index: 20;
     top: calc(100% - 0.25rem);
@@ -1086,7 +1086,7 @@ dialog.entry-modal-backdrop.guest-edit-dialog::backdrop {
     box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
   }
 
-  .guests-page-container .guest-list-menu button {
+  .huespedes-page-container .guest-list-menu button {
     display: flex;
     align-items: center;
     gap: 0.55rem;
@@ -1102,10 +1102,10 @@ dialog.entry-modal-backdrop.guest-edit-dialog::backdrop {
     cursor: pointer;
   }
 
-  .guests-page-container .guest-list-menu button:hover { background: #f1f5f9; }
-  .guests-page-container .guest-list-menu .delete-action { color: #b91c1c; }
-  .guests-page-container .empty-guest-list { padding: 2rem; color: #64748b; text-align: center; }
-  .guests-page-container .visually-hidden {
+  .huespedes-page-container .guest-list-menu button:hover { background: #f1f5f9; }
+  .huespedes-page-container .guest-list-menu .delete-action { color: #b91c1c; }
+  .huespedes-page-container .empty-guest-list { padding: 2rem; color: #64748b; text-align: center; }
+  .huespedes-page-container .visually-hidden {
     position: absolute;
     width: 1px;
     height: 1px;

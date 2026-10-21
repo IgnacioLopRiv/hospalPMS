@@ -9,6 +9,22 @@ export class PrismaInventarioHabitacionRepository
   implements InventarioHabitacionRepository
 {
   constructor(private readonly prisma: PrismaService) {}
+  async findBySedeId(sedeId: number): Promise<InventarioHabitacion[]> {
+    const rows = await this.prisma.inventarioHabitacion.findMany({
+      where: { habitacion: { sedeId } },
+      orderBy: { fechaAsignacion: 'desc' },
+    });
+    return rows.map((row) => this.toEntity(row));
+  }
+
+  async findByInsumoId(insumoId: number): Promise<InventarioHabitacion[]> {
+    const rows = await this.prisma.inventarioHabitacion.findMany({
+      where: { insumoId },
+      orderBy: { fechaAsignacion: 'desc' },
+    });
+    return rows.map((row) => this.toEntity(row));
+  }
+
 
   private toEntity(raw: PrismaInventarioHabitacion): InventarioHabitacion {
     return new InventarioHabitacion(
@@ -56,5 +72,9 @@ export class PrismaInventarioHabitacionRepository
 
   async delete(id: number): Promise<void> {
     await this.prisma.inventarioHabitacion.delete({ where: { id } });
+  }
+
+  async deleteByInsumoId(insumoId: number): Promise<void> {
+    await this.prisma.inventarioHabitacion.deleteMany({ where: { insumoId } });
   }
 }

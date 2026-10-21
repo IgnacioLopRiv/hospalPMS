@@ -1,5 +1,7 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { SedeService } from '../../locations/application/sede.service';
+import { InventarioRepository } from '../domain/inventario.repository';
 
 export interface InsumoInventario {
   id_insumo: number;
@@ -23,17 +25,16 @@ export interface AsignacionInventarioHabitacion {
 
 export type NuevoInsumo = Omit<InsumoInventario, 'id_insumo' | 'id_sede'>;
 
-const INSUMOS_STORAGE_KEY = 'hospal.inventario.insumos';
-const ASIGNACIONES_STORAGE_KEY = 'hospal.inventario.habitaciones';
-
 @Injectable({ providedIn: 'root' })
 export class InventarioService {
   private readonly sedeService = inject(SedeService);
+  private readonly repository = inject(InventarioRepository);
 
-  private readonly insumosRegistrados = signal<InsumoInventario[]>(this.readStored<InsumoInventario[]>(INSUMOS_STORAGE_KEY));
-  private readonly asignacionesRegistradas = signal<AsignacionInventarioHabitacion[]>(
-    this.readStored<AsignacionInventarioHabitacion[]>(ASIGNACIONES_STORAGE_KEY),
-  );
+  private readonly insumosRegistrados = signal<InsumoInventario[]>([]);
+  private readonly asignacionesRegistradas = signal<AsignacionInventarioHabitacion[]>([]);
+  private loadedSedeId: number | null = null;
+  private loadingSede: { id: number; promise: Promise<void> } | null = null;
+  readonly ready: Promise<void>;
 
   readonly insumos = computed(() => {
     const sedeId = this.sedeService.selectedSede()?.id;
@@ -55,26 +56,65 @@ export class InventarioService {
     );
   });
 
-  addInsumo(data: NuevoInsumo): InsumoInventario {
+  constructor() {
+    this.ready = this.sedeService.ready.then(() => this.loadForSelectedSede());
+    effect(() => {
+      const sedeId = this.sedeService.selectedSede()?.id;
+      if (sedeId !== undefined && sedeId !== this.loadedSedeId) {
+        void this.loadForSede(sedeId).catch(() => undefined);
+      }
+      if (sedeId === undefined) {
+        this.loadedSedeId = null;
+        this.insumosRegistrados.set([]);
+        this.asignacionesRegistradas.set([]);
+      }
+    });
+  }
+
+  private loadForSelectedSede(): Promise<void> {
+    const sedeId = this.sedeService.selectedSede()?.id;
+    return sedeId === undefined ? Promise.resolve() : this.loadForSede(sedeId);
+  }
+
+  private loadForSede(sedeId: number): Promise<void> {
+    if (this.loadedSedeId === sedeId) return Promise.resolve();
+    if (this.loadingSede?.id === sedeId) return this.loadingSede.promise;
+    const promise = Promise.all([
+      firstValueFrom(this.repository.listSupplies(sedeId)),
+      firstValueFrom(this.repository.listRoomAssignments(sedeId)),
+    ]).then(([supplies, assignments]) => {
+      if (this.sedeService.selectedSede()?.id !== sedeId) return;
+      this.insumosRegistrados.set(supplies.map((item) => this.fromRepositorySupply(item)));
+      this.asignacionesRegistradas.set(assignments.map((item) => this.fromRepositoryAssignment(item)));
+      this.loadedSedeId = sedeId;
+    }).finally(() => {
+      if (this.loadingSede?.id === sedeId) this.loadingSede = null;
+    });
+    this.loadingSede = { id: sedeId, promise };
+    return promise;
+  }
+
+  async addInsumo(data: NuevoInsumo): Promise<InsumoInventario> {
     const sedeId = this.sedeService.selectedSede()?.id;
     if (sedeId === undefined) throw new Error('Selecciona una sede antes de agregar insumos.');
     this.validateInsumo(data);
 
-    const nextId = this.insumosRegistrados().reduce((max, insumo) => Math.max(max, insumo.id_insumo), 0) + 1;
-    const insumo: InsumoInventario = {
-      ...data,
-      nombre_insumo: data.nombre_insumo.trim(),
+    const saved = await firstValueFrom(this.repository.createSupply({
+      sedeId,
+      nombre: data.nombre_insumo.trim(),
       descripcion: data.descripcion.trim(),
-      id_insumo: nextId,
-      id_sede: sedeId,
-    };
+      costoCompra: data.costo_compra,
+      stockActual: data.stock_actual,
+      stockMinimo: data.stock_minimo,
+      activo: data.producto_activo,
+    }));
+    const insumo = this.fromRepositorySupply(saved);
     const nextInsumos = [...this.insumosRegistrados(), insumo];
-    this.persist(INSUMOS_STORAGE_KEY, nextInsumos);
     this.insumosRegistrados.set(nextInsumos);
     return insumo;
   }
 
-  updateInsumo(idInsumo: number, data: NuevoInsumo): InsumoInventario {
+  async updateInsumo(idInsumo: number, data: NuevoInsumo): Promise<InsumoInventario> {
     const insumo = this.insumos().find((item) => item.id_insumo === idInsumo);
     if (!insumo) throw new Error('No se encontró el insumo seleccionado para esta sede.');
     this.validateInsumo(data);
@@ -86,32 +126,31 @@ export class InventarioService {
       throw new Error(`El stock total no puede ser menor que las ${stockAsignado} unidades asignadas a habitaciones.`);
     }
 
-    const updated: InsumoInventario = {
-      ...insumo,
-      ...data,
-      nombre_insumo: data.nombre_insumo.trim(),
+    const response = await firstValueFrom(this.repository.updateSupply(idInsumo, {
+      nombre: data.nombre_insumo.trim(),
       descripcion: data.descripcion.trim(),
-    };
+      costoCompra: data.costo_compra,
+      stockActual: data.stock_actual,
+      stockMinimo: data.stock_minimo,
+      activo: data.producto_activo,
+    }));
+    const updated = this.fromRepositorySupply(response);
     const nextInsumos = this.insumosRegistrados().map((item) =>
       item.id_insumo === idInsumo && item.id_sede === insumo.id_sede ? updated : item,
     );
-    this.persist(INSUMOS_STORAGE_KEY, nextInsumos);
     this.insumosRegistrados.set(nextInsumos);
     return updated;
   }
 
-  deleteInsumo(idInsumo: number): void {
+  async deleteInsumo(idInsumo: number): Promise<void> {
     const insumo = this.insumos().find((item) => item.id_insumo === idInsumo);
     if (!insumo) throw new Error('No se encontró el insumo seleccionado para esta sede.');
 
-    const nextAsignaciones = this.asignacionesRegistradas().filter(
-      (asignacion) => asignacion.id_insumo !== idInsumo,
-    );
+    await firstValueFrom(this.repository.deleteSupply(idInsumo));
+    const nextAsignaciones = this.asignacionesRegistradas().filter((assignment) => assignment.id_insumo !== idInsumo);
     const nextInsumos = this.insumosRegistrados().filter(
       (item) => item.id_insumo !== idInsumo || item.id_sede !== insumo.id_sede,
     );
-    this.persist(ASIGNACIONES_STORAGE_KEY, nextAsignaciones);
-    this.persist(INSUMOS_STORAGE_KEY, nextInsumos);
     this.asignacionesRegistradas.set(nextAsignaciones);
     this.insumosRegistrados.set(nextInsumos);
   }
@@ -123,7 +162,7 @@ export class InventarioService {
     if (!Number.isInteger(data.stock_minimo) || data.stock_minimo < 0) throw new Error('El stock mínimo debe ser un número entero igual o mayor que cero.');
   }
 
-  assignToRoom(idInsumo: number, idHabitacion: number, cantidad: number): AsignacionInventarioHabitacion {
+  async assignToRoom(idInsumo: number, idHabitacion: number, cantidad: number): Promise<AsignacionInventarioHabitacion> {
     const insumo = this.insumos().find((item) => item.id_insumo === idInsumo);
     if (!insumo) throw new Error('No se encontró el insumo seleccionado para esta sede.');
     const habitacion = this.sedeService.habitaciones().find((room) => room.id === idHabitacion);
@@ -137,45 +176,51 @@ export class InventarioService {
     const disponible = insumo.stock_actual - yaAsignado;
     if (cantidad > disponible) throw new Error(`Solo hay ${disponible} unidades disponibles en bodega.`);
 
-    const nextId = this.asignacionesRegistradas().reduce(
-      (max, asignacion) => Math.max(max, asignacion.id_inventario_hab),
-      0,
-    ) + 1;
-    const asignacion: AsignacionInventarioHabitacion = {
-      id_inventario_hab: nextId,
+    const saved = await firstValueFrom(this.repository.createRoomAssignment({
+      insumoId: idInsumo,
+      habitacionId: idHabitacion,
       cantidad,
       estado: 'ACTIVO',
-      fecha_asignacion: new Date().toISOString(),
-      id_insumo: idInsumo,
-      id_habitacion: idHabitacion,
-    };
+    }));
+    const asignacion = this.fromRepositoryAssignment(saved);
     const nextAsignaciones = [...this.asignacionesRegistradas(), asignacion];
-    this.persist(ASIGNACIONES_STORAGE_KEY, nextAsignaciones);
     this.asignacionesRegistradas.set(nextAsignaciones);
     return asignacion;
   }
 
-  releaseRoomAssignment(idAsignacion: number): void {
+  async releaseRoomAssignment(idAsignacion: number): Promise<void> {
     const assignment = this.habitacionesAsignadas().find(
       (item) => item.id_inventario_hab === idAsignacion && item.estado === 'ACTIVO',
     );
     if (!assignment) throw new Error('No se encontró la asignación activa seleccionada.');
 
-    const nextAssignments = this.asignacionesRegistradas().map((item) =>
-      item.id_inventario_hab === idAsignacion
-        ? { ...item, estado: 'DEVUELTO' }
-        : item,
-    );
-    this.persist(ASIGNACIONES_STORAGE_KEY, nextAssignments);
+    const saved = await firstValueFrom(this.repository.updateRoomAssignment(idAsignacion, { estado: 'DEVUELTO' }));
+    const updated = this.fromRepositoryAssignment(saved);
+    const nextAssignments = this.asignacionesRegistradas().map((item) => item.id_inventario_hab === idAsignacion ? updated : item);
     this.asignacionesRegistradas.set(nextAssignments);
   }
 
-  private readStored<T>(key: string): T {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) as T : [] as T;
+  private fromRepositorySupply(item: import('../domain/inventario.repository').Insumo): InsumoInventario {
+    return {
+      id_insumo: item.id,
+      id_sede: item.sedeId,
+      nombre_insumo: item.nombre,
+      descripcion: item.descripcion ?? '',
+      costo_compra: item.costoCompra,
+      stock_actual: item.stockActual,
+      stock_minimo: item.stockMinimo,
+      producto_activo: item.activo,
+    };
   }
 
-  private persist<T>(key: string, value: T): void {
-    localStorage.setItem(key, JSON.stringify(value));
+  private fromRepositoryAssignment(item: import('../domain/inventario.repository').AsignacionInventario): AsignacionInventarioHabitacion {
+    return {
+      id_inventario_hab: item.id,
+      id_insumo: item.insumoId,
+      id_habitacion: item.habitacionId,
+      cantidad: item.cantidad,
+      estado: item.estado,
+      fecha_asignacion: item.fechaAsignacion,
+    };
   }
 }

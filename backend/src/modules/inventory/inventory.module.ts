@@ -3,11 +3,13 @@ import { InsumoInventarioRepository } from './domain/repositories/insumo-inventa
 import { InventarioHabitacionRepository } from './domain/repositories/inventario-habitacion.repository';
 import { PrismaInsumoInventarioRepository } from './infrastructure/repositories/prisma-insumo-inventario.repository';
 import { PrismaInventarioHabitacionRepository } from './infrastructure/repositories/prisma-inventario-habitacion.repository';
+import { InventarioController } from './infrastructure/controllers/inventario.controller';
 
 /**
  * InventoryModule – Feature module
  */
 @Module({
+  controllers: [InventarioController],
   providers: [
     { provide: InsumoInventarioRepository, useClass: PrismaInsumoInventarioRepository },
     {

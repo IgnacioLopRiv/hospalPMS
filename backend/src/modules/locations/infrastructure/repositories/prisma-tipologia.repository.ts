@@ -19,6 +19,8 @@ export class PrismaTipologiaRepository implements TipologiaRepository {
       raw.capacidadMax,
       raw.numCamas,
       raw.descripcion,
+      raw.color,
+      raw.precioBase,
     );
   }
 
@@ -41,6 +43,8 @@ export class PrismaTipologiaRepository implements TipologiaRepository {
     capacidadMax: number;
     numCamas: number;
     descripcion?: string | null;
+    color?: string | null;
+    precioBase?: number | null;
   }): Promise<Tipologia> {
     const raw = await this.prisma.tipologia.create({ data });
     return this.toEntity(raw);
@@ -53,6 +57,8 @@ export class PrismaTipologiaRepository implements TipologiaRepository {
       capacidadMax: number;
       numCamas: number;
       descripcion: string | null;
+      color: string | null;
+      precioBase: number | null;
     }>,
   ): Promise<Tipologia> {
     const raw = await this.prisma.tipologia.update({ where: { id }, data });

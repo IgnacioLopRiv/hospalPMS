@@ -12,6 +12,8 @@ export abstract class TipologiaRepository {
     capacidadMax: number;
     numCamas: number;
     descripcion?: string | null;
+    color?: string | null;
+    precioBase?: number | null;
   }): Promise<Tipologia>;
   abstract update(
     id: number,
@@ -20,6 +22,8 @@ export abstract class TipologiaRepository {
       capacidadMax: number;
       numCamas: number;
       descripcion: string;
+      color: string | null;
+      precioBase: number | null;
     }>,
   ): Promise<Tipologia>;
   abstract delete(id: number): Promise<void>;

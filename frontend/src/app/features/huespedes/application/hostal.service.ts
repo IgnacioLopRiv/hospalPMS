@@ -1,10 +1,10 @@
-import { HttpClient } from '@angular/common/http';
 import { effect, Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
 import { Huesped, Habitacion, Tipologia, Reserva, GuestCardView } from '../../../shared/domain/hostal.model';
 import { SedeService } from '../../locations/application/sede.service';
-import { environment } from '../../../../environments/environment';
+import { CreateHuesped, Huesped as HuespedDomain, HuespedRepository } from '../domain/huesped.repository';
+import { CreateReserva, ReservasRepository, UpdateReserva } from '../../reservations/domain/reservas.repository';
 
 export interface RegisterEntryInput {
   guestId?: number;
@@ -46,8 +46,8 @@ export interface ReservationCalendarEntry {
 })
 export class HostalService {
   private readonly BASE_PREFIX = 'hospal_db_';
-  private readonly http = inject(HttpClient);
-  private readonly apiUrl = environment.apiUrl;
+  private readonly huespedRepository = inject(HuespedRepository);
+  private readonly reservasRepository = inject(ReservasRepository);
   private guestsViewSubject = new BehaviorSubject<GuestCardView[]>([]);
   public guestsView$: Observable<GuestCardView[]> = this.guestsViewSubject.asObservable();
 
@@ -91,11 +91,11 @@ export class HostalService {
     if (this.loadingSede?.id === sedeId) return this.loadingSede.promise;
 
     const promise = Promise.all([
-      firstValueFrom(this.http.get<Omit<Huesped, 'id_sede'>[]>(`${this.apiUrl}/huespedes`)),
-      firstValueFrom(this.http.get<Reserva[]>(`${this.apiUrl}/reservas`, { params: { sedeId } })),
+      firstValueFrom(this.huespedRepository.list()),
+      firstValueFrom(this.reservasRepository.listBySede(sedeId)),
     ]).then(([guests, reservations]) => {
       if (this.sedeService.selectedSede()?.id !== sedeId) return;
-      this.guests = guests.map((guest) => ({ ...guest, id_sede: sedeId }));
+      this.guests = guests.map((guest) => this.fromDomainHuesped(guest, sedeId));
       this.reservations = reservations.map((reservation) => this.normalizeReservation(reservation));
       this.loadedSedeId = sedeId;
       this.refreshView();
@@ -316,10 +316,10 @@ export class HostalService {
       throw new Error('Ya existe un huésped registrado con ese RUT o número de pasaporte.');
     }
 
-    const response = await firstValueFrom(this.http.patch<Omit<Huesped, 'id_sede'>>(
-      `${this.apiUrl}/huespedes/${guestId}`, this.toGuestRequest(updatedGuest)
+    const response = await firstValueFrom(this.huespedRepository.update(
+      guestId, this.toDomainHuespedInput(updatedGuest)
     ));
-    const savedGuest = { ...response, id_sede: existingGuest.id_sede };
+    const savedGuest = this.fromDomainHuesped(response, existingGuest.id_sede);
     this.guests = guests.map((guest) => guest.id_huesped === guestId ? savedGuest : guest);
     this.refreshView();
     return savedGuest;
@@ -331,7 +331,7 @@ export class HostalService {
       throw new Error('El huésped ya no está registrado. Actualiza la lista e inténtalo otra vez.');
     }
 
-    await firstValueFrom(this.http.delete(`${this.apiUrl}/huespedes/${guestId}`));
+    await firstValueFrom(this.huespedRepository.remove(guestId));
     this.guests = guests.filter((guest) => guest.id_huesped !== guestId);
     this.reservations = this.getReservations().filter((reservation) => reservation.id_huesped !== guestId);
     this.refreshView();
@@ -363,10 +363,8 @@ export class HostalService {
       throw new Error('Ya existe un huésped registrado con ese RUT o número de pasaporte.');
     }
 
-    const response = await firstValueFrom(this.http.post<Omit<Huesped, 'id_sede'>>(
-      `${this.apiUrl}/huespedes`, this.toGuestRequest(guestDetails)
-    ));
-    const guest: Huesped = { ...response, id_sede: this.sedeId };
+    const response = await firstValueFrom(this.huespedRepository.create(this.toDomainHuespedInput(guestDetails)));
+    const guest = this.fromDomainHuesped(response, this.sedeId);
     this.guests = [...guests, guest];
     this.refreshView();
     return guest;
@@ -411,9 +409,7 @@ export class HostalService {
       throw new Error('La cantidad de personas supera la capacidad de la habitación seleccionada.');
     }
 
-    const updatedReservation = await firstValueFrom(this.http.patch<Reserva>(
-      `${this.apiUrl}/reservas/${reservationId}`, changes
-    ));
+    const updatedReservation = await firstValueFrom(this.reservasRepository.update(reservationId, changes));
     this.reservations = reservations.map((reservation) =>
       reservation.id_reserva === reservationId ? this.normalizeReservation(updatedReservation) : reservation
     );
@@ -427,7 +423,7 @@ export class HostalService {
       throw new Error('La reserva ya no existe. Actualiza la lista e inténtalo otra vez.');
     }
 
-    await firstValueFrom(this.http.delete(`${this.apiUrl}/reservas/${reservationId}`));
+    await firstValueFrom(this.reservasRepository.remove(reservationId));
     this.reservations = reservations.filter((reservation) => reservation.id_reserva !== reservationId);
     this.refreshView();
   }
@@ -475,8 +471,8 @@ export class HostalService {
   }
 
   private async persistReservationUpdate(reservations: Reserva[], updatedReservation: Reserva): Promise<Reserva> {
-    const saved = await firstValueFrom(this.http.patch<Reserva>(
-      `${this.apiUrl}/reservas/${updatedReservation.id_reserva}`, updatedReservation
+    const saved = await firstValueFrom(this.reservasRepository.update(
+      updatedReservation.id_reserva, updatedReservation as UpdateReserva
     ));
     const normalized = this.normalizeReservation(saved);
     this.reservations = reservations.map((reservation) =>
@@ -592,14 +588,12 @@ export class HostalService {
     }
 
     if (input.newGuest) {
-      const response = await firstValueFrom(this.http.post<Omit<Huesped, 'id_sede'>>(
-        `${this.apiUrl}/huespedes`, this.toGuestRequest(guest)
-      ));
-      guest = { ...response, id_sede: this.sedeId };
+      const response = await firstValueFrom(this.huespedRepository.create(this.toDomainHuespedInput(guest)));
+      guest = this.fromDomainHuesped(response, this.sedeId);
       updatedGuests = [...guests, guest];
     }
 
-    const reservationInput: Omit<Reserva, 'id_reserva'> = {
+    const reservationInput: CreateReserva = {
       id_huesped: guest.id_huesped,
       id_habitacion: room.id_habitacion,
       fecha_llegada: input.arrivalDate,
@@ -615,7 +609,7 @@ export class HostalService {
         pago_completo: input.payment.paidInFull,
       } : {}),
     };
-    const savedReservation = await firstValueFrom(this.http.post<Reserva>(`${this.apiUrl}/reservas`, reservationInput));
+    const savedReservation = await firstValueFrom(this.reservasRepository.create(reservationInput));
     const reservation = this.normalizeReservation(savedReservation);
     this.guests = updatedGuests;
     this.reservations = [...reservations, reservation];
@@ -637,16 +631,31 @@ export class HostalService {
     }
   }
 
-  private toGuestRequest(guest: Partial<Huesped>) {
+  private fromDomainHuesped(guest: HuespedDomain, sedeId: number): Huesped {
     return {
-      documento: guest.documento,
-      nombre: guest.nombre,
-      apellido: guest.apellido,
-      nacionalidad: guest.nacionalidad,
+      id_huesped: guest.id,
+      id_sede: sedeId,
+      documento: guest.rutPasaporte,
+      nombre: guest.nombres,
+      apellido: guest.apellidos,
+      nacionalidad: guest.paisResidencia,
       telefono: guest.telefono,
       email: guest.email,
-      es_recurrente: guest.es_recurrente,
-      dias_ultimo_registro: guest.dias_ultimo_registro,
+      es_recurrente: guest.esRecurrente,
+      dias_ultimo_registro: guest.diasUltimoRegistro,
+    };
+  }
+
+  private toDomainHuespedInput(guest: Partial<Huesped>): CreateHuesped {
+    return {
+      rutPasaporte: guest.documento?.trim().toUpperCase() ?? '',
+      nombres: guest.nombre?.trim() ?? '',
+      apellidos: guest.apellido?.trim() ?? '',
+      paisResidencia: guest.nacionalidad?.trim() ?? '',
+      telefono: guest.telefono?.trim() ?? '',
+      email: guest.email?.trim() ?? '',
+      esRecurrente: guest.es_recurrente,
+      diasUltimoRegistro: guest.dias_ultimo_registro,
     };
   }
 

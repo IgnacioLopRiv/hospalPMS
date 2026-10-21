@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { IonicModule } from '@ionic/angular';
+import { LocationsRepository } from '../../../../features/locations/domain/locations.repository';
+import { createLocationsRepositoryStub } from '../../../../features/locations/domain/testing/locations.repository.stub';
 
 import { EditPerfilesComponent } from './edit-perfiles.component';
 
@@ -11,7 +13,10 @@ describe('EditPerfilesComponent', () => {
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       imports: [EditPerfilesComponent, IonicModule.forRoot()],
-      providers: [provideHttpClient()],
+      providers: [
+        provideHttpClient(),
+        { provide: LocationsRepository, useValue: createLocationsRepositoryStub() },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(EditPerfilesComponent);

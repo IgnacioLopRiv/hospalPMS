@@ -5,12 +5,30 @@ import { IonicRouteStrategy, provideIonicAngular } from '@ionic/angular/standalo
 
 import { routes } from './app/core/routing/app.routes';
 import { AppComponent } from './app/app.component';
+import { HuespedRepository } from './app/features/huespedes/domain/huesped.repository';
+import { HuespedHttpRepository } from './app/features/huespedes/infraestructure/huesped-http.repository';
+import { InventarioRepository } from './app/features/inventory/domain/inventario.repository';
+import { InventarioHttpRepository } from './app/features/inventory/infraestructure/inventario-http.repository';
+import { TarifasRepository } from './app/features/locations/domain/tarifas.repository';
+import { TarifasHttpRepository } from './app/features/locations/infraestructure/tarifas-http.repository';
+import { LocationsRepository } from './app/features/locations/domain/locations.repository';
+import { LocationsHttpRepository } from './app/features/locations/infraestructure/locations-http.repository';
+import { ReservasRepository } from './app/features/reservations/domain/reservas.repository';
+import { ReservasHttpRepository } from './app/features/reservations/infraestructure/reservas-http.repository';
+import { HostalRepository } from './app/features/hostal/domain/hostal.repository';
+import { HostalHttpRepository } from './app/features/hostal/infraestructure/hostal-http.repository';
 
 bootstrapApplication(AppComponent, {
   providers: [
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
     provideIonicAngular(),
     provideHttpClient(),
+    { provide: HuespedRepository, useClass: HuespedHttpRepository },
+    { provide: InventarioRepository, useClass: InventarioHttpRepository },
+    { provide: TarifasRepository, useClass: TarifasHttpRepository },
+    { provide: LocationsRepository, useClass: LocationsHttpRepository },
+    { provide: ReservasRepository, useClass: ReservasHttpRepository },
+    { provide: HostalRepository, useClass: HostalHttpRepository },
     provideRouter(routes, withPreloading(PreloadAllModules)),
   ],
 });

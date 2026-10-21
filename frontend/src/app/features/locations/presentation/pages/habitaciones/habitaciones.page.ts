@@ -481,7 +481,7 @@ export class HabitacionesPage implements OnInit, OnDestroy {
     this.roomFormError.set('');
   }
 
-  saveRoomChanges(): void {
+  async saveRoomChanges(): Promise<void> {
     const room = this.editingRoom();
     const sedeActual = this.sede();
     if (!this.isAdmin() || !room || !sedeActual) {
@@ -522,7 +522,7 @@ export class HabitacionesPage implements OnInit, OnDestroy {
       disposicionMuebles: this.roomFurniture.trim(),
       descripcion: this.roomDescription.trim(),
     };
-    this.sedeService.updateSelectedSede({
+    await this.sedeService.updateSelectedSede({
       nombre: sedeActual.nombre,
       habitaciones: this.habitaciones().map((item) =>
         item.id === room.id ? updatedRoom : item
@@ -551,7 +551,7 @@ export class HabitacionesPage implements OnInit, OnDestroy {
     return insumoId === null ? 0 : this.availableInventoryStock(insumoId);
   }
 
-  assignInventoryToRoom(): void {
+  async assignInventoryToRoom(): Promise<void> {
     const roomId = this.editingRoomId();
     const insumoId = this.selectedInventorySupplyId();
     const cantidad = this.inventoryQuantity();
@@ -560,7 +560,7 @@ export class HabitacionesPage implements OnInit, OnDestroy {
       return;
     }
     try {
-      this.inventarioService.assignToRoom(insumoId, roomId, cantidad);
+      await this.inventarioService.assignToRoom(insumoId, roomId, cantidad);
       this.inventoryQuantity.set(1);
       this.inventoryFormError.set('');
     } catch (error) {
@@ -570,9 +570,9 @@ export class HabitacionesPage implements OnInit, OnDestroy {
     }
   }
 
-  releaseInventoryFromRoom(assignmentId: number): void {
+  async releaseInventoryFromRoom(assignmentId: number): Promise<void> {
     try {
-      this.inventarioService.releaseRoomAssignment(assignmentId);
+      await this.inventarioService.releaseRoomAssignment(assignmentId);
       this.inventoryFormError.set('');
     } catch (error) {
       this.inventoryFormError.set(
@@ -587,7 +587,7 @@ export class HabitacionesPage implements OnInit, OnDestroy {
     }
   }
 
-  deleteRoom(): void {
+  async deleteRoom(): Promise<void> {
     const room = this.editingRoom();
     const sedeActual = this.sede();
     if (!this.isAdmin() || !room || !sedeActual || !this.confirmRoomDelete()) {
@@ -603,7 +603,7 @@ export class HabitacionesPage implements OnInit, OnDestroy {
       );
       return;
     }
-    this.sedeService.updateSelectedSede({
+    await this.sedeService.updateSelectedSede({
       nombre: sedeActual.nombre,
       habitaciones: this.habitaciones().filter((item) => item.id !== room.id),
     });
@@ -631,7 +631,7 @@ export class HabitacionesPage implements OnInit, OnDestroy {
     this.newRoomError.set('');
   }
 
-  createHabitacion(): void {
+  async createHabitacion(): Promise<void> {
     if (!this.isAdmin()) {
       return;
     }
@@ -670,7 +670,7 @@ export class HabitacionesPage implements OnInit, OnDestroy {
       estado: 'libre',
     };
 
-    this.sedeService.updateSelectedSede({
+    await this.sedeService.updateSelectedSede({
       nombre: sedeActual.nombre,
       habitaciones: [...this.habitaciones(), nuevaHabitacion],
     });

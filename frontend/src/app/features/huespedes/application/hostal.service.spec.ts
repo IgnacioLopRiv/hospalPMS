@@ -1,10 +1,11 @@
 import { signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { HostalService } from './hostal.service';
 import { Huesped, Reserva, Sede, SedeHabitacion, SedeTipologia } from '../../../shared/domain/hostal.model';
 import { SedeService } from '../../locations/application/sede.service';
+import { CreateHuesped, Huesped as HuespedDomain, HuespedRepository } from '../domain/huesped.repository';
+import { CreateReserva, ReservasRepository, UpdateReserva } from '../../reservations/domain/reservas.repository';
 
 const TEST_SEDE_ID = 99;
 
@@ -12,12 +13,19 @@ describe('HostalService HTTP persistence', () => {
   let service: HostalService;
   let guests: Omit<Huesped, 'id_sede'>[];
   let reservations: Reserva[];
-  let http: {
-    get: jasmine.Spy;
-    post: jasmine.Spy;
-    patch: jasmine.Spy;
-    delete: jasmine.Spy;
+  let reservasRepository: {
+    listBySede: jasmine.Spy;
+    create: jasmine.Spy;
+    update: jasmine.Spy;
+    remove: jasmine.Spy;
   };
+  let huespedRepository: {
+    list: jasmine.Spy;
+    create: jasmine.Spy;
+    update: jasmine.Spy;
+    remove: jasmine.Spy;
+  };
+  let domainGuests: HuespedDomain[];
 
   const typologies: SedeTipologia[] = [{ id: 1, nombre: 'Doble', capacidad: 2 }];
   const rooms: SedeHabitacion[] = [{
@@ -32,40 +40,39 @@ describe('HostalService HTTP persistence', () => {
   beforeEach(async () => {
     guests = [];
     reservations = [];
-    http = {
-      get: jasmine.createSpy().and.callFake((url: string) => of(
-        url.endsWith('/huespedes') ? guests : reservations
-      )),
-      post: jasmine.createSpy().and.callFake((url: string, body: Record<string, unknown>) => {
-        if (url.endsWith('/huespedes')) {
-          const saved = { ...body, id_huesped: guests.length + 1 } as Omit<Huesped, 'id_sede'>;
-          guests = [...guests, saved];
-          return of(saved);
-        }
-        const saved = { ...body, id_reserva: reservations.length + 1 } as unknown as Reserva;
+    domainGuests = [];
+    huespedRepository = {
+      list: jasmine.createSpy().and.callFake(() => of(domainGuests)),
+      create: jasmine.createSpy().and.callFake((data: CreateHuesped) => {
+        const saved: HuespedDomain = { ...data, id: domainGuests.length + 1 };
+        domainGuests = [...domainGuests, saved];
+        return of(saved);
+      }),
+      update: jasmine.createSpy().and.callFake((id: number, data: Partial<CreateHuesped>) => {
+        domainGuests = domainGuests.map((guest) => guest.id === id ? { ...guest, ...data } : guest);
+        return of(domainGuests.find((guest) => guest.id === id));
+      }),
+      remove: jasmine.createSpy().and.callFake((id: number) => {
+        domainGuests = domainGuests.filter((guest) => guest.id !== id);
+        return of(undefined);
+      }),
+    };
+    reservasRepository = {
+      listBySede: jasmine.createSpy().and.callFake(() => of(reservations)),
+      create: jasmine.createSpy().and.callFake((body: CreateReserva) => {
+        const saved = { ...body, id_reserva: reservations.length + 1 } as Reserva;
         reservations = [...reservations, saved];
         return of(saved);
       }),
-      patch: jasmine.createSpy().and.callFake((url: string, body: Partial<Huesped & Reserva>) => {
-        const id = Number(url.split('/').pop());
-        if (url.includes('/huespedes/')) {
-          guests = guests.map((guest) => guest.id_huesped === id ? { ...guest, ...body } : guest);
-          return of(guests.find((guest) => guest.id_huesped === id));
-        }
+      update: jasmine.createSpy().and.callFake((id: number, body: UpdateReserva) => {
         reservations = reservations.map((reservation) =>
           reservation.id_reserva === id ? { ...reservation, ...body } : reservation
         );
         return of(reservations.find((reservation) => reservation.id_reserva === id));
       }),
-      delete: jasmine.createSpy().and.callFake((url: string) => {
-        const id = Number(url.split('/').pop());
-        if (url.includes('/huespedes/')) {
-          guests = guests.filter((guest) => guest.id_huesped !== id);
-          reservations = reservations.filter((reservation) => reservation.id_huesped !== id);
-        } else {
-          reservations = reservations.filter((reservation) => reservation.id_reserva !== id);
-        }
-        return of({ deleted: true });
+      remove: jasmine.createSpy().and.callFake((id: number) => {
+        reservations = reservations.filter((reservation) => reservation.id_reserva !== id);
+        return of(undefined);
       }),
     };
 
@@ -86,7 +93,8 @@ describe('HostalService HTTP persistence', () => {
     TestBed.configureTestingModule({
       providers: [
         HostalService,
-        { provide: HttpClient, useValue: http },
+        { provide: HuespedRepository, useValue: huespedRepository },
+        { provide: ReservasRepository, useValue: reservasRepository },
         { provide: SedeService, useValue: mockSedeService },
       ],
     });
@@ -97,8 +105,8 @@ describe('HostalService HTTP persistence', () => {
   afterEach(() => TestBed.resetTestingModule());
 
   it('loads guests and reservations from the API for the selected sede', () => {
-    expect(http.get).toHaveBeenCalledWith('http://localhost:3000/huespedes');
-    expect(http.get).toHaveBeenCalledWith('http://localhost:3000/reservas', { params: { sedeId: TEST_SEDE_ID } });
+    expect(huespedRepository.list).toHaveBeenCalled();
+    expect(reservasRepository.listBySede).toHaveBeenCalledWith(TEST_SEDE_ID);
     expect(service.getGuests()).toEqual([]);
     expect(service.getReservations()).toEqual([]);
   });
@@ -113,7 +121,7 @@ describe('HostalService HTTP persistence', () => {
       email: 'valentin@example.com',
     });
     expect(guest.id_sede).toBe(TEST_SEDE_ID);
-    expect(http.post).toHaveBeenCalledWith('http://localhost:3000/huespedes', jasmine.objectContaining({ nombre: 'Valentín' }));
+    expect(huespedRepository.create).toHaveBeenCalledWith(jasmine.objectContaining({ nombres: 'Valentín' }));
 
     const updated = await service.updateGuest(guest.id_huesped, {
       documento: guest.documento,
@@ -126,7 +134,7 @@ describe('HostalService HTTP persistence', () => {
     expect(updated.email).toBe('nuevo@example.com');
 
     await service.deleteGuest(guest.id_huesped);
-    expect(http.delete).toHaveBeenCalledWith(`http://localhost:3000/huespedes/${guest.id_huesped}`);
+    expect(huespedRepository.remove).toHaveBeenCalledWith(guest.id_huesped);
     expect(service.getGuests()).toEqual([]);
   });
 
@@ -134,7 +142,7 @@ describe('HostalService HTTP persistence', () => {
     await expectAsync(service.registerGuest({
       documento: '', nombre: '', apellido: '', nacionalidad: '', telefono: '', email: 'invalid',
     })).toBeRejectedWithError('Completa todos los datos del huésped antes de registrarlo.');
-    expect(http.post).not.toHaveBeenCalled();
+    expect(huespedRepository.create).not.toHaveBeenCalled();
   });
 
   it('registers a guest and reservation in the database', async () => {
@@ -163,7 +171,8 @@ describe('HostalService HTTP persistence', () => {
 
     expect(result.guest.id_huesped).toBe(1);
     expect(result.reservation.id_reserva).toBe(1);
-    expect(http.post).toHaveBeenCalledTimes(2);
+    expect(huespedRepository.create).toHaveBeenCalledTimes(1);
+    expect(reservasRepository.create).toHaveBeenCalledTimes(1);
     expect(service.getReservations()).toContain(jasmine.objectContaining({ id_reserva: 1 }));
   });
 
@@ -185,6 +194,6 @@ describe('HostalService HTTP persistence', () => {
     expect(checkedIn.estado_reserva).toBe('HOSPEDADO');
     const checkedOut = await service.processCheckOut(reservation.id_reserva);
     expect(checkedOut.estado_reserva).toBe('FINALIZADA');
-    expect(http.patch).toHaveBeenCalled();
+    expect(reservasRepository.update).toHaveBeenCalled();
   });
 });

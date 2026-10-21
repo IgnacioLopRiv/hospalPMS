@@ -120,7 +120,7 @@ export class EditTipologiasComponent {
     this.errorMessage.set('');
   }
 
-  saveForm(): void {
+  async saveForm(): Promise<void> {
     if (!this.isAdmin()) {
       this.errorMessage.set('Solo administradores pueden realizar esta acción.');
       return;
@@ -151,14 +151,14 @@ export class EditTipologiasComponent {
     }
 
     if (this.formMode() === 'add') {
-      this.sedeService.addTipologia({
+      await this.sedeService.addTipologia({
         nombre,
         capacidad,
         descripcion,
       });
       this.showSuccess('Tipología agregada correctamente.');
     } else {
-      this.sedeService.updateTipologia(this.editingId()!, {
+      await this.sedeService.updateTipologia(this.editingId()!, {
         nombre,
         capacidad,
         descripcion,
@@ -182,9 +182,9 @@ export class EditTipologiasComponent {
     this.errorMessage.set('');
   }
 
-  confirmDelete(id: number): void {
+  async confirmDelete(id: number): Promise<void> {
     if (!this.isAdmin()) return;
-    const result = this.sedeService.deleteTipologia(id);
+    const result = await this.sedeService.deleteTipologia(id);
     if (!result.ok) {
       this.errorMessage.set(result.message ?? 'No se pudo eliminar la tipología.');
     } else {
