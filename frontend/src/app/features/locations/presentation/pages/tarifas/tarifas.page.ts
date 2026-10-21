@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
+import { firstValueFrom } from 'rxjs';
 import {
   addOutline,
   calendarOutline,
@@ -14,6 +15,7 @@ import {
   trashOutline,
 } from 'ionicons/icons';
 import { SedeService } from '../../../application/sede.service';
+import { TarifasRepository } from '../../../domain/tarifas.repository';
 
 export type PeriodType = 'months' | 'weekdays' | 'month-days' | 'specific-month-days' | 'date-range' | 'specific-dates';
 
@@ -37,8 +39,6 @@ export interface Tarifa {
   precios: Record<number, number>;
 }
 
-const TARIFAS_STORAGE_KEY = 'hospal.tarifas';
-const ABONO_STORAGE_KEY = 'hospal.tarifas.abono';
 const DEFAULT_ABONO_PORCENTAJE = 20;
 const WEEKDAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const PERIOD_TYPES: PeriodType[] = ['months', 'weekdays', 'month-days', 'specific-month-days', 'date-range', 'specific-dates'];
@@ -123,7 +123,9 @@ function isTarifa(value: unknown): value is Tarifa {
 })
 export class TarifasPage {
   private readonly sedeService = inject(SedeService);
+  private readonly tarifasRepository = inject(TarifasRepository);
   private readonly destroyRef = inject(DestroyRef);
+  private loadedSedeId: number | null = null;
 
   readonly sede = this.sedeService.selectedSede;
   readonly tipologias = this.sedeService.tipologias;
@@ -163,12 +165,17 @@ export class TarifasPage {
     effect(() => {
       const sedeId = this.sede()?.id;
       const currentTipologias = this.tipologias();
-      this.tarifas.set(this.loadTarifas(sedeId));
-      this.abonoPorcentaje.set(this.loadAbonoPorcentaje(sedeId));
-      this.abonoDraft = this.abonoPorcentaje();
       this.basePriceDraft = Object.fromEntries(
         currentTipologias.map((typology) => [typology.id, typology.precioBase ?? 0])
       );
+      if (sedeId === undefined) {
+        this.loadedSedeId = null;
+        this.tarifas.set([]);
+        this.abonoPorcentaje.set(DEFAULT_ABONO_PORCENTAJE);
+        this.abonoDraft = DEFAULT_ABONO_PORCENTAJE;
+      } else if (this.loadedSedeId !== sedeId) {
+        void this.loadConfig(sedeId);
+      }
     });
   }
 
@@ -203,7 +210,7 @@ export class TarifasPage {
     this.rateStep.set(1);
   }
 
-  saveTarifa(): void {
+  async saveTarifa(): Promise<void> {
     if (this.rateStep() !== 2 || !this.canSaveTarifa()) return;
 
     const nombre = this.editTarifa.nombre.trim();
@@ -215,25 +222,25 @@ export class TarifasPage {
     const updated = this.editingTarifaId()
       ? currentTarifas.map((tarifa) => tarifa.id === this.editingTarifaId() ? saved : tarifa)
       : [...currentTarifas, saved];
+    await this.persistConfig(updated, this.abonoPorcentaje());
     this.tarifas.set(updated);
-    this.persistTarifas(updated);
     this.configOpen.set(false);
   }
 
-  deleteTarifa(tarifaId: string): void {
+  async deleteTarifa(tarifaId: string): Promise<void> {
     const tarifa = this.tarifas().find((item) => item.id === tarifaId);
     if (!tarifa || !globalThis.confirm(`¿Eliminar la tarifa "${tarifa.nombre}"?`)) return;
     const updated = this.tarifas().filter((tarifa) => tarifa.id !== tarifaId);
+    await this.persistConfig(updated, this.abonoPorcentaje());
     this.tarifas.set(updated);
-    this.persistTarifas(updated);
   }
 
-  saveAbonoPorcentaje(): void {
+  async saveAbonoPorcentaje(): Promise<void> {
     const porcentaje = Number(this.abonoDraft);
     if (!this.isValidAbonoDraft()) return;
 
+    await this.persistConfig(this.tarifas(), porcentaje);
     this.abonoPorcentaje.set(porcentaje);
-    this.persistAbonoPorcentaje(porcentaje);
   }
 
   isValidAbonoDraft(): boolean {
@@ -241,16 +248,16 @@ export class TarifasPage {
     return Number.isFinite(percentage) && percentage >= 1 && percentage <= 100;
   }
 
-  saveBasePrices(): void {
+  async saveBasePrices(): Promise<void> {
     if (!this.isValidBasePriceDraft()) return;
 
     const prices = this.basePriceDraft;
-    this.tipologias().forEach((typology) => {
+    await Promise.all(this.tipologias().map((typology) => {
       const price = prices[typology.id];
-      if (typeof price === 'number') {
-        this.sedeService.updateTipologia(typology.id, { precioBase: price });
-      }
-    });
+      return typeof price === 'number'
+        ? this.sedeService.updateTipologia(typology.id, { precioBase: price })
+        : Promise.resolve();
+    }));
     this.basePriceDraft = Object.fromEntries(
       this.tipologias().map((typology) => [typology.id, prices[typology.id]])
     );
@@ -586,153 +593,27 @@ export class TarifasPage {
     };
   }
 
-  private loadTarifas(sedeId: number | undefined): Tarifa[] {
-    if (sedeId === undefined) return [];
-
-    const key = `${TARIFAS_STORAGE_KEY}.sede.${sedeId}`;
+  private async loadConfig(sedeId: number): Promise<void> {
     try {
-      const stored = localStorage.getItem(key);
-      if (stored) {
-        const parsed: unknown = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.every(isTarifa)) {
-          this.migrateEmbeddedDeposit(sedeId);
-          return parsed.map((tarifa) => this.cloneTarifa(tarifa));
-        }
-        console.error(`Las tarifas guardadas para la sede ${sedeId} tienen un formato inválido.`);
-        return [];
-      }
-      const legacy = localStorage.getItem(TARIFAS_STORAGE_KEY);
-      if (legacy) {
-        const legacyConfig: unknown = JSON.parse(legacy);
-        const converted = this.migrateLegacyConfig(legacyConfig);
-        if (converted.length) {
-          localStorage.setItem(key, JSON.stringify(converted));
-          this.migrateLegacyDeposit(legacyConfig, sedeId);
-          return converted;
-        }
-      }
+      const config = await firstValueFrom(this.tarifasRepository.getForSede(sedeId));
+      if (this.sede()?.id !== sedeId) return;
+      const rates = Array.isArray(config.tarifas) && config.tarifas.every(isTarifa)
+        ? config.tarifas.map((tarifa) => this.cloneTarifa(tarifa as Tarifa))
+        : [];
+      this.tarifas.set(rates);
+      this.abonoPorcentaje.set(config.porcentajeAbono);
+      this.abonoDraft = config.porcentajeAbono;
+      this.loadedSedeId = sedeId;
     } catch (error) {
-      console.error('No se pudieron cargar las tarifas guardadas.', error);
-    }
-    return [];
-  }
-
-  private migrateLegacyConfig(value: unknown): Tarifa[] {
-    if (!value || typeof value !== 'object') return [];
-    const legacy = value as {
-      mesesAlta?: number[];
-      tarifasAlta?: Record<number, number>;
-      tarifasBaja?: Record<number, number>;
-    };
-    const allMonths = MONTHS.map((_, index) => index);
-    const highMonths = Array.isArray(legacy.mesesAlta) ? legacy.mesesAlta : [];
-    const lowMonths = allMonths.filter((month) => !highMonths.includes(month));
-    const rates: Tarifa[] = [];
-
-    if (highMonths.length) {
-      rates.push({
-        id: crypto.randomUUID(),
-        nombre: 'Temporada alta',
-        periodos: [{ ...emptyPeriod(), meses: highMonths }],
-        precios: legacy.tarifasAlta ?? {},
-      });
-    }
-    if (lowMonths.length) {
-      rates.push({
-        id: crypto.randomUUID(),
-        nombre: 'Temporada baja',
-        periodos: [{ ...emptyPeriod(), meses: lowMonths }],
-        precios: legacy.tarifasBaja ?? {},
-      });
-    }
-    return rates;
-  }
-
-  private loadAbonoPorcentaje(sedeId: number | undefined): number {
-    if (sedeId === undefined) return DEFAULT_ABONO_PORCENTAJE;
-    const key = `${ABONO_STORAGE_KEY}.sede.${sedeId}`;
-    try {
-      const saved = localStorage.getItem(key);
-      if (saved !== null) {
-        const porcentaje = Number(saved);
-        if (Number.isFinite(porcentaje) && porcentaje >= 1 && porcentaje <= 100) return porcentaje;
-        console.error(`El porcentaje de abono guardado para la sede ${sedeId} no es válido.`);
-      }
-    } catch (error) {
-      console.error('No se pudo cargar el porcentaje de abono guardado.', error);
-    }
-
-    const migrated = this.readEmbeddedDeposit(sedeId) ?? this.readLegacyDeposit();
-    const percentage = Number.isFinite(migrated) && migrated !== undefined && migrated >= 1 && migrated <= 100
-      ? migrated
-      : DEFAULT_ABONO_PORCENTAJE;
-    this.persistAbonoPorcentaje(percentage, sedeId);
-    return percentage;
-  }
-
-  private readEmbeddedDeposit(sedeId: number): number | undefined {
-    try {
-      const stored = localStorage.getItem(`${TARIFAS_STORAGE_KEY}.sede.${sedeId}`);
-      if (!stored) return undefined;
-      const rates: unknown = JSON.parse(stored);
-      if (!Array.isArray(rates)) return undefined;
-      const rate = rates.find((item) =>
-        !!item && typeof item === 'object' && 'abonoPorcentaje' in item
-      ) as { abonoPorcentaje?: unknown } | undefined;
-      return typeof rate?.abonoPorcentaje === 'number' ? rate.abonoPorcentaje : undefined;
-    } catch (error) {
-      console.error('No se pudo migrar el porcentaje de abono de las tarifas guardadas.', error);
-      return undefined;
+      console.error('No se pudieron cargar las tarifas de la sede.', error);
+      this.tarifas.set([]);
+      this.abonoPorcentaje.set(DEFAULT_ABONO_PORCENTAJE);
     }
   }
 
-  private readLegacyDeposit(): number | undefined {
-    try {
-      const stored = localStorage.getItem(TARIFAS_STORAGE_KEY);
-      if (!stored) return undefined;
-      const config: unknown = JSON.parse(stored);
-      if (!config || typeof config !== 'object') return undefined;
-      const legacy = config as { abonoPctAlta?: unknown; abonoPctBaja?: unknown };
-      if (typeof legacy.abonoPctAlta === 'number') return legacy.abonoPctAlta;
-      return typeof legacy.abonoPctBaja === 'number' ? legacy.abonoPctBaja : undefined;
-    } catch (error) {
-      console.error('No se pudo migrar el porcentaje de abono anterior.', error);
-      return undefined;
-    }
-  }
-
-  private migrateEmbeddedDeposit(sedeId: number): void {
-    if (localStorage.getItem(`${ABONO_STORAGE_KEY}.sede.${sedeId}`) !== null) return;
-    const migrated = this.readEmbeddedDeposit(sedeId);
-    if (migrated !== undefined) this.persistAbonoPorcentaje(migrated, sedeId);
-  }
-
-  private migrateLegacyDeposit(config: unknown, sedeId: number): void {
-    if (localStorage.getItem(`${ABONO_STORAGE_KEY}.sede.${sedeId}`) !== null) return;
-    if (!config || typeof config !== 'object') return;
-    const legacy = config as { abonoPctAlta?: unknown; abonoPctBaja?: unknown };
-    const migrated = typeof legacy.abonoPctAlta === 'number'
-      ? legacy.abonoPctAlta
-      : legacy.abonoPctBaja;
-    if (typeof migrated === 'number') this.persistAbonoPorcentaje(migrated, sedeId);
-  }
-
-  private persistAbonoPorcentaje(porcentaje: number, sedeId = this.sede()?.id): void {
-    if (sedeId === undefined) return;
-    try {
-      localStorage.setItem(`${ABONO_STORAGE_KEY}.sede.${sedeId}`, String(porcentaje));
-    } catch (error) {
-      console.error('No se pudo guardar el porcentaje de abono.', error);
-    }
-  }
-
-  private persistTarifas(tarifas: Tarifa[]): void {
+  private async persistConfig(tarifas: Tarifa[], porcentajeAbono: number): Promise<void> {
     const sedeId = this.sedeService.selectedSede()?.id;
     if (sedeId === undefined) return;
-    try {
-      localStorage.setItem(`${TARIFAS_STORAGE_KEY}.sede.${sedeId}`, JSON.stringify(tarifas));
-    } catch (error) {
-      console.error('No se pudieron guardar las tarifas.', error);
-    }
+    await firstValueFrom(this.tarifasRepository.saveForSede({ sedeId, porcentajeAbono, tarifas }));
   }
 }

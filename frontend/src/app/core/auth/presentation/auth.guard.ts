@@ -30,7 +30,7 @@ export const guestGuard: CanActivateFn = () => {
     const sede = sedeService.sedes().find((s) => s.id === user.sedeId);
     if (sede) {
       sedeService.selectSede(sede);
-      return router.createUrlTree(['/guests-view']);
+      return router.createUrlTree(['/huespedes']);
     }
   }
 

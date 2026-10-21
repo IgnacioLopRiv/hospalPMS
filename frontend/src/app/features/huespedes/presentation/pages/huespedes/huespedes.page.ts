@@ -30,9 +30,9 @@ import { COUNTRY_OPTIONS } from '../../../../../shared/domain/country-options';
 import { CountryPickerComponent } from '../../../../../shared/presentation/country-picker/country-picker.component';
 
 @Component({
-  selector: 'app-guests-view',
-  templateUrl: './guests-view.page.html',
-  styleUrls: ['./guests-view.page.scss'],
+  selector: 'app-huespedes',
+  templateUrl: './huespedes.page.html',
+  styleUrls: ['./huespedes.page.scss'],
   standalone: true,
   imports: [
     CommonModule,
@@ -42,7 +42,7 @@ import { CountryPickerComponent } from '../../../../../shared/presentation/count
     CheckPagePage
   ]
 })
-export class GuestsViewPage implements OnInit, OnDestroy {
+export class HuespedesPage implements OnInit, OnDestroy {
   private readonly renderer = inject(Renderer2);
   private readonly document = inject(DOCUMENT);
   private readonly changeDetector = inject(ChangeDetectorRef);

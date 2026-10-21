@@ -9,7 +9,7 @@ $text-muted: #64748b;
   box-sizing: border-box;
 }
 
-.guests-page-container {
+.huespedes-page-container {
   padding: 2rem 2.5rem;
   box-sizing: border-box;
   width: 100%;
@@ -494,7 +494,7 @@ p {
 }
 
 @media (max-width: 1100px) {
-          .guests-page-container {
+          .huespedes-page-container {
             padding: 1.5rem;
           }
 
@@ -510,7 +510,7 @@ p {
         }
 
 @media (max-width: 600px) {
-          .guests-page-container {
+          .huespedes-page-container {
             padding: 1rem 0.75rem;
           }
 

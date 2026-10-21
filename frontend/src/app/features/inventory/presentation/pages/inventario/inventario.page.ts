@@ -111,7 +111,7 @@ export class InventarioPage {
     this.editingInsumoId.set(null);
   }
 
-  saveInsumo(): void {
+  async saveInsumo(): Promise<void> {
     const form = this.insumoForm();
     if (form.costo_compra === null || form.stock_actual === null || form.stock_minimo === null) {
       this.errorFormulario.set('Completa el costo y ambos campos de stock.');
@@ -126,9 +126,9 @@ export class InventarioPage {
       };
       const editingId = this.editingInsumoId();
       if (editingId === null) {
-        this.inventarioService.addInsumo(data);
+        await this.inventarioService.addInsumo(data);
       } else {
-        this.inventarioService.updateInsumo(editingId, data);
+        await this.inventarioService.updateInsumo(editingId, data);
       }
       this.closeInsumoModal();
     } catch (error) {
@@ -160,16 +160,16 @@ export class InventarioPage {
         {
           text: 'Eliminar',
           role: 'destructive',
-          handler: () => this.deleteInsumo(insumo.id_insumo),
+          handler: async () => this.deleteInsumo(insumo.id_insumo),
         },
       ],
     });
     await alert.present();
   }
 
-  private deleteInsumo(idInsumo: number): void {
+  private async deleteInsumo(idInsumo: number): Promise<void> {
     try {
-      this.inventarioService.deleteInsumo(idInsumo);
+      await this.inventarioService.deleteInsumo(idInsumo);
     } catch (error) {
       this.showDeleteError(this.getErrorMessage(error, 'No se pudo eliminar el insumo.'));
     }
