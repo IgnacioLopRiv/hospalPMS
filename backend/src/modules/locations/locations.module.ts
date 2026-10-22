@@ -10,6 +10,10 @@ import { CreateSedeUseCase } from './application/use-cases/create-sede.use-case'
 import { UpdateSedeUseCase } from './application/use-cases/update-sede.use-case';
 import { DeleteSedeUseCase } from './application/use-cases/delete-sede.use-case';
 import { SedesController } from './infrastructure/controllers/sedes.controller';
+import { TipologiasController } from './infrastructure/controllers/tipologias.controller';
+import { CaracteristicasController } from './infrastructure/controllers/caracteristicas.controller';
+import { TarifasController } from './infrastructure/controllers/tarifas.controller';
+import { HabitacionesController } from './infrastructure/controllers/habitaciones.controller';
 import { CatalogosSedeController } from './infrastructure/controllers/catalogos-sede.controller';
 import { ConfiguracionTarifasController } from './infrastructure/controllers/configuracion-tarifas.controller';
 import { ConfiguracionTarifaRepository } from './domain/repositories/configuracion-tarifa.repository';
@@ -29,7 +33,13 @@ const USE_CASES = [
  * (infraestructura Prisma) mediante inyección de dependencias de NestJS.
  */
 @Module({
-  controllers: [SedesController, CatalogosSedeController, ConfiguracionTarifasController],
+  controllers: [
+    SedesController,
+    TipologiasController,
+    CaracteristicasController,
+    TarifasController,
+    HabitacionesController,
+  ],
   providers: [
     { provide: ConfiguracionTarifaRepository, useClass: PrismaConfiguracionTarifaRepository },
     // Implementaciones de repositorios (adaptadores de infraestructura)

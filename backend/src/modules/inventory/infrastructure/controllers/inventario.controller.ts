@@ -12,174 +12,188 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { InsumoInventarioRepository } from '../../domain/repositories/insumo-inventario.repository';
-import { InventarioHabitacionRepository } from '../../domain/repositories/inventario-habitacion.repository';
+import { Prisma } from '@prisma/client';
+import { PrismaService } from '../../../../database/prisma.service';
 
 interface InsumoInput {
-  nombre_insumo?: string;
-  descripcion?: string;
-  costo_compra?: number;
-  stock_actual?: number;
-  stock_minimo?: number;
-  producto_activo?: boolean;
+  sedeId?: number;
+  nombre?: string;
+  descripcion?: string | null;
+  costoCompra?: number;
+  stockActual?: number;
+  stockMinimo?: number;
+  activo?: boolean;
 }
 
 interface AsignacionInput {
-  id_insumo?: number;
-  id_habitacion?: number;
+  insumoId?: number;
+  habitacionId?: number;
   cantidad?: number;
   estado?: string;
 }
 
-@Controller()
+/**
+ * Controller REST para InsumoInventario y su asignación a habitaciones.
+ *
+ * Rutas insumos:
+ *   GET    /inventario/insumos            → listar (opcional ?sedeId=)
+ *   GET    /inventario/insumos/:id        → obtener uno
+ *   POST   /inventario/insumos            → crear
+ *   PATCH  /inventario/insumos/:id        → actualizar
+ *   DELETE /inventario/insumos/:id        → eliminar
+ *
+ * Rutas asignaciones (inventario_habitacion):
+ *   GET    /inventario/asignaciones       → listar (opcional ?habitacionId=)
+ *   POST   /inventario/asignaciones       → crear asignación
+ *   PATCH  /inventario/asignaciones/:id   → actualizar asignación
+ *   DELETE /inventario/asignaciones/:id   → eliminar asignación
+ */
+@Controller('inventario')
 export class InventarioController {
-  constructor(
-    private readonly insumos: InsumoInventarioRepository,
-    private readonly asignaciones: InventarioHabitacionRepository,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  @Get('sedes/:sedeId/insumos')
-  async listSupplies(@Param('sedeId', ParseIntPipe) sedeId: number) {
-    const rows = await this.insumos.findBySedeId(sedeId);
-    return rows.map((row) => ({
-      id_insumo: row.id,
-      nombre_insumo: row.nombre,
-      descripcion: row.descripcion ?? '',
-      costo_compra: row.costoCompra,
-      stock_actual: row.stockActual,
-      stock_minimo: row.stockMinimo,
-      producto_activo: row.activo,
-      id_sede: row.sedeId,
-    }));
+  // ── Insumos ──────────────────────────────────────────────────────────────
+
+  @Get('insumos')
+  async findAllInsumos(@Query('sedeId') sedeId?: string) {
+    return this.prisma.insumoInventario.findMany({
+      where: sedeId ? { sedeId: Number(sedeId) } : undefined,
+      orderBy: { nombre: 'asc' },
+    });
   }
 
-  @Post('sedes/:sedeId/insumos')
-  async createSupply(@Param('sedeId', ParseIntPipe) sedeId: number, @Body() input: InsumoInput) {
-    this.validateSupply(input);
-    const row = await this.insumos.create({
-      sedeId,
-      nombre: input.nombre_insumo!.trim(),
-      descripcion: input.descripcion?.trim() || null,
-      costoCompra: input.costo_compra!,
-      stockActual: input.stock_actual!,
-      stockMinimo: input.stock_minimo!,
-      activo: input.producto_activo ?? true,
-    });
-    return {
-      id_insumo: row.id,
-      nombre_insumo: row.nombre,
-      descripcion: row.descripcion ?? '',
-      costo_compra: row.costoCompra,
-      stock_actual: row.stockActual,
-      stock_minimo: row.stockMinimo,
-      producto_activo: row.activo,
-      id_sede: row.sedeId,
-    };
+  @Get('insumos/:id')
+  async findOneInsumo(@Param('id', ParseIntPipe) id: number) {
+    const insumo = await this.prisma.insumoInventario.findUnique({ where: { id } });
+    if (!insumo) throw new NotFoundException(`No existe el insumo ${id}.`);
+    return insumo;
+  }
+
+  @Post('insumos')
+  async createInsumo(@Body() input: InsumoInput) {
+    if (!input.sedeId || !input.nombre || input.costoCompra == null || input.stockActual == null || input.stockMinimo == null) {
+      throw new BadRequestException('Faltan campos obligatorios: sedeId, nombre, costoCompra, stockActual, stockMinimo.');
+    }
+    try {
+      return await this.prisma.insumoInventario.create({
+        data: {
+          sedeId: input.sedeId,
+          nombre: input.nombre.trim(),
+          descripcion: input.descripcion?.trim() ?? null,
+          costoCompra: input.costoCompra,
+          stockActual: input.stockActual,
+          stockMinimo: input.stockMinimo,
+          activo: input.activo ?? true,
+        },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
+        throw new BadRequestException('La sede especificada no existe.');
+      }
+      throw error;
+    }
   }
 
   @Patch('insumos/:id')
-  async updateSupply(@Param('id', ParseIntPipe) id: number, @Body() input: InsumoInput) {
-    this.validateSupply(input, true);
+  async updateInsumo(@Param('id', ParseIntPipe) id: number, @Body() input: InsumoInput) {
+    const data = {
+      ...(input.nombre !== undefined ? { nombre: input.nombre.trim() } : {}),
+      ...(input.descripcion !== undefined ? { descripcion: input.descripcion?.trim() ?? null } : {}),
+      ...(input.costoCompra !== undefined ? { costoCompra: input.costoCompra } : {}),
+      ...(input.stockActual !== undefined ? { stockActual: input.stockActual } : {}),
+      ...(input.stockMinimo !== undefined ? { stockMinimo: input.stockMinimo } : {}),
+      ...(input.activo !== undefined ? { activo: input.activo } : {}),
+    };
     try {
-      const row = await this.insumos.update(id, {
-        ...(input.nombre_insumo !== undefined ? { nombre: input.nombre_insumo.trim() } : {}),
-        ...(input.descripcion !== undefined ? { descripcion: input.descripcion.trim() || null } : {}),
-        ...(input.costo_compra !== undefined ? { costoCompra: input.costo_compra } : {}),
-        ...(input.stock_actual !== undefined ? { stockActual: input.stock_actual } : {}),
-        ...(input.stock_minimo !== undefined ? { stockMinimo: input.stock_minimo } : {}),
-        ...(input.producto_activo !== undefined ? { activo: input.producto_activo } : {}),
-      });
-      return {
-        id_insumo: row.id,
-        nombre_insumo: row.nombre,
-        descripcion: row.descripcion ?? '',
-        costo_compra: row.costoCompra,
-        stock_actual: row.stockActual,
-        stock_minimo: row.stockMinimo,
-        producto_activo: row.activo,
-        id_sede: row.sedeId,
-      };
-    } catch {
-      throw new NotFoundException(`No existe el insumo ${id}.`);
+      return await this.prisma.insumoInventario.update({ where: { id }, data });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException(`No existe el insumo ${id}.`);
+      }
+      throw error;
     }
   }
 
   @Delete('insumos/:id')
-  async deleteSupply(@Param('id', ParseIntPipe) id: number) {
+  async removeInsumo(@Param('id', ParseIntPipe) id: number) {
     try {
-      await this.asignaciones.deleteByInsumoId(id);
-      await this.insumos.delete(id);
+      await this.prisma.insumoInventario.delete({ where: { id } });
       return { deleted: true };
-    } catch {
-      throw new NotFoundException(`No se pudo eliminar el insumo ${id}.`);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException(`No existe el insumo ${id}.`);
+      }
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
+        throw new ConflictException('No se puede eliminar el insumo porque tiene asignaciones a habitaciones.');
+      }
+      throw error;
     }
   }
 
-  @Get('inventario-habitaciones')
-  async listRoomAssignments(@Query('sedeId') sedeId?: string, @Query('habitacionId') habitacionId?: string) {
-    if (habitacionId) {
-      return (await this.asignaciones.findByHabitacionId(Number(habitacionId))).map((row) => this.toFrontendAssignment(row));
-    }
-    if (sedeId) {
-      return (await this.asignaciones.findBySedeId(Number(sedeId))).map((row) => this.toFrontendAssignment(row));
-    }
-    throw new BadRequestException('Se requiere sedeId o habitacionId.');
-  }
+  // ── Asignaciones (inventario_habitacion) ─────────────────────────────────
 
-  @Post('inventario-habitaciones')
-  async createRoomAssignment(@Body() input: AsignacionInput) {
-    if (!input.id_insumo || !input.id_habitacion || !Number.isInteger(input.cantidad) || (input.cantidad ?? 0) < 1) {
-      throw new BadRequestException('id_insumo, id_habitacion y cantidad válida son obligatorios.');
-    }
-    const row = await this.asignaciones.create({
-      insumoId: input.id_insumo,
-      habitacionId: input.id_habitacion,
-      cantidad: input.cantidad!,
-      estado: input.estado ?? 'ACTIVO',
+  @Get('asignaciones')
+  async findAllAsignaciones(@Query('habitacionId') habitacionId?: string) {
+    return this.prisma.inventarioHabitacion.findMany({
+      where: habitacionId ? { habitacionId: Number(habitacionId) } : undefined,
+      include: { insumo: true },
+      orderBy: { fechaAsignacion: 'desc' },
     });
-    return this.toFrontendAssignment(row);
   }
 
-  @Patch('inventario-habitaciones/:id')
-  async updateRoomAssignment(@Param('id', ParseIntPipe) id: number, @Body() input: Partial<AsignacionInput>) {
+  @Post('asignaciones')
+  async createAsignacion(@Body() input: AsignacionInput) {
+    if (!input.insumoId || !input.habitacionId || input.cantidad == null || !input.estado) {
+      throw new BadRequestException('Faltan campos obligatorios: insumoId, habitacionId, cantidad, estado.');
+    }
     try {
-      const row = await this.asignaciones.update(id, {
-        ...(input.cantidad !== undefined ? { cantidad: input.cantidad } : {}),
-        ...(input.estado !== undefined ? { estado: input.estado } : {}),
+      return await this.prisma.inventarioHabitacion.create({
+        data: {
+          insumoId: input.insumoId,
+          habitacionId: input.habitacionId,
+          cantidad: input.cantidad,
+          estado: input.estado.trim(),
+        },
+        include: { insumo: true },
       });
-      return this.toFrontendAssignment(row);
-    } catch {
-      throw new NotFoundException(`No existe la asignación ${id}.`);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
+        throw new BadRequestException('El insumo o la habitación especificados no existen.');
+      }
+      throw error;
     }
   }
 
-  private validateSupply(input: InsumoInput, partial = false): void {
-    if (!partial && (!input.nombre_insumo?.trim() || input.costo_compra === undefined || input.stock_actual === undefined || input.stock_minimo === undefined)) {
-      throw new BadRequestException('Nombre, costo y niveles de stock son obligatorios.');
-    }
-    if (input.costo_compra !== undefined && (!Number.isFinite(input.costo_compra) || input.costo_compra < 0)) {
-      throw new BadRequestException('El costo debe ser igual o mayor que cero.');
-    }
-    if ([input.stock_actual, input.stock_minimo].some((value) => value !== undefined && (!Number.isInteger(value) || value < 0))) {
-      throw new BadRequestException('Los niveles de stock deben ser enteros no negativos.');
-    }
-  }
-
-  private toFrontendAssignment(row: {
-    id: number;
-    insumoId: number;
-    habitacionId: number;
-    cantidad: number;
-    estado: string;
-    fechaAsignacion: Date;
-  }) {
-    return {
-      id_inventario_hab: row.id,
-      id_insumo: row.insumoId,
-      id_habitacion: row.habitacionId,
-      cantidad: row.cantidad,
-      estado: row.estado,
-      fecha_asignacion: row.fechaAsignacion.toISOString(),
+  @Patch('asignaciones/:id')
+  async updateAsignacion(@Param('id', ParseIntPipe) id: number, @Body() input: AsignacionInput) {
+    const data = {
+      ...(input.cantidad !== undefined ? { cantidad: input.cantidad } : {}),
+      ...(input.estado !== undefined ? { estado: input.estado.trim() } : {}),
     };
+    try {
+      return await this.prisma.inventarioHabitacion.update({
+        where: { id },
+        data,
+        include: { insumo: true },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException(`No existe la asignación ${id}.`);
+      }
+      throw error;
+    }
+  }
+
+  @Delete('asignaciones/:id')
+  async removeAsignacion(@Param('id', ParseIntPipe) id: number) {
+    try {
+      await this.prisma.inventarioHabitacion.delete({ where: { id } });
+      return { deleted: true };
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException(`No existe la asignación ${id}.`);
+      }
+      throw error;
+    }
   }
 }
