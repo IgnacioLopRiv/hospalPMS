@@ -5,7 +5,7 @@ import { filter } from 'rxjs/operators';
 import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
 import { HeaderComponent } from './core/layout/components/header/header.component';
 import { SidebarComponent } from './core/layout/components/sidebar/sidebar.component';
-import { HostalService } from './features/guests/application/hostal.service';
+import { HostalService } from './features/huespedes/application/hostal.service';
 
 @Component({
   selector: 'app-root',

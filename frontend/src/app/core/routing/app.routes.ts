@@ -23,9 +23,14 @@ export const routes: Routes = [
     loadComponent: () => import('../../features/locations/presentation/pages/sedes/sedes.page').then((m) => m.SedesPage),
   },
   {
-    path: 'guests-view',
+    path: 'huespedes',
     canActivate: [authGuard],
-    loadComponent: () => import('../../features/guests/presentation/pages/guests-view/guests-view.page').then((m) => m.GuestsViewPage),
+    loadComponent: () => import('../../features/huespedes/presentation/pages/huespedes/huespedes.page').then((m) => m.HuespedesPage),
+  },
+  {
+    path: 'guests-view',
+    redirectTo: 'huespedes',
+    pathMatch: 'full',
   },
   {
     path: 'habitaciones',

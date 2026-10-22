@@ -1,30 +1,72 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
+import { of } from 'rxjs';
 import { SedeService } from '../../../application/sede.service';
 import { TarifaPeriodo, TarifasPage } from './tarifas.page';
+import { TarifasConfig, TarifasRepository } from '../../../domain/tarifas.repository';
+import { SedeTipologia } from '../../../../../shared/domain/hostal.model';
 
 describe('TarifasPage', () => {
   let component: TarifasPage;
   let fixture: ComponentFixture<TarifasPage>;
+  let config: TarifasConfig;
+  let tipologias: SedeTipologia[];
+  let sedeServiceStub: {
+    selectedSede: ReturnType<typeof signal<{ id: number; nombre: string; ciudad: string; habitaciones: never[] } | null>>;
+    tipologias: ReturnType<typeof signal<SedeTipologia[]>>;
+    updateTipologia: jasmine.Spy;
+    addTipologia: jasmine.Spy;
+    deleteTipologia: jasmine.Spy;
+  };
 
-  beforeEach(() => {
-    const sedeService = TestBed.inject(SedeService);
-    const sedeId = sedeService.selectedSede()?.id;
-    if (sedeId !== undefined) {
-      localStorage.removeItem(`hospal.tarifas.sede.${sedeId}`);
-      localStorage.removeItem(`hospal.tarifas.abono.sede.${sedeId}`);
-    }
-    localStorage.removeItem('hospal.tarifas');
+  beforeEach(async () => {
+    config = { sedeId: 7, porcentajeAbono: 20, tarifas: [] };
+    tipologias = [];
+    sedeServiceStub = {
+      selectedSede: signal({ id: 7, nombre: 'Sede test', ciudad: 'Santiago', habitaciones: [] }),
+      tipologias: signal(tipologias),
+      updateTipologia: jasmine.createSpy().and.callFake(async (id: number, patch: Partial<SedeTipologia>) => {
+        tipologias = tipologias.map((typology) => typology.id === id ? { ...typology, ...patch } : typology);
+        sedeServiceStub.tipologias.set(tipologias);
+      }),
+      addTipologia: jasmine.createSpy().and.callFake(async (data: Omit<SedeTipologia, 'id'>) => {
+        const created = { ...data, id: tipologias.length + 1 };
+        tipologias = [...tipologias, created];
+        sedeServiceStub.tipologias.set(tipologias);
+        return created;
+      }),
+      deleteTipologia: jasmine.createSpy().and.callFake(async (id: number) => {
+        tipologias = tipologias.filter((typology) => typology.id !== id);
+        sedeServiceStub.tipologias.set(tipologias);
+        return { ok: true };
+      }),
+    };
+    const tarifasRepository = {
+      getForSede: jasmine.createSpy().and.callFake(() => of(config)),
+      saveForSede: jasmine.createSpy().and.callFake((saved: TarifasConfig) => {
+        config = saved;
+        return of(saved);
+      }),
+    };
+    await TestBed.configureTestingModule({
+      imports: [TarifasPage],
+      providers: [
+        { provide: SedeService, useValue: sedeServiceStub },
+        { provide: TarifasRepository, useValue: tarifasRepository },
+      ],
+    }).compileComponents();
     fixture = TestBed.createComponent(TarifasPage);
     component = fixture.componentInstance;
-    component.tarifas.set([]);
     fixture.detectChanges();
+    await Promise.resolve();
+    await Promise.resolve();
   });
 
   it('should create', () => {
     expect(component).toBeTruthy();
   });
 
-  it('creates a named rate with a selected month and stores it for the current location', () => {
+  it('creates a named rate and persists it for the current location', async () => {
     component.openConfig();
     component.editTarifa.nombre = 'Verano';
     component.toggleMonth(component.editTarifa.periodos[0], 11);
@@ -32,30 +74,28 @@ describe('TarifasPage', () => {
     expect(component.rateStep()).toBe(1);
     component.continueToPrices();
     expect(component.rateStep()).toBe(2);
-    component.saveTarifa();
+    await component.saveTarifa();
 
     expect(component.tarifas().length).toBe(1);
     expect(component.tarifas()[0].nombre).toBe('Verano');
     expect('abonoPorcentaje' in component.tarifas()[0]).toBeFalse();
     expect(component.periodSummary(component.tarifas()[0].periodos[0])).toBe('Dic');
-    const sedeId = TestBed.inject(SedeService).selectedSede()?.id;
-    expect(localStorage.getItem(`hospal.tarifas.sede.${sedeId}`)).toContain('Verano');
+    expect(config.sedeId).toBe(7);
+    expect(config.tarifas).toContain(jasmine.objectContaining({ nombre: 'Verano' }));
   });
 
-  it('saves a shared location deposit percentage separately from rates', () => {
+  it('saves a shared location deposit percentage with its rate configuration', async () => {
     component.abonoDraft = 35;
 
-    component.saveAbonoPorcentaje();
+    await component.saveAbonoPorcentaje();
 
     expect(component.abonoPorcentaje()).toBe(35);
-    const sedeId = TestBed.inject(SedeService).selectedSede()?.id;
-    expect(localStorage.getItem(`hospal.tarifas.abono.sede.${sedeId}`)).toBe('35');
-    expect(localStorage.getItem(`hospal.tarifas.sede.${sedeId}`)).toBeNull();
+    expect(config.porcentajeAbono).toBe(35);
   });
 
-  it('saves base prices by typology to the selected location', () => {
+  it('saves base prices by typology to the selected location', async () => {
     const sedeService = TestBed.inject(SedeService);
-    const typology = sedeService.addTipologia({
+    const typology = await sedeService.addTipologia({
       nombre: 'Base test',
       capacidad: 2,
       precioBase: 50000,
@@ -64,20 +104,15 @@ describe('TarifasPage', () => {
 
     component.basePriceDraft[typology.id] = 72500;
     expect(component.isValidBasePriceDraft()).toBeTrue();
-    component.saveBasePrices();
+    await component.saveBasePrices();
 
     expect(sedeService.tipologias().find((item) => item.id === typology.id)?.precioBase).toBe(72500);
-    const savedSedes = JSON.parse(localStorage.getItem('hospal.sedes') ?? '[]');
-    const savedTypology = savedSedes.find((sede: { id: number }) => sede.id === sedeService.selectedSede()?.id)
-      .tipologias.find((item: { id: number }) => item.id === typology.id);
-    expect(savedTypology.precioBase).toBe(72500);
-
-    sedeService.deleteTipologia(typology.id);
+    await sedeService.deleteTipologia(typology.id);
   });
 
-  it('does not accept an empty or negative base price', () => {
+  it('does not accept an empty or negative base price', async () => {
     const sedeService = TestBed.inject(SedeService);
-    const typology = sedeService.addTipologia({
+    const typology = await sedeService.addTipologia({
       nombre: 'Base inválida test',
       capacidad: 2,
       precioBase: 50000,
@@ -86,57 +121,34 @@ describe('TarifasPage', () => {
 
     component.basePriceDraft[typology.id] = -1;
     expect(component.isValidBasePriceDraft()).toBeFalse();
-    component.saveBasePrices();
+    await component.saveBasePrices();
     expect(sedeService.tipologias().find((item) => item.id === typology.id)?.precioBase).toBe(50000);
 
     component.basePriceDraft[typology.id] = null;
     expect(component.isValidBasePriceDraft()).toBeFalse();
-    sedeService.deleteTipologia(typology.id);
+    await sedeService.deleteTipologia(typology.id);
   });
 
-  it('stacks the deposit below base prices when there are many typologies', () => {
+  it('stacks the deposit below base prices when there are many typologies', async () => {
     const sedeService = TestBed.inject(SedeService);
-    const typologies = Array.from({ length: 5 }, (_, index) =>
+    const typologies = await Promise.all(Array.from({ length: 5 }, (_, index) =>
       sedeService.addTipologia({
         nombre: `Responsiva ${index + 1}`,
         capacidad: 2,
         precioBase: 50000,
       })
-    );
+    ));
     fixture.detectChanges();
 
     const settings = fixture.nativeElement.querySelector('.settings-grid');
     expect(settings.classList).toContain('settings-grid-many-typologies');
 
-    typologies.forEach((typology) => sedeService.deleteTipologia(typology.id));
+    await Promise.all(typologies.map((typology) => sedeService.deleteTipologia(typology.id)));
   });
 
-  it('migrates the shared deposit from older tariff records', () => {
-    const sedeId = TestBed.inject(SedeService).selectedSede()?.id;
-    localStorage.removeItem(`hospal.tarifas.abono.sede.${sedeId}`);
-    localStorage.setItem(`hospal.tarifas.sede.${sedeId}`, JSON.stringify([{
-      id: 'legacy-rate',
-      nombre: 'Anterior',
-      periodos: [{
-        id: 'legacy-period',
-        tipo: 'months',
-        meses: [0],
-        diasSemana: [],
-        diasMes: [],
-        fechaInicio: '',
-        fechaFin: '',
-        fechas: [],
-      }],
-      precios: {},
-      abonoPorcentaje: 40,
-    }]));
-
-    const migratedFixture = TestBed.createComponent(TarifasPage);
-    const migratedComponent = migratedFixture.componentInstance;
-    migratedFixture.detectChanges();
-
-    expect(migratedComponent.abonoPorcentaje()).toBe(40);
-    expect('abonoPorcentaje' in migratedComponent.tarifas()[0]).toBeFalse();
+  it('loads the stored tariff configuration from the repository', () => {
+    expect(component.abonoPorcentaje()).toBe(20);
+    expect(component.tarifas()).toEqual([]);
   });
 
   it('supports different period types and recognizes an active date range', () => {

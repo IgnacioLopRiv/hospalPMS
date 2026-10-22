@@ -1,19 +1,16 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { environment } from '../../../../environments/environment';
 import {
   Sede,
   SedeHabitacion as Habitacion,
   SedeTipologia,
   EstadoHabitacion,
 } from '../../../shared/domain/hostal.model';
+import { LocationsRepository } from '../domain/locations.repository';
 
 export type { Sede, SedeHabitacion as Habitacion, SedeTipologia, EstadoHabitacion } from '../../../shared/domain/hostal.model';
 
 const SELECTED_SEDE_KEY = 'hospal.selectedSede';
-const LOCAL_SEDE_CONFIG_KEY = 'hospal.sedes.config';
-const LEGACY_SEDES_KEY = 'hospal.sedes';
 const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
 
 function colorHue(color: string): number {
@@ -49,8 +46,7 @@ function hueToHex(hue: number): string {
 
 @Injectable({ providedIn: 'root' })
 export class SedeService {
-  private readonly http = inject(HttpClient);
-  private readonly apiUrl = `${environment.apiUrl}/sedes`;
+  private readonly repository = inject(LocationsRepository);
   private nextHabitacionId = 1;
 
   readonly sedes = signal<Sede[]>([]);
@@ -67,19 +63,15 @@ export class SedeService {
   }
 
   private async loadSedes(): Promise<void> {
-    const sedes = await firstValueFrom(this.http.get<Sede[]>(this.apiUrl));
-    const localConfigs = this.readLocalSedeConfigs();
-    const normalized = sedes.map((sede) => {
-      const localConfig = localConfigs.get(sede.id);
-      return {
+    const sedes = await firstValueFrom(this.repository.listSedes());
+    const normalized = sedes.map((sede) => ({
         ...sede,
-        habitaciones: (localConfig?.habitaciones ?? sede.habitaciones ?? []).map((room) => ({
+        habitaciones: (sede.habitaciones ?? []).map((room) => ({
           ...room,
           estado: room.estado || 'libre' as EstadoHabitacion,
         })),
-        tipologias: this.assignMissingTypologyColors(localConfig?.tipologias ?? sede.tipologias ?? []),
-      };
-    });
+        tipologias: this.assignMissingTypologyColors(sede.tipologias ?? []),
+      }));
     this.sedes.set(normalized);
     const selectedId = this.readSelectedSedeId();
     const selected = normalized.find((sede) => sede.id === selectedId) ?? normalized[0] ?? null;
@@ -107,7 +99,7 @@ export class SedeService {
    * C (Crear): Agrega una nueva sede al listado
    */
   async createSede(data: { nombre: string; ciudad: string }): Promise<Sede> {
-    const created = await firstValueFrom(this.http.post<Sede>(this.apiUrl, {
+    const created = await firstValueFrom(this.repository.createSede({
       nombre: data.nombre.trim(),
       ciudad: data.ciudad.trim(),
     }));
@@ -120,7 +112,7 @@ export class SedeService {
    * U (Actualizar datos generales): Modifica nombre y ciudad de una sede
    */
   async updateSedeInfo(id: number, data: { nombre: string; ciudad: string }): Promise<void> {
-    await firstValueFrom(this.http.patch<Sede>(`${this.apiUrl}/${id}`, {
+    await firstValueFrom(this.repository.updateSede(id, {
       nombre: data.nombre.trim(),
       ciudad: data.ciudad.trim(),
     }));
@@ -141,7 +133,7 @@ export class SedeService {
    * D (Eliminar): Elimina una sede por su ID
    */
   async deleteSede(id: number): Promise<void> {
-    await firstValueFrom(this.http.delete(`${this.apiUrl}/${id}`));
+    await firstValueFrom(this.repository.deleteSede(id));
     this.sedes.update((list) => list.filter((sede) => sede.id !== id));
 
     // Si se eliminó la sede activa, limpiar o reasignar
@@ -158,25 +150,22 @@ export class SedeService {
 
   // ── Gestión CRUD de Tipologías por Sede ───────────────────────────────────
 
-  addTipologia(data: Omit<SedeTipologia, 'id'>): SedeTipologia {
+  async addTipologia(data: Omit<SedeTipologia, 'id'>): Promise<SedeTipologia> {
     const selected = this.selectedSede();
     if (!selected) {
       throw new Error('No hay sede seleccionada');
     }
 
     const currentTipologias = selected.tipologias ?? [];
-    const nextId = currentTipologias.length > 0 
-      ? Math.max(...currentTipologias.map((t) => t.id)) + 1 
-      : 1;
-
-    const nuevaTipologia: SedeTipologia = {
-      id: nextId,
+    const response = await firstValueFrom(this.repository.createTypology(selected.id, {
+      ...data,
       nombre: data.nombre.trim(),
       capacidad: Number(data.capacidad) || 1,
       color: this.createUniqueTypologyColor(currentTipologias.map((typology) => typology.color ?? '')),
       precioBase: data.precioBase !== undefined ? Number(data.precioBase) : undefined,
       descripcion: data.descripcion?.trim() || '',
-    };
+    }));
+    const nuevaTipologia: SedeTipologia = this.assignMissingTypologyColors([response])[0];
 
     const updatedTipologias = [...currentTipologias, nuevaTipologia];
     const updatedSede: Sede = {
@@ -184,19 +173,27 @@ export class SedeService {
       tipologias: updatedTipologias,
     };
 
-    this.updateSede(updatedSede);
+    this.setUpdatedSede(updatedSede);
     return nuevaTipologia;
   }
 
-  updateTipologia(id: number, patch: Partial<Omit<SedeTipologia, 'id' | 'color'>>): void {
+  async updateTipologia(id: number, patch: Partial<Omit<SedeTipologia, 'id'>>): Promise<void> {
     const selected = this.selectedSede();
     if (!selected) return;
 
     const oldTipologia = (selected.tipologias ?? []).find((t) => t.id === id);
+    const response = await firstValueFrom(this.repository.updateTypology(id, {
+      ...(patch.nombre !== undefined ? { nombre: patch.nombre.trim() } : {}),
+      ...(patch.capacidad !== undefined ? { capacidad: Number(patch.capacidad) || 1 } : {}),
+      ...(patch.precioBase !== undefined ? { precioBase: Number(patch.precioBase) } : {}),
+      ...(patch.descripcion !== undefined ? { descripcion: patch.descripcion.trim() } : {}),
+      ...(patch.color !== undefined ? { color: patch.color } : {}),
+    }));
     const updatedTipologias = (selected.tipologias ?? []).map((t) =>
       t.id === id
         ? {
             ...t,
+            ...response,
             ...(patch.nombre !== undefined ? { nombre: patch.nombre.trim() } : {}),
             ...(patch.capacidad !== undefined ? { capacidad: Number(patch.capacidad) || 1 } : {}),
             ...(patch.precioBase !== undefined ? { precioBase: Number(patch.precioBase) } : {}),
@@ -222,10 +219,10 @@ export class SedeService {
       habitaciones: updatedHabitaciones,
     };
 
-    this.updateSede(updatedSede);
+    this.setUpdatedSede(updatedSede);
   }
 
-  deleteTipologia(id: number): { ok: boolean; message?: string } {
+  async deleteTipologia(id: number): Promise<{ ok: boolean; message?: string }> {
     const selected = this.selectedSede();
     if (!selected) {
       return { ok: false, message: 'No hay sede seleccionada.' };
@@ -254,39 +251,67 @@ export class SedeService {
       tipologias: updatedTipologias,
     };
 
-    this.updateSede(updatedSede);
+    try {
+      await firstValueFrom(this.repository.deleteTypology(id));
+    } catch {
+      return { ok: false, message: 'No se pudo eliminar la tipología; puede tener habitaciones asociadas.' };
+    }
+    this.setUpdatedSede(updatedSede);
     return { ok: true };
   }
 
-  private updateSede(updated: Sede): void {
+  private setUpdatedSede(updated: Sede): void {
     this.selectedSede.set(updated);
     this.sedes.update((list) => {
-      const nextList = list.map((sede) => (sede.id === updated.id ? updated : sede));
-      this.saveLocalSedeConfigs(nextList);
-      return nextList;
+      return list.map((sede) => (sede.id === updated.id ? updated : sede));
     });
     this.saveSelectedSede(updated);
   }
 
-  updateSelectedSede(patch: Pick<Sede, 'nombre' | 'habitaciones'>): void {
+  async updateSelectedSede(patch: Pick<Sede, 'nombre' | 'habitaciones'>): Promise<void> {
     const current = this.selectedSede();
     if (!current) {
       return;
     }
 
+    if (patch.nombre.trim() !== current.nombre) {
+      await firstValueFrom(this.repository.updateSede(current.id, { nombre: patch.nombre.trim(), ciudad: current.ciudad }));
+    }
+    const existingById = new Map(current.habitaciones.map((room) => [room.id, room]));
+    const persistedRooms: Habitacion[] = [];
+    for (const room of patch.habitaciones) {
+      const data = {
+        numero: room.numero.trim(),
+        tipo: room.tipo,
+        tipologiaId: room.tipologiaId ?? current.tipologias?.find((typology) => typology.nombre === room.tipo)?.id ?? 0,
+        tamanoM2: room.tamanoM2,
+        disposicionMuebles: room.disposicionMuebles,
+        descripcion: room.descripcion ?? '',
+        estado: room.estado ?? 'libre' as EstadoHabitacion,
+        huespedActual: room.huespedActual,
+        aseoIniciado: room.aseoIniciado,
+        inventario: room.inventario,
+      };
+      const existing = existingById.get(room.id);
+      const saved = existing
+        ? await firstValueFrom(this.repository.updateRoom(room.id, data))
+        : await firstValueFrom(this.repository.createRoom(current.id, data));
+      persistedRooms.push(saved as Habitacion);
+    }
+    const retainedIds = new Set(current.habitaciones.filter((room) =>
+      patch.habitaciones.some((candidate) => candidate.id === room.id)
+    ).map((room) => room.id));
+    for (const room of current.habitaciones) {
+      if (!retainedIds.has(room.id)) await firstValueFrom(this.repository.deleteRoom(room.id));
+    }
+
     const updated: Sede = {
       ...current,
       nombre: patch.nombre.trim(),
-      habitaciones: patch.habitaciones.map((habitacion) => ({ ...habitacion })),
+      habitaciones: persistedRooms,
     };
 
-    this.selectedSede.set(updated);
-    this.sedes.update((list) => {
-      const nextList = list.map((sede) => (sede.id === updated.id ? updated : sede));
-      this.saveLocalSedeConfigs(nextList);
-      return nextList;
-    });
-    this.saveSelectedSede(updated);
+    this.setUpdatedSede(updated);
     this.syncNextHabitacionId();
   }
 
@@ -297,11 +322,11 @@ export class SedeService {
   /**
    * Actualiza el estado de una habitación por su número o ID
    */
-  updateHabitacionEstado(
+  async updateHabitacionEstado(
     numeroOrId: string | number,
     estado: EstadoHabitacion,
     extra?: { huesped?: string; aseoIniciado?: number }
-  ): void {
+  ): Promise<void> {
     const current = this.selectedSede();
     if (!current) return;
 
@@ -322,30 +347,38 @@ export class SedeService {
     });
 
     if (updatedAny) {
-      this.updateSede({
-        ...current,
-        habitaciones: nextHabitaciones,
-      });
+      const updatedRoom = nextHabitaciones.find((room) =>
+        String(room.numero).trim() === strTarget || String(room.id) === strTarget
+      );
+      if (!updatedRoom) return;
+      const saved = await firstValueFrom(this.repository.updateRoom(updatedRoom.id, {
+        numero: updatedRoom.numero,
+        tipologiaId: updatedRoom.tipologiaId,
+        estado: updatedRoom.estado,
+        huespedActual: updatedRoom.huespedActual,
+        aseoIniciado: updatedRoom.aseoIniciado,
+      }));
+      this.setUpdatedSede({ ...current, habitaciones: nextHabitaciones.map((room) => room.id === saved.id ? saved : room) });
     }
   }
 
-  marcarOcupada(numeroOrId: string | number, huesped?: string): void {
-    this.updateHabitacionEstado(numeroOrId, 'ocupada', { huesped });
+  marcarOcupada(numeroOrId: string | number, huesped?: string): Promise<void> {
+    return this.updateHabitacionEstado(numeroOrId, 'ocupada', { huesped });
   }
 
-  marcarEnAseo(numeroOrId: string | number): void {
-    this.updateHabitacionEstado(numeroOrId, 'en aseo', { aseoIniciado: Date.now() });
+  marcarEnAseo(numeroOrId: string | number): Promise<void> {
+    return this.updateHabitacionEstado(numeroOrId, 'en aseo', { aseoIniciado: Date.now() });
   }
 
-  marcarLibre(numeroOrId: string | number): void {
-    this.updateHabitacionEstado(numeroOrId, 'libre');
+  marcarLibre(numeroOrId: string | number): Promise<void> {
+    return this.updateHabitacionEstado(numeroOrId, 'libre');
   }
 
   /**
    * Revisa automáticamente habitaciones en aseo y las libera si ya transcurrió el tiempo de aseo.
    * @param maxMinutos Duración del aseo antes de volver a libre (por defecto 30 min)
    */
-  autoLiberarAseo(maxMinutos = 30): void {
+  async autoLiberarAseo(maxMinutos = 30): Promise<void> {
     const current = this.selectedSede();
     if (!current) return;
 
@@ -368,10 +401,7 @@ export class SedeService {
     });
 
     if (huboCambios) {
-      this.updateSede({
-        ...current,
-        habitaciones: nextHabitaciones,
-      });
+      await this.updateSelectedSede({ nombre: current.nombre, habitaciones: nextHabitaciones });
     }
   }
 
@@ -414,34 +444,6 @@ export class SedeService {
       return null;
     }
     return null;
-  }
-
-  private readLocalSedeConfigs(): Map<number, Pick<Sede, 'habitaciones' | 'tipologias'>> {
-    try {
-      const raw = localStorage.getItem(LOCAL_SEDE_CONFIG_KEY) ?? localStorage.getItem(LEGACY_SEDES_KEY);
-      const parsed: unknown = raw ? JSON.parse(raw) : [];
-      if (!Array.isArray(parsed)) return new Map();
-      return new Map(parsed
-        .filter((item): item is Sede => typeof item?.id === 'number')
-        .map((sede) => [sede.id, {
-          habitaciones: sede.habitaciones ?? [],
-          tipologias: sede.tipologias ?? [],
-        }]));
-    } catch {
-      return new Map();
-    }
-  }
-
-  private saveLocalSedeConfigs(sedes: Sede[]): void {
-    try {
-      localStorage.setItem(LOCAL_SEDE_CONFIG_KEY, JSON.stringify(sedes.map((sede) => ({
-        id: sede.id,
-        habitaciones: sede.habitaciones,
-        tipologias: sede.tipologias,
-      }))));
-    } catch {
-      // Ignorar error de almacenamiento local para la configuración no conectada.
-    }
   }
 
   private saveSelectedSede(sede: Sede): void {

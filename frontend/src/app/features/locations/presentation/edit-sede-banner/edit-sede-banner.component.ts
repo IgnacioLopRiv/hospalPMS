@@ -110,7 +110,7 @@ export class EditSedeBannerComponent {
     this.updateHabitacion(id, { tamanoM2: raw === null || Number.isNaN(raw) ? null : raw });
   }
 
-  save(): void {
+  async save(): Promise<void> {
     const nombre = this.nombre().trim();
     if (!nombre) {
       this.errorMessage.set('El nombre de la sede es obligatorio.');
@@ -132,11 +132,12 @@ export class EditSedeBannerComponent {
       return;
     }
 
-    this.sedeService.updateSelectedSede({
-      nombre,
-      habitaciones: this.habitaciones(),
-    });
-    this.dismiss();
+    try {
+      await this.sedeService.updateSelectedSede({ nombre, habitaciones: this.habitaciones() });
+      this.dismiss();
+    } catch (error) {
+      this.errorMessage.set(error instanceof Error ? error.message : 'No se pudo guardar la configuración de la sede.');
+    }
   }
 
   private nextRoomNumber(habitaciones: Habitacion[]): number {

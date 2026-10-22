@@ -5,6 +5,10 @@ import { AuthService } from '../../../../../core/auth/application/auth.service';
 import { SedeService } from '../../../application/sede.service';
 import { FotoHabitacionService } from '../../../application/foto-habitacion.service';
 import { InventarioService } from '../../../../inventory/application/inventario.service';
+import { InventarioRepository } from '../../../../inventory/domain/inventario.repository';
+import { LocationsRepository } from '../../../domain/locations.repository';
+import { createLocationsRepositoryStub } from '../../../domain/testing/locations.repository.stub';
+import { of } from 'rxjs';
 import JSZip from 'jszip';
 
 describe('HabitacionesPage', () => {
@@ -15,14 +19,50 @@ describe('HabitacionesPage', () => {
   let inventarioService: InventarioService;
 
   beforeEach(async () => {
+    const supplies: { id: number; sedeId: number; nombre: string; descripcion: string | null; costoCompra: number; stockActual: number; stockMinimo: number; activo: boolean }[] = [];
+    const assignments: { id: number; insumoId: number; habitacionId: number; cantidad: number; estado: string; fechaAsignacion: string }[] = [];
+    const inventarioRepository = {
+      listSupplies: () => of(supplies),
+      listRoomAssignments: () => of(assignments),
+      createSupply: (data: typeof supplies[number]) => {
+        const saved = { ...data, id: supplies.length + 1 };
+        supplies.push(saved);
+        return of(saved);
+      },
+      updateSupply: (id: number, data: Partial<typeof supplies[number]>) => {
+        const index = supplies.findIndex((item) => item.id === id);
+        supplies[index] = { ...supplies[index], ...data };
+        return of(supplies[index]);
+      },
+      deleteSupply: (id: number) => {
+        const index = supplies.findIndex((item) => item.id === id);
+        supplies.splice(index, 1);
+        return of(undefined);
+      },
+      createRoomAssignment: (data: Omit<typeof assignments[number], 'id' | 'fechaAsignacion'>) => {
+        const saved = { ...data, id: assignments.length + 1, fechaAsignacion: new Date().toISOString() };
+        assignments.push(saved);
+        return of(saved);
+      },
+      updateRoomAssignment: (id: number, data: Partial<Pick<typeof assignments[number], 'cantidad' | 'estado'>>) => {
+        const index = assignments.findIndex((item) => item.id === id);
+        assignments[index] = { ...assignments[index], ...data };
+        return of(assignments[index]);
+      },
+    };
     localStorage.removeItem('hospal.inventario.insumos');
     localStorage.removeItem('hospal.inventario.habitaciones');
     await TestBed.configureTestingModule({
       imports: [HabitacionesPage],
-      providers: [provideHttpClient()],
+      providers: [
+        provideHttpClient(),
+        { provide: LocationsRepository, useValue: createLocationsRepositoryStub() },
+        { provide: InventarioRepository, useValue: inventarioRepository },
+      ],
     }).compileComponents();
 
     sedeService = TestBed.inject(SedeService);
+    await sedeService.ready;
     inventarioService = TestBed.inject(InventarioService);
     sedeService.selectedSede.set({
       id: 1,
@@ -181,17 +221,17 @@ describe('HabitacionesPage', () => {
     expect(component.editingRoomId()).toBe(10);
   });
 
-  it('creates one room with the selected typology and automatically assigns the next number when blank', () => {
+  it('creates one room with the selected typology and automatically assigns the next number when blank', async () => {
     authService.currentUser.set({
       id: 1,
       name: 'Administrador',
       email: 'admin@hostal.cl',
       role: 'admin',
     });
-    const typology = sedeService.addTipologia({ nombre: 'Doble', capacidad: 2 });
+    const typology = await sedeService.addTipologia({ nombre: 'Doble', capacidad: 2 });
 
     component.openNewRoomForm();
-    component.createHabitacion();
+    await component.createHabitacion();
 
     expect(sedeService.habitaciones().length).toBe(2);
     expect(sedeService.habitaciones()[1]).toEqual(jasmine.objectContaining({
@@ -203,18 +243,18 @@ describe('HabitacionesPage', () => {
     expect(component.newRoomFormOpen()).toBeFalse();
   });
 
-  it('creates one room with a manually entered number', () => {
+  it('creates one room with a manually entered number', async () => {
     authService.currentUser.set({
       id: 1,
       name: 'Administrador',
       email: 'admin@hostal.cl',
       role: 'admin',
     });
-    const typology = sedeService.addTipologia({ nombre: 'Doble', capacidad: 2 });
+    const typology = await sedeService.addTipologia({ nombre: 'Doble', capacidad: 2 });
 
     component.openNewRoomForm();
     component.newRoomNumber.set('208');
-    component.createHabitacion();
+    await component.createHabitacion();
 
     expect(sedeService.habitaciones()[1]).toEqual(jasmine.objectContaining({
       numero: '208',
@@ -224,34 +264,34 @@ describe('HabitacionesPage', () => {
     expect(component.newRoomError()).toBe('');
   });
 
-  it('does not create a room with a duplicate number', () => {
+  it('does not create a room with a duplicate number', async () => {
     authService.currentUser.set({
       id: 1,
       name: 'Administrador',
       email: 'admin@hostal.cl',
       role: 'admin',
     });
-    sedeService.addTipologia({ nombre: 'Doble', capacidad: 2 });
+    await sedeService.addTipologia({ nombre: 'Doble', capacidad: 2 });
 
     component.openNewRoomForm();
     component.newRoomNumber.set('105');
-    component.createHabitacion();
+    await component.createHabitacion();
 
     expect(sedeService.habitaciones().length).toBe(1);
     expect(component.newRoomError()).toBe('Ya existe una habitación con el número 105.');
     expect(component.newRoomFormOpen()).toBeTrue();
   });
 
-  it('opens a room editor and assigns a registered supply to the room', () => {
+  it('opens a room editor and assigns a registered supply to the room', async () => {
     authService.currentUser.set({
       id: 1,
       name: 'Administrador',
       email: 'admin@hostal.cl',
       role: 'admin',
     });
-    const typology = sedeService.addTipologia({ nombre: 'Doble', capacidad: 2 });
+    const typology = await sedeService.addTipologia({ nombre: 'Doble', capacidad: 2 });
     const room = sedeService.habitaciones()[0];
-    const insumo = inventarioService.addInsumo({
+    const insumo = await inventarioService.addInsumo({
       nombre_insumo: 'Lámpara',
       descripcion: '',
       costo_compra: 5000,
@@ -268,8 +308,8 @@ describe('HabitacionesPage', () => {
     component.roomDescription = 'Habitación con vista al mar';
     component.selectedInventorySupplyId.set(insumo.id_insumo);
     component.inventoryQuantity.set(2);
-    component.assignInventoryToRoom();
-    component.saveRoomChanges();
+    await component.assignInventoryToRoom();
+    await component.saveRoomChanges();
 
     expect(sedeService.habitaciones()[0]).toEqual(jasmine.objectContaining({
       numero: '107',
@@ -285,15 +325,15 @@ describe('HabitacionesPage', () => {
     expect(component.editingRoomId()).toBeNull();
   });
 
-  it('keeps the editor open when the edited room number is already in use', () => {
+  it('keeps the editor open when the edited room number is already in use', async () => {
     authService.currentUser.set({
       id: 1,
       name: 'Administrador',
       email: 'admin@hostal.cl',
       role: 'admin',
     });
-    const typology = sedeService.addTipologia({ nombre: 'Doble', capacidad: 2 });
-    sedeService.updateSelectedSede({
+    const typology = await sedeService.addTipologia({ nombre: 'Doble', capacidad: 2 });
+    await sedeService.updateSelectedSede({
       nombre: 'Hostal Playa',
       habitaciones: [...sedeService.habitaciones(), {
         id: 11,
@@ -308,13 +348,13 @@ describe('HabitacionesPage', () => {
     component.openRoomEditor(sedeService.habitaciones()[0]);
     component.roomNumber = '106';
     component.roomTypologyId = typology.id;
-    component.saveRoomChanges();
+    await component.saveRoomChanges();
 
     expect(component.roomFormError()).toBe('Ya existe una habitación con el número 106.');
     expect(component.editingRoomId()).toBe(10);
   });
 
-  it('deletes a room only after confirming the action', () => {
+  it('deletes a room only after confirming the action', async () => {
     authService.currentUser.set({
       id: 1,
       name: 'Administrador',
@@ -324,11 +364,11 @@ describe('HabitacionesPage', () => {
     const room = sedeService.habitaciones()[0];
 
     component.openRoomEditor(room);
-    component.deleteRoom();
+    await component.deleteRoom();
     expect(sedeService.habitaciones()).toHaveSize(1);
 
     component.requestRoomDelete();
-    component.deleteRoom();
+    await component.deleteRoom();
     expect(sedeService.habitaciones()).toHaveSize(0);
   });
 

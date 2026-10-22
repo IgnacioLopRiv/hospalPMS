@@ -23,5 +23,10 @@ export class Habitacion {
     public numero: string,
     public cantidadPersonas: number,
     public estado: EstadoHabitacion,
+    public tamanoM2: number | null = null,
+    public disposicionMuebles: string | null = null,
+    public descripcion: string | null = null,
+    public huespedActual: string | null = null,
+    public aseoIniciado: Date | null = null,
   ) {}
 }

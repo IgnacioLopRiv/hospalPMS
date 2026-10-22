@@ -1,21 +1,48 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { provideRouter, Router } from '@angular/router';
 import { By } from '@angular/platform-browser';
+import { of } from 'rxjs';
 import { HostalService } from '../../../application/hostal.service';
+import { SedeService } from '../../../../locations/application/sede.service';
 import { CheckPagePage } from '../../../../reservations/presentation/pages/check-page/check-page.page';
-import { GuestsViewPage } from './guests-view.page';
+import { InventarioRepository } from '../../../../inventory/domain/inventario.repository';
+import { createEmptyInventarioRepositoryStub } from '../../../../inventory/domain/testing/inventario.repository.stub';
+import { HuespedesPage } from './huespedes.page';
 import { GuestCardView, Huesped } from '../../../../../shared/domain/hostal.model';
 
-describe('GuestsViewPage', () => {
-  let component: GuestsViewPage;
-  let fixture: ComponentFixture<GuestsViewPage>;
+describe('HuespedesPage', () => {
+  let component: HuespedesPage;
+  let fixture: ComponentFixture<HuespedesPage>;
 
   beforeEach(() => {
+    const hostalServiceStub = {
+      guestsView$: of([]),
+      getGuests: () => [],
+      getReservations: () => [],
+      getReservationCalendarData: () => [],
+      getAvailableRooms: () => [],
+      onSedeChanged: () => undefined,
+    };
+    const sedeServiceStub = {
+      ready: Promise.resolve(),
+      selectedSede: signal(null),
+      habitaciones: signal([]),
+      tipologias: signal([]),
+      marcarOcupada: () => undefined,
+      marcarEnAseo: () => undefined,
+    };
+
     TestBed.configureTestingModule({
-      imports: [GuestsViewPage],
-      providers: [provideRouter([])],
+      imports: [HuespedesPage],
+      providers: [
+        provideRouter([]),
+        { provide: HostalService, useValue: hostalServiceStub },
+        { provide: SedeService, useValue: sedeServiceStub },
+        { provide: InventarioRepository, useValue: createEmptyInventarioRepositoryStub() },
+      ],
     });
-    fixture = TestBed.createComponent(GuestsViewPage);
+    fixture = TestBed.createComponent(HuespedesPage);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
@@ -71,7 +98,7 @@ describe('GuestsViewPage', () => {
     expect(fixture.nativeElement.querySelector('.cards-grid')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.guest-list')).toBeNull();
 
-    const button = fixture.nativeElement.querySelector('.guests-view-toggle') as HTMLButtonElement;
+    const button = fixture.nativeElement.querySelector('.huespedes-view-toggle') as HTMLButtonElement;
     expect(button.textContent).toContain('Ver');
     button.click();
     fixture.detectChanges();

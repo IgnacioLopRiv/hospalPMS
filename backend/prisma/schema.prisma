@@ -85,6 +85,7 @@ model Sede {
   habitaciones Habitacion[]
   tipologias   Tipologia[]
   insumos      InsumoInventario[]
+  configuracionTarifa ConfiguracionTarifa?
 
   @@map("sede")
 }
@@ -110,6 +111,8 @@ model Tipologia {
   capacidadMax    Int
   numCamas        Int
   descripcion     String?                   @db.Text
+  color           String?                   @db.VarChar(7)
+  precioBase      Int?
   sede            Sede                      @relation(fields: [sedeId], references: [id])
   habitaciones    Habitacion[]
   tarifas         Tarifa[]
@@ -161,6 +164,11 @@ model Habitacion {
   numero           String                 @db.VarChar(10)
   estado           EstadoHabitacion       @default(DISPONIBLE)
   cantidadPersonas Int
+  tamanoM2         Float?
+  disposicionMuebles String?
+  descripcion      String?                  @db.Text
+  huespedActual    String?
+  aseoIniciado     DateTime?
   sede             Sede                   @relation(fields: [sedeId], references: [id])
   tipologia        Tipologia              @relation(fields: [tipologiaId], references: [id])
   reservas         Reserva[]
@@ -168,6 +176,16 @@ model Habitacion {
 
   @@unique([sedeId, numero])
   @@map("habitacion")
+}
+
+model ConfiguracionTarifa {
+  id               Int      @id @default(autoincrement())
+  sedeId           Int      @unique
+  porcentajeAbono  Int      @default(20)
+  tarifas          Json
+  sede             Sede     @relation(fields: [sedeId], references: [id])
+
+  @@map("configuracion_tarifa")
 }
 
 model InsumoInventario {

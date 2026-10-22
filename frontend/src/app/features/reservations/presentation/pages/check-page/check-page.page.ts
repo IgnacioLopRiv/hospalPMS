@@ -26,7 +26,7 @@ import {
   searchOutline,
 } from 'ionicons/icons';
 import { SedeService } from '../../../../locations/application/sede.service';
-import { HostalService, ReservationCalendarEntry } from '../../../../guests/application/hostal.service';
+import { HostalService, ReservationCalendarEntry } from '../../../../huespedes/application/hostal.service';
 import { GuestCardView, Huesped, Habitacion, SedeHabitacion, SedeTipologia } from '../../../../../shared/domain/hostal.model';
 import { COUNTRY_OPTIONS } from '../../../../../shared/domain/country-options';
 import { CountryPickerComponent } from '../../../../../shared/presentation/country-picker/country-picker.component';
@@ -634,7 +634,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
 
     try {
       await this.hostalService.processCheckIn(item.id, this.checkInPaymentMethod || undefined);
-      this.sedeService.marcarOcupada(item.roomNumber, item.guestName);
+      await this.sedeService.marcarOcupada(item.roomNumber, item.guestName);
       this.entrySuccessMessage = item.outstandingBalance > 0
         ? `Check-in completado para ${item.guestName}. Se cobraron ${item.outstandingBalance.toLocaleString('es-CL')} CLP por ${this.checkInPaymentMethod}. La habitación ${item.roomNumber} ahora está OCUPADA.`
         : `Check-in completado para ${item.guestName}. ${item.hasPaymentRecord ? 'El pago de la reserva ya estaba completo.' : 'No había saldo pendiente registrado.'} La habitación ${item.roomNumber} ahora está OCUPADA.`;
@@ -651,7 +651,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
     this.movementError = '';
     try {
       await this.hostalService.processCheckOut(item.id);
-      this.sedeService.marcarEnAseo(item.roomNumber);
+      await this.sedeService.marcarEnAseo(item.roomNumber);
       this.movementError = '';
       this.entrySuccessMessage = `Check-out procesado para ${item.guestName}. La habitación ${item.roomNumber} pasa a estado EN ASEO.`;
     } catch (error) {
@@ -733,7 +733,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
 
   isValidRut(value: string): boolean {
     const rut = value.replace(/[.\s-]/g, '').toUpperCase();
-    if (!/^\d{1,8}[0-9K]$/.test(rut) || /^0+$/.test(rut)) {
+    if (!/^\d{7,8}[0-9K]$/.test(rut) || /^0+$/.test(rut)) {
       return false;
     }
 

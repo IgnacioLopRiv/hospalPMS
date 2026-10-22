@@ -10,6 +10,7 @@ import { GuestsModule } from './modules/guests/guests.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { ReservationsModule } from './modules/reservations/reservations.module';
 import { BillingModule } from './modules/billing/billing.module';
+import { HostalModule } from './modules/hostal/hostal.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { BillingModule } from './modules/billing/billing.module';
     ReservationsModule,
     InventoryModule,
     BillingModule,
+    HostalModule,
   ],
   controllers: [AppController],
   providers: [AppService],

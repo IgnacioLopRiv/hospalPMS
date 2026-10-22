@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Body,
+  ConflictException,
   Controller,
   Delete,
   Get,
@@ -11,6 +12,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { PrismaService } from '../../../../database/prisma.service';
+import { Prisma } from '@prisma/client';
 
 interface SedeInput {
   nombre?: string;
@@ -44,15 +46,20 @@ export class SedesController {
         nombre: typology.nombre,
         capacidad: typology.capacidadMax,
         descripcion: typology.descripcion ?? '',
+        color: typology.color ?? undefined,
+        precioBase: typology.precioBase ?? undefined,
       })),
       habitaciones: sede.habitaciones.map((room) => ({
         id: room.id,
         numero: room.numero,
         tipologiaId: room.tipologiaId,
         tipo: sede.tipologias.find((typology) => typology.id === room.tipologiaId)?.nombre ?? '',
-        tamanoM2: null,
-        disposicionMuebles: '',
+        tamanoM2: room.tamanoM2,
+        disposicionMuebles: room.disposicionMuebles ?? '',
+        descripcion: room.descripcion ?? '',
         estado: room.estado === 'OCUPADA' ? 'ocupada' : room.estado === 'EN_LIMPIEZA' ? 'en aseo' : 'libre',
+        huespedActual: room.huespedActual ?? undefined,
+        aseoIniciado: room.aseoIniciado?.getTime(),
       })),
     }));
   }
@@ -98,18 +105,30 @@ export class SedesController {
     try {
       const sede = await this.prisma.sede.update({ where: { id }, data });
       return { id: sede.id, hostalId: sede.hostalId, nombre: sede.nombreSede, ciudad: sede.ciudad };
-    } catch {
-      throw new NotFoundException(`No existe la sede ${id}.`);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException(`No existe la sede ${id}.`);
+      }
+      throw error;
     }
   }
 
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number) {
     try {
-      await this.prisma.sede.delete({ where: { id } });
+      await this.prisma.$transaction(async (transaction) => {
+        await transaction.configuracionTarifa.deleteMany({ where: { sedeId: id } });
+        await transaction.sede.delete({ where: { id } });
+      });
       return { deleted: true };
-    } catch {
-      throw new NotFoundException(`No se pudo eliminar la sede ${id}; puede no existir o tener registros asociados.`);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException(`No existe la sede ${id}.`);
+      }
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
+        throw new ConflictException(`No se puede eliminar la sede ${id}; todavía tiene registros asociados.`);
+      }
+      throw error;
     }
   }
 }

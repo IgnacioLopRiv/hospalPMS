@@ -11,5 +11,7 @@ export class Tipologia {
     public capacidadMax: number,
     public numCamas: number,
     public descripcion: string | null,
+    public color: string | null = null,
+    public precioBase: number | null = null,
   ) {}
 }

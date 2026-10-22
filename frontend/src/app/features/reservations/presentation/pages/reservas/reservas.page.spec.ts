@@ -1,6 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { HostalService } from '../../../../guests/application/hostal.service';
+import { provideHttpClient } from '@angular/common/http';
+import { HostalService } from '../../../../huespedes/application/hostal.service';
 import { SedeService } from '../../../../locations/application/sede.service';
+import { LocationsRepository } from '../../../../locations/domain/locations.repository';
+import { createLocationsRepositoryStub } from '../../../../locations/domain/testing/locations.repository.stub';
+import { HuespedRepository } from '../../../../huespedes/domain/huesped.repository';
+import { createHostalRepositoryStubs } from '../../../../huespedes/domain/testing/hostal-repositories.stub';
+import { ReservasRepository } from '../../../domain/reservas.repository';
 import { Reserva, SedeTipologia } from '../../../../../shared/domain/hostal.model';
 import { ReservasPage } from './reservas.page';
 
@@ -13,15 +19,25 @@ describe('ReservasPage', () => {
   beforeEach(async () => {
     localStorage.removeItem('hospal.sedes');
     localStorage.removeItem('hospal.selectedSede');
+    const repositories = createHostalRepositoryStubs();
+    const initialSede = { id: 1, nombre: 'Sede test', ciudad: 'Santiago', habitaciones: [], tipologias: [] };
     await TestBed.configureTestingModule({
       imports: [ReservasPage],
+      providers: [
+        provideHttpClient(),
+        { provide: LocationsRepository, useValue: createLocationsRepositoryStub([initialSede]) },
+        { provide: HuespedRepository, useValue: repositories.huespedRepository },
+        { provide: ReservasRepository, useValue: repositories.reservasRepository },
+      ],
     }).compileComponents();
 
     sedeService = TestBed.inject(SedeService);
+    await sedeService.ready;
     const sedeId = sedeService.selectedSede()!.id;
     localStorage.removeItem(`hospal_db_sede_${sedeId}_huespedes`);
     localStorage.removeItem(`hospal_db_sede_${sedeId}_reservas`);
     hostalService = TestBed.inject(HostalService);
+    await hostalService.ready;
     fixture = TestBed.createComponent(ReservasPage);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -37,13 +53,13 @@ describe('ReservasPage', () => {
     localStorage.removeItem('hospal.selectedSede');
   });
 
-  function addInventory(): SedeTipologia {
-    const typology = sedeService.addTipologia({
+  async function addInventory(): Promise<SedeTipologia> {
+    const typology = await sedeService.addTipologia({
       nombre: 'Tipo de prueba',
       capacidad: 2,
     });
     const sede = sedeService.selectedSede()!;
-    sedeService.updateSelectedSede({
+    await sedeService.updateSelectedSede({
       nombre: sede.nombre,
       habitaciones: [...sede.habitaciones, {
         id: sedeService.createHabitacionId(),
@@ -69,7 +85,7 @@ describe('ReservasPage', () => {
   }
 
   async function addReservation(arrivalOffset: number, departureOffset: number): Promise<Reserva> {
-    const typology = addInventory();
+    const typology = await addInventory();
     const guest = await hostalService.registerGuest({
       documento: 'TEST-123',
       nombre: 'Huésped',
@@ -114,8 +130,8 @@ describe('ReservasPage', () => {
     expect(component.datePickerOpen()).toBeFalse();
   });
 
-  it('shows only managed room types and uses their configured colors', () => {
-    const typology = addInventory();
+  it('shows only managed room types and uses their configured colors', async () => {
+    const typology = await addInventory();
     fixture.detectChanges();
 
     expect(component.categories().length).toBe(1);
@@ -159,9 +175,9 @@ describe('ReservasPage', () => {
     expect(component.getGridColumnSpan(block)).toBe(1);
   });
 
-  it('assigns different colors to managed typologies', () => {
-    const first = sedeService.addTipologia({ nombre: 'Tipo 1', capacidad: 2 });
-    const second = sedeService.addTipologia({ nombre: 'Tipo 2', capacidad: 2 });
+  it('assigns different colors to managed typologies', async () => {
+    const first = await sedeService.addTipologia({ nombre: 'Tipo 1', capacidad: 2 });
+    const second = await sedeService.addTipologia({ nombre: 'Tipo 2', capacidad: 2 });
 
     expect(first.color).toBeTruthy();
     expect(second.color).toBeTruthy();

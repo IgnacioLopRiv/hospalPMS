@@ -14,6 +14,10 @@ import { TipologiasController } from './infrastructure/controllers/tipologias.co
 import { CaracteristicasController } from './infrastructure/controllers/caracteristicas.controller';
 import { TarifasController } from './infrastructure/controllers/tarifas.controller';
 import { HabitacionesController } from './infrastructure/controllers/habitaciones.controller';
+import { CatalogosSedeController } from './infrastructure/controllers/catalogos-sede.controller';
+import { ConfiguracionTarifasController } from './infrastructure/controllers/configuracion-tarifas.controller';
+import { ConfiguracionTarifaRepository } from './domain/repositories/configuracion-tarifa.repository';
+import { PrismaConfiguracionTarifaRepository } from './infrastructure/repositories/prisma-configuracion-tarifa.repository';
 
 const USE_CASES = [
   GetSedesUseCase,
@@ -37,6 +41,7 @@ const USE_CASES = [
     HabitacionesController,
   ],
   providers: [
+    { provide: ConfiguracionTarifaRepository, useClass: PrismaConfiguracionTarifaRepository },
     // Implementaciones de repositorios (adaptadores de infraestructura)
     { provide: SedeRepository, useClass: PrismaSedeRepository },
     { provide: TipologiaRepository, useClass: PrismaTipologiaRepository },

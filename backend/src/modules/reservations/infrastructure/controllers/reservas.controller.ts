@@ -10,7 +10,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { EstadoReserva, MetodoPago, Prisma } from '@prisma/client';
+import { EstadoReserva, MetodoPago, Prisma, TipoOperacion } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
 
 interface ReservaInput {
@@ -43,8 +43,12 @@ export class ReservasController {
 
   @Post()
   async create(@Body() input: ReservaInput) {
-    const reservation = await this.prisma.reserva.create({
-      data: this.toDatabase(input) as Prisma.ReservaUncheckedCreateInput,
+    const reservation = await this.prisma.$transaction(async (transaction) => {
+      const saved = await transaction.reserva.create({
+        data: this.toDatabase(input) as Prisma.ReservaUncheckedCreateInput,
+      });
+      await this.recordPayment(transaction, saved.id, input, 0);
+      return saved;
     });
     return this.toFrontend(reservation);
   }
@@ -52,9 +56,15 @@ export class ReservasController {
   @Patch(':id')
   async update(@Param('id', ParseIntPipe) id: number, @Body() input: ReservaInput) {
     try {
-      const reservation = await this.prisma.reserva.update({
-        where: { id },
-        data: this.toDatabase(input, true) as Prisma.ReservaUncheckedUpdateInput,
+      const reservation = await this.prisma.$transaction(async (transaction) => {
+        const previous = await transaction.reserva.findUnique({ where: { id } });
+        if (!previous) throw new NotFoundException(`No existe la reserva ${id}.`);
+        const saved = await transaction.reserva.update({
+          where: { id },
+          data: this.toDatabase(input, true) as Prisma.ReservaUncheckedUpdateInput,
+        });
+        await this.recordPayment(transaction, id, input, previous.montoPagado ?? 0);
+        return saved;
       });
       return this.toFrontend(reservation);
     } catch (error) {
@@ -80,6 +90,33 @@ export class ReservasController {
       }
       throw error;
     }
+  }
+
+  @Get(':id/pagos')
+  async listPayments(@Param('id', ParseIntPipe) id: number) {
+    return this.prisma.pago.findMany({ where: { reservaId: id }, orderBy: { fechaPago: 'asc' } });
+  }
+
+  private async recordPayment(
+    transaction: Prisma.TransactionClient,
+    reservationId: number,
+    input: ReservaInput,
+    previousAmount: number,
+  ): Promise<void> {
+    const newAmount = input.monto_pagado;
+    const metodoPago = input.metodo_pago === 'transferencia' ? MetodoPago.TRANSFERENCIA
+      : input.metodo_pago === 'efectivo' ? MetodoPago.EFECTIVO
+        : undefined;
+    const amount = (newAmount ?? previousAmount) - previousAmount;
+    if (!metodoPago || amount <= 0) return;
+    await transaction.pago.create({
+      data: {
+        reservaId: reservationId,
+        monto: amount,
+        metodoPago,
+        tipoOperacion: input.pago_completo ? TipoOperacion.PAGO_FINAL : TipoOperacion.ABONO,
+      },
+    });
   }
 
   private toDatabase(input: ReservaInput, partial = false): Prisma.ReservaUncheckedCreateInput | Prisma.ReservaUncheckedUpdateInput {

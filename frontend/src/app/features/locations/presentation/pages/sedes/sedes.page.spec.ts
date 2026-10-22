@@ -2,6 +2,8 @@ import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { SedesPage } from './sedes.page';
 import { AuthService } from '../../../../../core/auth/application/auth.service';
+import { LocationsRepository } from '../../../domain/locations.repository';
+import { createLocationsRepositoryStub } from '../../../domain/testing/locations.repository.stub';
 
 describe('SedesPage', () => {
   let component: SedesPage;
@@ -11,7 +13,10 @@ describe('SedesPage', () => {
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       imports: [SedesPage],
-      providers: [provideHttpClient()],
+      providers: [
+        provideHttpClient(),
+        { provide: LocationsRepository, useValue: createLocationsRepositoryStub() },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(SedesPage);

@@ -12,6 +12,11 @@ export abstract class HabitacionRepository {
     numero: string;
     cantidadPersonas: number;
     estado?: EstadoHabitacion;
+    tamanoM2?: number | null;
+    disposicionMuebles?: string | null;
+    descripcion?: string | null;
+    huespedActual?: string | null;
+    aseoIniciado?: Date | null;
   }): Promise<Habitacion>;
   abstract update(
     id: number,
@@ -20,6 +25,11 @@ export abstract class HabitacionRepository {
       tipologiaId: number;
       cantidadPersonas: number;
       estado: EstadoHabitacion;
+      tamanoM2: number | null;
+      disposicionMuebles: string | null;
+      descripcion: string | null;
+      huespedActual: string | null;
+      aseoIniciado: Date | null;
     }>,
   ): Promise<Habitacion>;
   abstract delete(id: number): Promise<void>;

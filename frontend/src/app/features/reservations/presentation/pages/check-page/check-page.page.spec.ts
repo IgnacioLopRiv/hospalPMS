@@ -1,7 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
 import { NgForm } from '@angular/forms';
-import { HostalService } from '../../../../guests/application/hostal.service';
+import { HostalService } from '../../../../huespedes/application/hostal.service';
 import { SedeService } from '../../../../locations/application/sede.service';
+import { LocationsRepository } from '../../../../locations/domain/locations.repository';
+import { createLocationsRepositoryStub } from '../../../../locations/domain/testing/locations.repository.stub';
+import { HuespedRepository } from '../../../../huespedes/domain/huesped.repository';
+import { createHostalRepositoryStubs } from '../../../../huespedes/domain/testing/hostal-repositories.stub';
+import { ReservasRepository } from '../../../domain/reservas.repository';
+import { InventarioRepository } from '../../../../inventory/domain/inventario.repository';
+import { createEmptyInventarioRepositoryStub } from '../../../../inventory/domain/testing/inventario.repository.stub';
+import { InventarioService } from '../../../../inventory/application/inventario.service';
 import { Huesped } from '../../../../../shared/domain/hostal.model';
 import { CheckPagePage } from './check-page.page';
 
@@ -9,8 +18,31 @@ describe('CheckPagePage', () => {
   let component: CheckPagePage;
   let fixture: ComponentFixture<CheckPagePage>;
 
-  beforeEach(() => {
-    const sedeId = TestBed.inject(SedeService).selectedSede()?.id;
+  beforeEach(async () => {
+    const initialSede = {
+      id: 1,
+      nombre: 'Sede de prueba',
+      ciudad: 'Santiago',
+      tipologias: [{ id: 1, nombre: 'Doble', capacidad: 2, precioBase: 40000 }],
+      habitaciones: [{ id: 101, numero: '101', tipo: 'Doble', tipologiaId: 1, tamanoM2: 20, disposicionMuebles: '' }],
+    };
+    const repositories = createHostalRepositoryStubs();
+    await TestBed.configureTestingModule({
+      imports: [CheckPagePage],
+      providers: [
+        provideHttpClient(),
+        { provide: LocationsRepository, useValue: createLocationsRepositoryStub([initialSede]) },
+        { provide: HuespedRepository, useValue: repositories.huespedRepository },
+        { provide: ReservasRepository, useValue: repositories.reservasRepository },
+        { provide: InventarioRepository, useValue: createEmptyInventarioRepositoryStub() },
+      ],
+    }).compileComponents();
+    const sedeService = TestBed.inject(SedeService);
+    await sedeService.ready;
+    const hostalService = TestBed.inject(HostalService);
+    await hostalService.ready;
+    await TestBed.inject(InventarioService).ready;
+    const sedeId = sedeService.selectedSede()?.id;
     if (sedeId !== undefined) {
       ['huespedes', 'reservas', 'habitaciones', 'tipologias'].forEach((entity) => {
         localStorage.removeItem(`hospal_db_sede_${sedeId}_${entity}`);
@@ -85,8 +117,7 @@ describe('CheckPagePage', () => {
     cashButton.click();
     fixture.detectChanges();
     expect(confirmButton.disabled).toBeFalse();
-    confirmButton.click();
-    await fixture.whenStable();
+    await component.confirmCheckInPayment();
     fixture.detectChanges();
 
     const updatedReservation = hostalService.getReservations()
