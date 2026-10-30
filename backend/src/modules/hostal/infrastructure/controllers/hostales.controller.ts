@@ -84,9 +84,10 @@ export class HostalesController {
   }
 
   private normalize<T extends Partial<HostalData>>(input: T): T {
-    return Object.fromEntries(Object.entries(input).map(([key, value]) => [
-      key,
-      typeof value === 'string' ? value.trim() : value,
-    ])) as T;
+    return Object.fromEntries(Object.entries(input).map(([key, value]) => {
+      if (typeof value !== 'string') return [key, value];
+      const trimmed = value.trim();
+      return [key, key === 'rutEmpresa' ? trimmed.toUpperCase() : trimmed];
+    })) as T;
   }
 }

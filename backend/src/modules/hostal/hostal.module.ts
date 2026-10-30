@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { HostalRepository } from './domain/repositories/hostal.repository';
 import { PrismaHostalRepository } from './infrastructure/repositories/prisma-hostal.repository';
-import { HostalController } from './infrastructure/controllers/hostal.controller';
+import { HostalesController } from './infrastructure/controllers/hostales.controller';
 
 /**
  * HostalModule – Feature module
@@ -10,7 +10,7 @@ import { HostalController } from './infrastructure/controllers/hostal.controller
  * (p. ej. LocationsModule lo necesita para validar hostalId al crear sedes).
  */
 @Module({
-  controllers: [HostalController],
+  controllers: [HostalesController],
   providers: [
     { provide: HostalRepository, useClass: PrismaHostalRepository },
   ],

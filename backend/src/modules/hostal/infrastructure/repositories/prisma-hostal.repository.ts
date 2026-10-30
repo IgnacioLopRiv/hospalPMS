@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { Hostal as PrismaHostal } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
 import { HostalRepository } from '../../domain/repositories/hostal.repository';
+import type { HostalData } from '../../domain/repositories/hostal.repository';
 import { Hostal } from '../../domain/entities/hostal.entity';
 
 /**
@@ -41,28 +42,12 @@ export class PrismaHostalRepository implements HostalRepository {
     return raw ? this.toEntity(raw) : null;
   }
 
-  async create(data: {
-    rutEmpresa: string;
-    razonSocial: string;
-    nombreFantasia: string;
-    giro: string;
-    direccion: string;
-    logoUrl?: string | null;
-  }): Promise<Hostal> {
+  async create(data: HostalData): Promise<Hostal> {
     const raw = await this.prisma.hostal.create({ data });
     return this.toEntity(raw);
   }
 
-  async update(
-    id: number,
-    data: Partial<{
-      razonSocial: string;
-      nombreFantasia: string;
-      giro: string;
-      direccion: string;
-      logoUrl: string | null;
-    }>,
-  ): Promise<Hostal> {
+  async update(id: number, data: Partial<HostalData>): Promise<Hostal> {
     const raw = await this.prisma.hostal.update({ where: { id }, data });
     return this.toEntity(raw);
   }
