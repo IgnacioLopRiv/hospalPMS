@@ -8,6 +8,7 @@ import { SedeService } from '../../../../locations/application/sede.service';
 import { CheckPagePage } from '../../../../reservations/presentation/pages/check-page/check-page.page';
 import { InventarioRepository } from '../../../../inventory/domain/inventario.repository';
 import { createEmptyInventarioRepositoryStub } from '../../../../inventory/domain/testing/inventario.repository.stub';
+import { TarifasConfig, TarifasRepository } from '../../../../locations/domain/tarifas.repository';
 import { HuespedesPage } from './huespedes.page';
 import { GuestCardView, Huesped } from '../../../../../shared/domain/hostal.model';
 
@@ -40,6 +41,13 @@ describe('HuespedesPage', () => {
         { provide: HostalService, useValue: hostalServiceStub },
         { provide: SedeService, useValue: sedeServiceStub },
         { provide: InventarioRepository, useValue: createEmptyInventarioRepositoryStub() },
+        {
+          provide: TarifasRepository,
+          useValue: {
+            getForSede: (sedeId: number) => of({ sedeId, porcentajeAbono: 20, tarifas: [] }),
+            saveForSede: (saved: TarifasConfig) => of(saved),
+          },
+        },
       ],
     });
     fixture = TestBed.createComponent(HuespedesPage);

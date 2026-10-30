@@ -10,7 +10,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { EstadoReserva, MetodoPago, Prisma, TipoOperacion } from '@prisma/client';
+import { EstadoReserva, MetodoPago, Prisma, TipoDocumento, TipoOperacion } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
 
 interface ReservaInput {
@@ -48,6 +48,9 @@ export class ReservasController {
         data: this.toDatabase(input) as Prisma.ReservaUncheckedCreateInput,
       });
       await this.recordPayment(transaction, saved.id, input, 0);
+      if (saved.estado === EstadoReserva.EN_CURSO) {
+        await this.issueCheckInReceipt(transaction, saved);
+      }
       return saved;
     });
     return this.toFrontend(reservation);
@@ -64,6 +67,9 @@ export class ReservasController {
           data: this.toDatabase(input, true) as Prisma.ReservaUncheckedUpdateInput,
         });
         await this.recordPayment(transaction, id, input, previous.montoPagado ?? 0);
+        if (previous.estado !== EstadoReserva.EN_CURSO && saved.estado === EstadoReserva.EN_CURSO) {
+          await this.issueCheckInReceipt(transaction, saved);
+        }
         return saved;
       });
       return this.toFrontend(reservation);
@@ -115,6 +121,32 @@ export class ReservasController {
         monto: amount,
         metodoPago,
         tipoOperacion: input.pago_completo ? TipoOperacion.PAGO_FINAL : TipoOperacion.ABONO,
+      },
+    });
+  }
+
+  /**
+   * Emite la boleta de respaldo al hacer check-in (una sola por reserva).
+   * El precio total se considera IVA incluido (19%); queda PENDIENTE ante el SII.
+   */
+  private async issueCheckInReceipt(
+    transaction: Prisma.TransactionClient,
+    reservation: { id: number; precioTotal: number | null },
+  ): Promise<void> {
+    const existing = await transaction.documentoFacturacion.findFirst({
+      where: { reservaId: reservation.id, tipoDocumento: TipoDocumento.BOLETA },
+    });
+    if (existing) return;
+    const montoTotal = reservation.precioTotal ?? 0;
+    const montoNeto = Math.round(montoTotal / 1.19);
+    await transaction.documentoFacturacion.create({
+      data: {
+        reservaId: reservation.id,
+        tipoDocumento: TipoDocumento.BOLETA,
+        montoNeto,
+        montoIva: montoTotal - montoNeto,
+        montoTotal,
+        fechaEmision: new Date(),
       },
     });
   }
