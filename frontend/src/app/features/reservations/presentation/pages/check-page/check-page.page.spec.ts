@@ -11,14 +11,18 @@ import { ReservasRepository } from '../../../domain/reservas.repository';
 import { InventarioRepository } from '../../../../inventory/domain/inventario.repository';
 import { createEmptyInventarioRepositoryStub } from '../../../../inventory/domain/testing/inventario.repository.stub';
 import { InventarioService } from '../../../../inventory/application/inventario.service';
+import { TarifasConfig, TarifasRepository } from '../../../../locations/domain/tarifas.repository';
 import { Huesped } from '../../../../../shared/domain/hostal.model';
+import { of } from 'rxjs';
 import { CheckPagePage } from './check-page.page';
 
 describe('CheckPagePage', () => {
   let component: CheckPagePage;
   let fixture: ComponentFixture<CheckPagePage>;
+  let tarifasConfig: TarifasConfig;
 
   beforeEach(async () => {
+    tarifasConfig = { sedeId: 1, porcentajeAbono: 20, tarifas: [] };
     const initialSede = {
       id: 1,
       nombre: 'Sede de prueba',
@@ -35,6 +39,7 @@ describe('CheckPagePage', () => {
         { provide: HuespedRepository, useValue: repositories.huespedRepository },
         { provide: ReservasRepository, useValue: repositories.reservasRepository },
         { provide: InventarioRepository, useValue: createEmptyInventarioRepositoryStub() },
+        { provide: TarifasRepository, useValue: { getForSede: () => of(tarifasConfig), saveForSede: (saved: TarifasConfig) => of(saved) } },
       ],
     }).compileComponents();
     const sedeService = TestBed.inject(SedeService);
@@ -47,8 +52,6 @@ describe('CheckPagePage', () => {
       ['huespedes', 'reservas', 'habitaciones', 'tipologias'].forEach((entity) => {
         localStorage.removeItem(`hospal_db_sede_${sedeId}_${entity}`);
       });
-      localStorage.removeItem(`hospal.tarifas.sede.${sedeId}`);
-      localStorage.removeItem(`hospal.tarifas.abono.sede.${sedeId}`);
     }
     fixture = TestBed.createComponent(CheckPagePage);
     component = fixture.componentInstance;
@@ -331,8 +334,7 @@ describe('CheckPagePage', () => {
     component.entryForm.arrivalDate = '2026-10-10';
     component.entryForm.departureDate = '2026-10-12';
     component.entryStep = 3;
-    localStorage.setItem(`hospal.tarifas.abono.sede.${sedeId}`, '35');
-    localStorage.setItem(`hospal.tarifas.sede.${sedeId}`, JSON.stringify([{
+    tarifasConfig = { sedeId, porcentajeAbono: 35, tarifas: [{
       id: 'temporada-prueba',
       nombre: 'Temporada de prueba',
       periodos: [{
@@ -346,7 +348,8 @@ describe('CheckPagePage', () => {
         fechas: [],
       }],
       precios: { 1: 40000 },
-    }]));
+    }] };
+    await component['loadTarifasConfig']();
     component.updateAvailableRooms();
     expect(component.availableRooms.length).toBe(1);
     expect(component.roomNightlyPrice(component.availableRooms[0])).toBe(40000);

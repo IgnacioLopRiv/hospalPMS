@@ -134,8 +134,6 @@ CREATE TABLE `huesped` (
     `paisResidencia` VARCHAR(191) NOT NULL,
     `email` VARCHAR(191) NOT NULL,
     `telefono` VARCHAR(20) NOT NULL,
-    `esRecurrente` BOOLEAN NOT NULL DEFAULT false,
-    `diasUltimoRegistro` INTEGER NULL,
 
     UNIQUE INDEX `huesped_rutPasaporte_key`(`rutPasaporte`),
     PRIMARY KEY (`id`)
@@ -150,13 +148,6 @@ CREATE TABLE `reserva` (
     `fechaCheckIn` DATETIME(3) NOT NULL,
     `fechaCheckOut` DATETIME(3) NOT NULL,
     `estado` ENUM('CONFIRMADA', 'EN_CURSO', 'FINALIZADA', 'CANCELADA') NOT NULL DEFAULT 'CONFIRMADA',
-    `horaLlegada` VARCHAR(5) NULL,
-    `cantidadPersonas` INTEGER NOT NULL DEFAULT 1,
-    `precioTotal` INTEGER NULL,
-    `porcentajeAbono` INTEGER NULL,
-    `montoPagado` INTEGER NULL,
-    `metodoPago` ENUM('TRANSFERENCIA', 'EFECTIVO', 'TARJETA_CREDITO', 'TARJETA_DEBITO') NULL,
-    `pagoCompleto` BOOLEAN NOT NULL DEFAULT false,
 
     INDEX `reserva_habitacionId_fechaCheckIn_fechaCheckOut_idx`(`habitacionId`, `fechaCheckIn`, `fechaCheckOut`),
     PRIMARY KEY (`id`)

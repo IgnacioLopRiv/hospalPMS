@@ -2,7 +2,7 @@ import { Component, EventEmitter, inject, Input, OnDestroy, OnInit, Output, Rend
 import { CommonModule, DOCUMENT } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { IonIcon } from '@ionic/angular/standalone';
-import { Subscription } from 'rxjs';
+import { firstValueFrom, Subscription } from 'rxjs';
 import { addIcons } from 'ionicons';
 import {
   enterOutline,
@@ -33,6 +33,7 @@ import { CountryPickerComponent } from '../../../../../shared/presentation/count
 import { FotoHabitacionService } from '../../../../locations/application/foto-habitacion.service';
 import { FotoHabitacion } from '../../../../locations/domain/foto-habitacion.model';
 import { InventarioService } from '../../../../inventory/application/inventario.service';
+import { TarifasConfig, TarifasRepository } from '../../../../locations/domain/tarifas.repository';
 
 export interface GuestDraft {
   documentType: 'rut' | 'passport';
@@ -112,6 +113,8 @@ export class CheckPagePage implements OnInit, OnDestroy {
   private readonly document = inject(DOCUMENT);
   private readonly fotoHabitacionService = inject(FotoHabitacionService);
   private readonly inventarioService = inject(InventarioService);
+  private readonly tarifasRepository = inject(TarifasRepository);
+  private tarifasConfig: TarifasConfig | null = null;
   @Input() modalOnly = false;
   @Input() guestDraft?: GuestDraft;
   @Input() existingGuestId: number | null = null;
@@ -404,6 +407,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
     this.isSearchingRooms = true;
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
     try {
+      await this.loadTarifasConfig();
       this.updateAvailableRooms();
     } catch (error) {
       this.entryError = error instanceof Error
@@ -938,14 +942,21 @@ export class CheckPagePage implements OnInit, OnDestroy {
     return nightlyPrice;
   }
 
+  private async loadTarifasConfig(): Promise<void> {
+    const sedeId = this.sede()?.id;
+    if (sedeId === undefined) {
+      throw new Error('Selecciona una sede para consultar sus tarifas.');
+    }
+    this.tarifasConfig = await firstValueFrom(this.tarifasRepository.getForSede(sedeId));
+  }
+
   private loadStoredTarifas(): StoredTarifa[] {
     const sedeId = this.sede()?.id;
     if (sedeId === undefined) {
       throw new Error('Selecciona una sede para consultar sus tarifas.');
     }
-    const stored = localStorage.getItem(`hospal.tarifas.sede.${sedeId}`);
-    if (stored === null) return [];
-    const parsed: unknown = JSON.parse(stored);
+    if (this.tarifasConfig?.sedeId !== sedeId) return [];
+    const parsed: unknown = this.tarifasConfig.tarifas;
     if (!Array.isArray(parsed) || !parsed.every((rate) => this.isStoredTarifa(rate))) {
       throw new Error('Las tarifas guardadas tienen un formato inválido. Revísalas en /tarifas.');
     }
@@ -980,9 +991,8 @@ export class CheckPagePage implements OnInit, OnDestroy {
     if (sedeId === undefined) {
       throw new Error('Selecciona una sede para consultar el porcentaje de abono.');
     }
-    const stored = localStorage.getItem(`hospal.tarifas.abono.sede.${sedeId}`);
-    if (stored === null) return 20;
-    const percentage = Number(stored);
+    if (this.tarifasConfig?.sedeId !== sedeId) return 20;
+    const percentage = this.tarifasConfig.porcentajeAbono;
     if (!Number.isFinite(percentage) || percentage < 1 || percentage > 100) {
       throw new Error('El porcentaje de abono configurado en /tarifas no es válido.');
     }
