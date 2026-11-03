@@ -3,13 +3,14 @@ import { signal } from '@angular/core';
 import { of } from 'rxjs';
 import { SedeService } from '../../../application/sede.service';
 import { TarifaPeriodo, TarifasPage } from './tarifas.page';
-import { TarifasConfig, TarifasRepository } from '../../../domain/tarifas.repository';
+import { Tarifa, TarifaInput, TarifasRepository } from '../../../domain/tarifas.repository';
 import { SedeTipologia } from '../../../../../shared/domain/hostal.model';
 
 describe('TarifasPage', () => {
   let component: TarifasPage;
   let fixture: ComponentFixture<TarifasPage>;
-  let config: TarifasConfig;
+  let storedTarifas: Tarifa[];
+  let storedAbono: number;
   let tipologias: SedeTipologia[];
   let sedeServiceStub: {
     selectedSede: ReturnType<typeof signal<{ id: number; nombre: string; ciudad: string; habitaciones: never[] } | null>>;
@@ -20,7 +21,8 @@ describe('TarifasPage', () => {
   };
 
   beforeEach(async () => {
-    config = { sedeId: 7, porcentajeAbono: 20, tarifas: [] };
+    storedTarifas = [];
+    storedAbono = 20;
     tipologias = [];
     sedeServiceStub = {
       selectedSede: signal({ id: 7, nombre: 'Sede test', ciudad: 'Santiago', habitaciones: [] }),
@@ -42,10 +44,24 @@ describe('TarifasPage', () => {
       }),
     };
     const tarifasRepository = {
-      getForSede: jasmine.createSpy().and.callFake(() => of(config)),
-      saveForSede: jasmine.createSpy().and.callFake((saved: TarifasConfig) => {
-        config = saved;
-        return of(saved);
+      getAbono: jasmine.createSpy().and.callFake((sedeId: number) => of({ sedeId, porcentajeAbono: storedAbono })),
+      saveAbono: jasmine.createSpy().and.callFake((sedeId: number, porcentajeAbono: number) => {
+        storedAbono = porcentajeAbono;
+        return of({ sedeId, porcentajeAbono });
+      }),
+      listTarifas: jasmine.createSpy().and.callFake(() => of(storedTarifas)),
+      createTarifa: jasmine.createSpy().and.callFake((_sedeId: number, data: TarifaInput) => {
+        const created = { ...data, id: storedTarifas.length + 1 };
+        storedTarifas = [...storedTarifas, created];
+        return of(created);
+      }),
+      updateTarifa: jasmine.createSpy().and.callFake((id: number, data: Partial<TarifaInput>) => {
+        storedTarifas = storedTarifas.map((tarifa) => tarifa.id === id ? { ...tarifa, ...data } : tarifa);
+        return of(storedTarifas.find((tarifa) => tarifa.id === id)!);
+      }),
+      deleteTarifa: jasmine.createSpy().and.callFake((id: number) => {
+        storedTarifas = storedTarifas.filter((tarifa) => tarifa.id !== id);
+        return of(undefined);
       }),
     };
     await TestBed.configureTestingModule({
@@ -80,8 +96,8 @@ describe('TarifasPage', () => {
     expect(component.tarifas()[0].nombre).toBe('Verano');
     expect('abonoPorcentaje' in component.tarifas()[0]).toBeFalse();
     expect(component.periodSummary(component.tarifas()[0].periodos[0])).toBe('Dic');
-    expect(config.sedeId).toBe(7);
-    expect(config.tarifas).toContain(jasmine.objectContaining({ nombre: 'Verano' }));
+    expect(storedTarifas).toContain(jasmine.objectContaining({ id: 1, nombre: 'Verano', tipoTemporada: 'ALTA', activa: true }));
+    expect(TestBed.inject(TarifasRepository).createTarifa).toHaveBeenCalledWith(7, jasmine.objectContaining({ nombre: 'Verano' }));
   });
 
   it('saves a shared location deposit percentage with its rate configuration', async () => {
@@ -90,7 +106,7 @@ describe('TarifasPage', () => {
     await component.saveAbonoPorcentaje();
 
     expect(component.abonoPorcentaje()).toBe(35);
-    expect(config.porcentajeAbono).toBe(35);
+    expect(storedAbono).toBe(35);
   });
 
   it('saves base prices by typology to the selected location', async () => {
@@ -157,7 +173,9 @@ describe('TarifasPage', () => {
     period.fechaInicio = '2025-01-01';
     period.fechaFin = '2025-01-31';
     component.tarifas.set([{
-      id: 'winter-rate',
+      id: 1,
+      tipoTemporada: 'ALTA',
+      activa: true,
       nombre: 'Invierno',
       periodos: [period],
       precios: {},
@@ -180,7 +198,9 @@ describe('TarifasPage', () => {
     expect(component.periodIsValid(period)).toBeTrue();
     expect(component.periodSummary(period)).toBe('29 de Febrero de 2028');
     component.tarifas.set([{
-      id: 'leap-rate',
+      id: 2,
+      tipoTemporada: 'ALTA',
+      activa: true,
       nombre: 'Año bisiesto',
       periodos: [period],
       precios: {},
@@ -292,7 +312,9 @@ describe('TarifasPage', () => {
       fechas: [],
     };
     component.tarifas.set([{
-      id: 'existing-tariff',
+      id: 1,
+      tipoTemporada: 'ALTA',
+      activa: true,
       nombre: 'Jueves',
       periodos: [existingWeekdays],
       precios: {},
@@ -320,7 +342,9 @@ describe('TarifasPage', () => {
       fechas: [],
     };
     component.tarifas.set([{
-      id: 'existing-tariff',
+      id: 1,
+      tipoTemporada: 'ALTA',
+      activa: true,
       nombre: 'Abril',
       periodos: [existingApril],
       precios: {},
@@ -345,7 +369,9 @@ describe('TarifasPage', () => {
       fechas: [],
     };
     component.tarifas.set([{
-      id: 'weekly-tariff',
+      id: 1,
+      tipoTemporada: 'ALTA',
+      activa: true,
       nombre: 'Jueves',
       periodos: [existingWeekdays],
       precios: {},
@@ -379,21 +405,25 @@ describe('TarifasPage', () => {
     };
     component.tarifas.set([
       {
-        id: 'april-tariff',
+        id: 1,
+      tipoTemporada: 'ALTA',
+      activa: true,
         nombre: 'Abril',
         periodos: [aprilPeriod],
         precios: { 1: 120000, 2: 90000 },
       },
       {
-        id: 'thursday-tariff',
+        id: 2,
+      tipoTemporada: 'ALTA',
+      activa: true,
         nombre: 'Jueves',
         periodos: [thursdayPeriod],
         precios: { 1: 110000, 2: 100000 },
       },
     ]);
 
-    expect(component.getAppliedTarifa(1, new Date(2026, 3, 2))?.id).toBe('april-tariff');
-    expect(component.getAppliedTarifa(2, new Date(2026, 3, 2))?.id).toBe('thursday-tariff');
+    expect(component.getAppliedTarifa(1, new Date(2026, 3, 2))?.id).toBe(1);
+    expect(component.getAppliedTarifa(2, new Date(2026, 3, 2))?.id).toBe(2);
   });
 
   it('rejects a specific date that overlaps a weekday rule from another tariff', () => {
@@ -408,7 +438,9 @@ describe('TarifasPage', () => {
       fechas: [],
     };
     component.tarifas.set([{
-      id: 'existing-tariff',
+      id: 1,
+      tipoTemporada: 'ALTA',
+      activa: true,
       nombre: 'Jueves',
       periodos: [existingWeekdays],
       precios: {},

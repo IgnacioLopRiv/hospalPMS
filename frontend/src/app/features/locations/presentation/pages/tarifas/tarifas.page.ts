@@ -15,33 +15,12 @@ import {
   trashOutline,
 } from 'ionicons/icons';
 import { SedeService } from '../../../application/sede.service';
-import { TarifasRepository } from '../../../domain/tarifas.repository';
+import { PeriodType, Tarifa, TarifaInput, TarifaPeriodo, TarifasRepository } from '../../../domain/tarifas.repository';
 
-export type PeriodType = 'months' | 'weekdays' | 'month-days' | 'specific-month-days' | 'date-range' | 'specific-dates';
-
-export interface TarifaPeriodo {
-  id: string;
-  tipo: PeriodType;
-  meses: number[];
-  diasSemana: number[];
-  diasMes: number[];
-  fechaInicio: string;
-  fechaFin: string;
-  fechas: string[];
-  anio?: number;
-  mes?: number;
-}
-
-export interface Tarifa {
-  id: string;
-  nombre: string;
-  periodos: TarifaPeriodo[];
-  precios: Record<number, number>;
-}
+export type { PeriodType, Tarifa, TarifaPeriodo } from '../../../domain/tarifas.repository';
 
 const DEFAULT_ABONO_PORCENTAJE = 20;
 const WEEKDAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-const PERIOD_TYPES: PeriodType[] = ['months', 'weekdays', 'month-days', 'specific-month-days', 'date-range', 'specific-dates'];
 const RECURRING_CYCLE_DAYS = 146_097;
 const MONTHS = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -82,38 +61,6 @@ function isValidPeriod(period: TarifaPeriodo): boolean {
   }
 }
 
-function isTarifaPeriod(value: unknown): value is TarifaPeriodo {
-  if (!value || typeof value !== 'object') return false;
-  const period = value as Partial<TarifaPeriodo>;
-  return typeof period.id === 'string'
-    && PERIOD_TYPES.includes(period.tipo as PeriodType)
-    && Array.isArray(period.meses)
-    && Array.isArray(period.diasSemana)
-    && Array.isArray(period.diasMes)
-    && typeof period.fechaInicio === 'string'
-    && typeof period.fechaFin === 'string'
-    && Array.isArray(period.fechas)
-    && period.meses.every((month) => Number.isInteger(month) && month >= 0 && month < 12)
-    && period.diasSemana.every((day) => Number.isInteger(day) && day >= 0 && day < 7)
-    && period.diasMes.every((day) => Number.isInteger(day) && day >= 1 && day <= 31)
-    && period.fechas.every((date) => typeof date === 'string')
-    && (period.tipo !== 'specific-month-days'
-      || (Number.isInteger(period.anio) && (period.anio ?? 0) >= 1900 && (period.anio ?? 10000) <= 9999
-        && Number.isInteger(period.mes) && (period.mes ?? -1) >= 0 && (period.mes ?? 12) <= 11));
-}
-
-function isTarifa(value: unknown): value is Tarifa {
-  if (!value || typeof value !== 'object') return false;
-  const tarifa = value as Partial<Tarifa>;
-  return typeof tarifa.id === 'string'
-    && typeof tarifa.nombre === 'string'
-    && Array.isArray(tarifa.periodos)
-    && tarifa.periodos.every(isTarifaPeriod)
-    && !!tarifa.precios
-    && typeof tarifa.precios === 'object'
-    && Object.values(tarifa.precios).every((price) => typeof price === 'number' && Number.isFinite(price) && price >= 0);
-}
-
 @Component({
   selector: 'app-tarifas',
   templateUrl: './tarifas.page.html',
@@ -131,7 +78,7 @@ export class TarifasPage {
   readonly tipologias = this.sedeService.tipologias;
   readonly tarifas = signal<Tarifa[]>([]);
   readonly configOpen = signal(false);
-  readonly editingTarifaId = signal<string | null>(null);
+  readonly editingTarifaId = signal<number | null>(null);
   readonly rateStep = signal<1 | 2>(1);
   readonly abonoPorcentaje = signal(DEFAULT_ABONO_PORCENTAJE);
   readonly periodSelectionError = signal('');
@@ -146,7 +93,8 @@ export class TarifasPage {
 
   readonly activeTarifas = computed(() => {
     const today = this.now();
-    return this.tarifas().filter((tarifa) => tarifa.periodos.some((periodo) => this.periodMatches(periodo, today)));
+    return this.tarifas().filter((tarifa) =>
+      tarifa.activa && tarifa.periodos.some((periodo) => this.periodMatches(periodo, today)));
   });
 
   constructor() {
@@ -213,34 +161,35 @@ export class TarifasPage {
   async saveTarifa(): Promise<void> {
     if (this.rateStep() !== 2 || !this.canSaveTarifa()) return;
 
-    const nombre = this.editTarifa.nombre.trim();
-    const saved = this.cloneTarifa({
-      ...this.editTarifa,
-      nombre,
-    });
-    const currentTarifas = this.tarifas();
-    const updated = this.editingTarifaId()
-      ? currentTarifas.map((tarifa) => tarifa.id === this.editingTarifaId() ? saved : tarifa)
-      : [...currentTarifas, saved];
-    await this.persistConfig(updated, this.abonoPorcentaje());
-    this.tarifas.set(updated);
+    const sedeId = this.sede()?.id;
+    if (sedeId === undefined) return;
+    const { id: _id, ...draft } = this.cloneTarifa(this.editTarifa);
+    const data: TarifaInput = { ...draft, nombre: draft.nombre.trim() };
+    const editingId = this.editingTarifaId();
+    const saved = await firstValueFrom(editingId !== null
+      ? this.tarifasRepository.updateTarifa(editingId, data)
+      : this.tarifasRepository.createTarifa(sedeId, data));
+    this.tarifas.update((current) => editingId !== null
+      ? current.map((tarifa) => tarifa.id === editingId ? saved : tarifa)
+      : [...current, saved]);
     this.configOpen.set(false);
   }
 
-  async deleteTarifa(tarifaId: string): Promise<void> {
+  async deleteTarifa(tarifaId: number): Promise<void> {
     const tarifa = this.tarifas().find((item) => item.id === tarifaId);
     if (!tarifa || !globalThis.confirm(`¿Eliminar la tarifa "${tarifa.nombre}"?`)) return;
-    const updated = this.tarifas().filter((tarifa) => tarifa.id !== tarifaId);
-    await this.persistConfig(updated, this.abonoPorcentaje());
-    this.tarifas.set(updated);
+    await firstValueFrom(this.tarifasRepository.deleteTarifa(tarifaId));
+    this.tarifas.update((current) => current.filter((item) => item.id !== tarifaId));
   }
 
   async saveAbonoPorcentaje(): Promise<void> {
     const porcentaje = Number(this.abonoDraft);
     if (!this.isValidAbonoDraft()) return;
 
-    await this.persistConfig(this.tarifas(), porcentaje);
-    this.abonoPorcentaje.set(porcentaje);
+    const sedeId = this.sede()?.id;
+    if (sedeId === undefined) return;
+    const saved = await firstValueFrom(this.tarifasRepository.saveAbono(sedeId, porcentaje));
+    this.abonoPorcentaje.set(saved.porcentajeAbono);
   }
 
   isValidAbonoDraft(): boolean {
@@ -437,7 +386,7 @@ export class TarifasPage {
 
   getAppliedTarifa(typologyId: number, date: Date = this.now()): Tarifa | undefined {
     return this.tarifas()
-      .filter((tarifa) => tarifa.periodos.some((period) => this.periodMatches(period, date)))
+      .filter((tarifa) => tarifa.activa && tarifa.periodos.some((period) => this.periodMatches(period, date)))
       .reduce<Tarifa | undefined>((highest, tarifa) =>
         !highest || this.getRatePrice(tarifa, typologyId) > this.getRatePrice(highest, typologyId)
           ? tarifa
@@ -571,8 +520,10 @@ export class TarifasPage {
 
   private newTarifa(): Tarifa {
     return {
-      id: crypto.randomUUID(),
+      id: 0,
       nombre: '',
+      tipoTemporada: 'ALTA',
+      activa: true,
       periodos: [emptyPeriod()],
       precios: Object.fromEntries(this.tipologias().map((typology) => [typology.id, typology.precioBase ?? 0])),
     };
@@ -582,6 +533,8 @@ export class TarifasPage {
     return {
       id: tarifa.id,
       nombre: tarifa.nombre,
+      tipoTemporada: tarifa.tipoTemporada,
+      activa: tarifa.activa,
       periodos: tarifa.periodos.map((period) => ({
         ...period,
         meses: [...period.meses],
@@ -595,14 +548,14 @@ export class TarifasPage {
 
   private async loadConfig(sedeId: number): Promise<void> {
     try {
-      const config = await firstValueFrom(this.tarifasRepository.getForSede(sedeId));
+      const [abono, rates] = await Promise.all([
+        firstValueFrom(this.tarifasRepository.getAbono(sedeId)),
+        firstValueFrom(this.tarifasRepository.listTarifas(sedeId)),
+      ]);
       if (this.sede()?.id !== sedeId) return;
-      const rates = Array.isArray(config.tarifas) && config.tarifas.every(isTarifa)
-        ? config.tarifas.map((tarifa) => this.cloneTarifa(tarifa as Tarifa))
-        : [];
-      this.tarifas.set(rates);
-      this.abonoPorcentaje.set(config.porcentajeAbono);
-      this.abonoDraft = config.porcentajeAbono;
+      this.tarifas.set(rates.map((tarifa) => this.cloneTarifa(tarifa)));
+      this.abonoPorcentaje.set(abono.porcentajeAbono);
+      this.abonoDraft = abono.porcentajeAbono;
       this.loadedSedeId = sedeId;
     } catch (error) {
       console.error('No se pudieron cargar las tarifas de la sede.', error);
@@ -611,9 +564,4 @@ export class TarifasPage {
     }
   }
 
-  private async persistConfig(tarifas: Tarifa[], porcentajeAbono: number): Promise<void> {
-    const sedeId = this.sedeService.selectedSede()?.id;
-    if (sedeId === undefined) return;
-    await firstValueFrom(this.tarifasRepository.saveForSede({ sedeId, porcentajeAbono, tarifas }));
-  }
 }

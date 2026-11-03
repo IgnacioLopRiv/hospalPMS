@@ -11,7 +11,7 @@ import { ReservasRepository } from '../../../domain/reservas.repository';
 import { InventarioRepository } from '../../../../inventory/domain/inventario.repository';
 import { createEmptyInventarioRepositoryStub } from '../../../../inventory/domain/testing/inventario.repository.stub';
 import { InventarioService } from '../../../../inventory/application/inventario.service';
-import { TarifasConfig, TarifasRepository } from '../../../../locations/domain/tarifas.repository';
+import { Tarifa, TarifasRepository } from '../../../../locations/domain/tarifas.repository';
 import { Huesped } from '../../../../../shared/domain/hostal.model';
 import { of } from 'rxjs';
 import { CheckPagePage } from './check-page.page';
@@ -19,7 +19,7 @@ import { CheckPagePage } from './check-page.page';
 describe('CheckPagePage', () => {
   let component: CheckPagePage;
   let fixture: ComponentFixture<CheckPagePage>;
-  let tarifasConfig: TarifasConfig;
+  let tarifasConfig: { sedeId: number; porcentajeAbono: number; tarifas: Tarifa[] };
 
   beforeEach(async () => {
     tarifasConfig = { sedeId: 1, porcentajeAbono: 20, tarifas: [] };
@@ -39,7 +39,13 @@ describe('CheckPagePage', () => {
         { provide: HuespedRepository, useValue: repositories.huespedRepository },
         { provide: ReservasRepository, useValue: repositories.reservasRepository },
         { provide: InventarioRepository, useValue: createEmptyInventarioRepositoryStub() },
-        { provide: TarifasRepository, useValue: { getForSede: () => of(tarifasConfig), saveForSede: (saved: TarifasConfig) => of(saved) } },
+        {
+          provide: TarifasRepository,
+          useValue: {
+            getAbono: (sedeId: number) => of({ sedeId, porcentajeAbono: tarifasConfig.porcentajeAbono }),
+            listTarifas: () => of(tarifasConfig.tarifas),
+          },
+        },
       ],
     }).compileComponents();
     const sedeService = TestBed.inject(SedeService);
@@ -335,8 +341,10 @@ describe('CheckPagePage', () => {
     component.entryForm.departureDate = '2026-10-12';
     component.entryStep = 3;
     tarifasConfig = { sedeId, porcentajeAbono: 35, tarifas: [{
-      id: 'temporada-prueba',
+      id: 1,
       nombre: 'Temporada de prueba',
+      tipoTemporada: 'ALTA',
+      activa: true,
       periodos: [{
         id: 'rango-prueba',
         tipo: 'date-range',

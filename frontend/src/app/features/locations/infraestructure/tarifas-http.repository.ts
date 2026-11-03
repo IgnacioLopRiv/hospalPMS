@@ -1,22 +1,63 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-import { TarifasConfig, TarifasRepository } from '../domain/tarifas.repository';
+import { Tarifa, TarifaAbono, TarifaInput, TarifasRepository } from '../domain/tarifas.repository';
+
+interface TarifaApiDto extends Tarifa {
+  sedeId: number;
+  tarifaAbonoId: number;
+  precioBase: number | null;
+  fechaInicio: string | null;
+  fechaFin: string | null;
+}
 
 @Injectable()
 export class TarifasHttpRepository extends TarifasRepository {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = environment.apiUrl;
 
-  getForSede(sedeId: number): Observable<TarifasConfig> {
-    return this.http.get<TarifasConfig>(`${this.apiUrl}/sedes/${sedeId}/configuracion-tarifas`);
+  getAbono(sedeId: number): Observable<TarifaAbono> {
+    return this.http.get<TarifaAbono>(`${this.apiUrl}/sedes/${sedeId}/tarifa-abono`)
+      .pipe(map((row) => this.toAbono(row)));
   }
 
-  saveForSede(config: TarifasConfig): Observable<TarifasConfig> {
-    return this.http.put<TarifasConfig>(
-      `${this.apiUrl}/sedes/${config.sedeId}/configuracion-tarifas`,
-      { porcentajeAbono: config.porcentajeAbono, tarifas: config.tarifas },
-    );
+  saveAbono(sedeId: number, porcentajeAbono: number): Observable<TarifaAbono> {
+    return this.http.put<TarifaAbono>(`${this.apiUrl}/sedes/${sedeId}/tarifa-abono`, { porcentajeAbono })
+      .pipe(map((row) => this.toAbono(row)));
+  }
+
+  listTarifas(sedeId: number): Observable<Tarifa[]> {
+    return this.http.get<TarifaApiDto[]>(`${this.apiUrl}/sedes/${sedeId}/tarifas`)
+      .pipe(map((rows) => rows.map((row) => this.toTarifa(row))));
+  }
+
+  createTarifa(sedeId: number, data: TarifaInput): Observable<Tarifa> {
+    return this.http.post<TarifaApiDto>(`${this.apiUrl}/sedes/${sedeId}/tarifas`, data)
+      .pipe(map((row) => this.toTarifa(row)));
+  }
+
+  updateTarifa(id: number, data: Partial<TarifaInput>): Observable<Tarifa> {
+    return this.http.patch<TarifaApiDto>(`${this.apiUrl}/tarifas/${id}`, data)
+      .pipe(map((row) => this.toTarifa(row)));
+  }
+
+  deleteTarifa(id: number): Observable<void> {
+    return this.http.delete<{ deleted: boolean }>(`${this.apiUrl}/tarifas/${id}`).pipe(map(() => undefined));
+  }
+
+  private toAbono(row: TarifaAbono): TarifaAbono {
+    return { sedeId: row.sedeId, porcentajeAbono: row.porcentajeAbono };
+  }
+
+  private toTarifa(row: TarifaApiDto): Tarifa {
+    return {
+      id: row.id,
+      nombre: row.nombre,
+      tipoTemporada: row.tipoTemporada,
+      activa: row.activa,
+      periodos: row.periodos,
+      precios: row.precios,
+    };
   }
 }

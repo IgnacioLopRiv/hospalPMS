@@ -295,6 +295,19 @@ $primary: #1e50d8;
   font-size: 1.15rem;
 }
 
+.rate-season {
+  display: inline-block;
+  margin: 0.3rem 0.4rem 0 0;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: $primary;
+  font-size: 0.68rem;
+  font-weight: 600;
+
+  &.season-alta { background: #fff7ed; color: #c2410c; }
+}
+
 .rate-active-label {
   display: inline-flex;
   align-items: center;

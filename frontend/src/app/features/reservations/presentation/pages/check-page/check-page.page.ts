@@ -33,7 +33,7 @@ import { CountryPickerComponent } from '../../../../../shared/presentation/count
 import { FotoHabitacionService } from '../../../../locations/application/foto-habitacion.service';
 import { FotoHabitacion } from '../../../../locations/domain/foto-habitacion.model';
 import { InventarioService } from '../../../../inventory/application/inventario.service';
-import { TarifasConfig, TarifasRepository } from '../../../../locations/domain/tarifas.repository';
+import { Tarifa, TarifasRepository } from '../../../../locations/domain/tarifas.repository';
 
 export interface GuestDraft {
   documentType: 'rut' | 'passport';
@@ -114,7 +114,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
   private readonly fotoHabitacionService = inject(FotoHabitacionService);
   private readonly inventarioService = inject(InventarioService);
   private readonly tarifasRepository = inject(TarifasRepository);
-  private tarifasConfig: TarifasConfig | null = null;
+  private tarifasConfig: { sedeId: number; porcentajeAbono: number; tarifas: Tarifa[] } | null = null;
   @Input() modalOnly = false;
   @Input() guestDraft?: GuestDraft;
   @Input() existingGuestId: number | null = null;
@@ -947,7 +947,15 @@ export class CheckPagePage implements OnInit, OnDestroy {
     if (sedeId === undefined) {
       throw new Error('Selecciona una sede para consultar sus tarifas.');
     }
-    this.tarifasConfig = await firstValueFrom(this.tarifasRepository.getForSede(sedeId));
+    const [abono, tarifas] = await Promise.all([
+      firstValueFrom(this.tarifasRepository.getAbono(sedeId)),
+      firstValueFrom(this.tarifasRepository.listTarifas(sedeId)),
+    ]);
+    this.tarifasConfig = {
+      sedeId,
+      porcentajeAbono: abono.porcentajeAbono,
+      tarifas: tarifas.filter((tarifa) => tarifa.activa),
+    };
   }
 
   private loadStoredTarifas(): StoredTarifa[] {
