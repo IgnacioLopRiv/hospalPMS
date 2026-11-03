@@ -13,9 +13,11 @@ import { SedesController } from './infrastructure/controllers/sedes.controller';
 import { CaracteristicasController } from './infrastructure/controllers/caracteristicas.controller';
 import { TarifasController } from './infrastructure/controllers/tarifas.controller';
 import { CatalogosSedeController } from './infrastructure/controllers/catalogos-sede.controller';
-import { ConfiguracionTarifasController } from './infrastructure/controllers/configuracion-tarifas.controller';
-import { ConfiguracionTarifaRepository } from './domain/repositories/configuracion-tarifa.repository';
-import { PrismaConfiguracionTarifaRepository } from './infrastructure/repositories/prisma-configuracion-tarifa.repository';
+import { TarifaAbonoController } from './infrastructure/controllers/tarifa-abono.controller';
+import { TarifaAbonoRepository } from './domain/repositories/tarifa-abono.repository';
+import { TarifaRepository } from './domain/repositories/tarifa.repository';
+import { PrismaTarifaAbonoRepository } from './infrastructure/repositories/prisma-tarifa-abono.repository';
+import { PrismaTarifaRepository } from './infrastructure/repositories/prisma-tarifa.repository';
 
 const USE_CASES = [
   GetSedesUseCase,
@@ -34,13 +36,14 @@ const USE_CASES = [
   controllers: [
     SedesController,
     CatalogosSedeController,
-    ConfiguracionTarifasController,
-    CaracteristicasController,
+    TarifaAbonoController,
     TarifasController,
+    CaracteristicasController,
   ],
   providers: [
-    { provide: ConfiguracionTarifaRepository, useClass: PrismaConfiguracionTarifaRepository },
     // Implementaciones de repositorios (adaptadores de infraestructura)
+    { provide: TarifaAbonoRepository, useClass: PrismaTarifaAbonoRepository },
+    { provide: TarifaRepository, useClass: PrismaTarifaRepository },
     { provide: SedeRepository, useClass: PrismaSedeRepository },
     { provide: TipologiaRepository, useClass: PrismaTipologiaRepository },
     { provide: HabitacionRepository, useClass: PrismaHabitacionRepository },

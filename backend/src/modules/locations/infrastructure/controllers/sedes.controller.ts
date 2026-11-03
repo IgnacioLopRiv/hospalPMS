@@ -117,7 +117,8 @@ export class SedesController {
   async remove(@Param('id', ParseIntPipe) id: number) {
     try {
       await this.prisma.$transaction(async (transaction) => {
-        await transaction.configuracionTarifa.deleteMany({ where: { sedeId: id } });
+        await transaction.tarifa.deleteMany({ where: { sedeId: id } });
+        await transaction.tarifaAbono.deleteMany({ where: { sedeId: id } });
         await transaction.sede.delete({ where: { id } });
       });
       return { deleted: true };
