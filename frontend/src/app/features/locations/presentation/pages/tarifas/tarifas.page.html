@@ -1,15 +1,26 @@
 <div class="tarifas-container">
-  <header class="top-bar">
-    <div>
-      <h1 class="page-title">Tarifas</h1>
-      @if (sede(); as currentSede) {
-        <p class="page-subtitle">Precios y periodos de {{ currentSede.nombre }}</p>
-      }
+  <header class="page-header-standard">
+    <div class="header-left-group">
+      <div class="page-header-icon">
+        <ion-icon name="cash-outline"></ion-icon>
+      </div>
+      <div class="page-header-titles">
+        <h1 class="page-title">Tarifas</h1>
+        @if (sede(); as currentSede) {
+          <p class="page-subtitle">
+            Precios y periodos de <strong>{{ currentSede.nombre }}</strong>
+          </p>
+        } @else {
+          <p class="page-subtitle">Precios y periodos configurados</p>
+        }
+      </div>
     </div>
-    <button type="button" class="btn-top-action" (click)="openConfig()" id="btn-new-tarifa">
-      <ion-icon name="add-outline"></ion-icon>
-      <span>Nueva tarifa</span>
-    </button>
+    <div class="page-header-actions">
+      <button type="button" class="btn-action-primary" (click)="openConfig()" id="btn-new-tarifa">
+        <ion-icon name="add-outline"></ion-icon>
+        <span>Nueva tarifa</span>
+      </button>
+    </div>
   </header>
 
   <section class="active-rates-note" aria-live="polite">

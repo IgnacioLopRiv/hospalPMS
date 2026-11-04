@@ -88,6 +88,7 @@ export class ReservasPage implements OnInit {
   private readonly sedeService = inject(SedeService);
   private readonly destroyRef = inject(DestroyRef);
 
+  readonly sede = this.sedeService.selectedSede;
   readonly savedRooms = this.sedeService.habitaciones;
   readonly roomTypes = this.sedeService.tipologias;
   readonly reservations = signal<ReservationBlock[]>([]);

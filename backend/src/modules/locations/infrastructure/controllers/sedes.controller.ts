@@ -20,6 +20,7 @@ interface SedeInput {
   ciudad?: string;
   direccion?: string;
   telefono?: string | null;
+  email?: string | null;
   hostalId?: number;
 }
 
@@ -41,6 +42,7 @@ export class SedesController {
       ciudad: sede.ciudad,
       direccion: sede.direccion,
       telefono: sede.telefono,
+      email: sede.email,
       tipologias: sede.tipologias.map((typology) => ({
         id: typology.id,
         nombre: typology.nombre,
@@ -72,6 +74,11 @@ export class SedesController {
       throw new BadRequestException('nombre y ciudad son obligatorios.');
     }
 
+    const emailTrimmed = input.email !== undefined && input.email !== null ? input.email.trim() : null;
+    if (emailTrimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
+      throw new BadRequestException('El formato del correo de la sede no es válido.');
+    }
+
     const hostal = input.hostalId
       ? await this.prisma.hostal.findUnique({ where: { id: input.hostalId } })
       : await this.prisma.hostal.findFirst({ orderBy: { id: 'asc' } });
@@ -86,13 +93,27 @@ export class SedesController {
         ciudad,
         direccion: input.direccion?.trim() || ciudad,
         telefono: input.telefono?.trim() || null,
+        email: emailTrimmed || null,
       },
     });
-    return { id: sede.id, hostalId: sede.hostalId, nombre: sede.nombreSede, ciudad: sede.ciudad, tipologias: [], habitaciones: [] };
+    return { id: sede.id, hostalId: sede.hostalId, nombre: sede.nombreSede, ciudad: sede.ciudad, email: sede.email, tipologias: [], habitaciones: [] };
   }
 
   @Patch(':id')
   async update(@Param('id', ParseIntPipe) id: number, @Body() input: SedeInput) {
+    let emailValue: string | null | undefined = undefined;
+    if (input.email !== undefined) {
+      if (input.email === null || input.email.trim() === '') {
+        emailValue = null;
+      } else {
+        const trimmed = input.email.trim();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+          throw new BadRequestException('El formato del correo de la sede no es válido.');
+        }
+        emailValue = trimmed;
+      }
+    }
+
     const data = {
       ...(input.nombre !== undefined || input.nombreSede !== undefined
         ? { nombreSede: (input.nombreSede ?? input.nombre)?.trim() }
@@ -100,11 +121,12 @@ export class SedesController {
       ...(input.ciudad !== undefined ? { ciudad: input.ciudad.trim() } : {}),
       ...(input.direccion !== undefined ? { direccion: input.direccion.trim() } : {}),
       ...(input.telefono !== undefined ? { telefono: input.telefono?.trim() || null } : {}),
+      ...(emailValue !== undefined ? { email: emailValue } : {}),
     };
 
     try {
       const sede = await this.prisma.sede.update({ where: { id }, data });
-      return { id: sede.id, hostalId: sede.hostalId, nombre: sede.nombreSede, ciudad: sede.ciudad };
+      return { id: sede.id, hostalId: sede.hostalId, nombre: sede.nombreSede, ciudad: sede.ciudad, email: sede.email };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
         throw new NotFoundException(`No existe la sede ${id}.`);

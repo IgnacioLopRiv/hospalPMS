@@ -4,6 +4,7 @@ import { Sede, SedeHabitacion, SedeTipologia } from '../../../shared/domain/host
 export interface CreateSedeInput {
   nombre: string;
   ciudad: string;
+  email?: string | null;
 }
 
 export type CreateTipologiaInput = Omit<SedeTipologia, 'id'>;

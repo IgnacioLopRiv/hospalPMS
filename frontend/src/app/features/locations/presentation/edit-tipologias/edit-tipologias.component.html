@@ -165,8 +165,12 @@
                   @if (deleteConfirmId() === tipologia.id) {
                     <div class="confirm-delete" role="alert">
                       <span>¿Eliminar?</span>
-                      <button class="icon-btn danger" (click)="confirmDelete(tipologia.id)" title="Confirmar eliminación">✓</button>
-                      <button class="icon-btn" (click)="cancelDelete()" title="Cancelar">✕</button>
+                      <button class="icon-btn danger" (click)="confirmDelete(tipologia.id)" title="Confirmar eliminación" aria-label="Confirmar eliminación">
+                        <ion-icon name="checkmark-outline"></ion-icon>
+                      </button>
+                      <button class="icon-btn" (click)="cancelDelete()" title="Cancelar" aria-label="Cancelar">
+                        <ion-icon name="close-outline"></ion-icon>
+                      </button>
                     </div>
                   } @else {
                     @if (isAdmin()) {

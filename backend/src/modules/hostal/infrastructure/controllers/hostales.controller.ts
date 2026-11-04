@@ -81,6 +81,12 @@ export class HostalesController {
     if (!partial && required.some((field) => !input[field]?.trim())) {
       throw new BadRequestException('RUT, razón social, nombre de fantasía, giro y dirección son obligatorios.');
     }
+    if (input.email !== undefined && input.email !== null && input.email.trim() !== '') {
+      const emailTrimmed = input.email.trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
+        throw new BadRequestException('El formato del correo del hostal no es válido.');
+      }
+    }
   }
 
   private normalize<T extends Partial<HostalData>>(input: T): T {

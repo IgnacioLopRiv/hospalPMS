@@ -16,7 +16,7 @@ hospalPMS/
 ├── docker-compose.yml
 ├── .env.example            variables de Docker
 ├── backend/                API NestJS + Prisma
-└── frontend/               Ionic React
+└── frontend/               Ionic + Angular (Standalone Components)
 ```
 
 ## Primera vez

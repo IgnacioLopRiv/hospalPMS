@@ -1,18 +1,26 @@
 <main class="inventory-page">
-  <header class="page-header">
-    <div>
-      <h1>Inventario</h1>
-      @if (sede(); as currentSede) {
-        <p class="sede-description">
-          <ion-icon name="business-outline"></ion-icon>
-          Insumos registrados de <strong>{{ currentSede.nombre }}</strong> en {{ currentSede.ciudad }}
-        </p>
-      }
+  <header class="page-header-standard">
+    <div class="header-left-group">
+      <div class="page-header-icon">
+        <ion-icon name="cube-outline"></ion-icon>
+      </div>
+      <div class="page-header-titles">
+        <h1 class="page-title">Inventario</h1>
+        @if (sede(); as currentSede) {
+          <p class="page-subtitle">
+            Insumos registrados de <strong>{{ currentSede.nombre }}</strong> en {{ currentSede.ciudad }}
+          </p>
+        } @else {
+          <p class="page-subtitle">Insumos y stock registrados</p>
+        }
+      </div>
     </div>
-    <button type="button" class="primary-button" (click)="openInsumoModal()" [disabled]="!sede()">
-      <ion-icon name="add-outline"></ion-icon>
-      Agregar insumo
-    </button>
+    <div class="page-header-actions">
+      <button type="button" class="btn-action-primary" (click)="openInsumoModal()" [disabled]="!sede()">
+        <ion-icon name="add-outline"></ion-icon>
+        <span>Agregar insumo</span>
+      </button>
+    </div>
   </header>
 
   @if (!sede()) {

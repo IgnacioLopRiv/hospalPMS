@@ -1,13 +1,25 @@
 <div class="huespedes-page-container">
   <!-- Encabezado de la página -->
-  <header class="top-bar">
-    <div>
-      <h1 class="page-title">Vista General de Huéspedes</h1>
+  <header class="page-header-standard">
+    <div class="header-left-group">
+      <div class="page-header-icon">
+        <ion-icon name="people-outline"></ion-icon>
+      </div>
+      <div class="page-header-titles">
+        <h1 class="page-title">Huéspedes</h1>
+        <p class="page-subtitle">
+          @if (sede(); as currentSede) {
+            Consulta y administra los huéspedes de <strong>{{ currentSede.nombre }}</strong>
+          } @else {
+            Consulta y administra los huéspedes registrados
+          }
+        </p>
+      </div>
     </div>
-    <div class="top-actions">
-      <button type="button" class="btn-primary" (click)="openNewGuestForm()">
+    <div class="page-header-actions">
+      <button type="button" class="btn-action-primary" (click)="openNewGuestForm()">
         <ion-icon name="enter-outline"></ion-icon>
-        <span>Nuevo Huésped</span>
+        <span>Nuevo huésped</span>
       </button>
     </div>
   </header>

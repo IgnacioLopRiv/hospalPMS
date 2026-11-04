@@ -60,6 +60,19 @@ enum EstadoSii {
   RECHAZADO
 }
 
+enum TipoNotificacionEmail {
+  CONFIRMACION_RESERVA
+  COMPROBANTE_PAGO
+  RECORDATORIO_PRE_LLEGADA
+  RESUMEN_CHECKOUT
+}
+
+enum EstadoNotificacionEmail {
+  PENDIENTE
+  ENVIADA
+  FALLIDA
+}
+
 model Hostal {
   id             Int     @id @default(autoincrement())
   rutEmpresa     String  @unique @db.VarChar(12)
@@ -67,6 +80,7 @@ model Hostal {
   nombreFantasia String
   giro           String
   direccion      String
+  email          String? @db.VarChar(191)
   logoUrl        String? @db.VarChar(500)
   sedes          Sede[]
 
@@ -74,19 +88,26 @@ model Hostal {
 }
 
 model Sede {
-  id           Int                @id @default(autoincrement())
-  hostalId     Int
-  nombreSede   String
-  direccion    String
-  ciudad       String
-  telefono     String?            @db.VarChar(20)
-  hostal       Hostal             @relation(fields: [hostalId], references: [id])
-  funcionarios Funcionario[]
-  habitaciones Habitacion[]
-  tipologias   Tipologia[]
-  insumos      InsumoInventario[]
-  tarifaAbono  TarifaAbono?
-  tarifas      Tarifa[]
+  id                  Int                @id @default(autoincrement())
+  hostalId            Int
+  nombreSede          String
+  direccion           String
+  ciudad              String
+  telefono            String?            @db.VarChar(20)
+  email               String?            @db.VarChar(191)
+  horaCheckIn         String?            @default("15:00") @db.VarChar(10)
+  horaCheckOut        String?            @default("11:00") @db.VarChar(10)
+  politicaCancelacion String?            @db.Text
+  serviciosIncluidos  String?            @db.Text
+  urlEncuesta         String?            @db.VarChar(500)
+  sitioWeb            String?            @db.VarChar(500)
+  hostal              Hostal             @relation(fields: [hostalId], references: [id])
+  funcionarios        Funcionario[]
+  habitaciones        Habitacion[]
+  tipologias          Tipologia[]
+  insumos             InsumoInventario[]
+  tarifaAbono         TarifaAbono?
+  tarifas             Tarifa[]
 
   @@map("sede")
 }
@@ -249,6 +270,7 @@ model Huesped {
 
 model Reserva {
   id               Int                    @id @default(autoincrement())
+  codigo           String?                @unique @db.VarChar(30)
   huespedId        Int
   habitacionId     Int
   fechaReserva     DateTime               @default(now())
@@ -266,19 +288,22 @@ model Reserva {
   habitacion       Habitacion             @relation(fields: [habitacionId], references: [id])
   pagos            Pago[]
   documentos       DocumentoFacturacion[]
+  notificaciones   NotificacionEmail[]
 
   @@index([habitacionId, fechaCheckIn, fechaCheckOut])
   @@map("reserva")
 }
 
 model Pago {
-  id            Int           @id @default(autoincrement())
-  reservaId     Int
-  monto         Int
-  metodoPago    MetodoPago
-  tipoOperacion TipoOperacion
-  fechaPago     DateTime      @default(now())
-  reserva       Reserva       @relation(fields: [reservaId], references: [id])
+  id             Int                 @id @default(autoincrement())
+  referencia     String?             @unique @db.VarChar(50)
+  reservaId      Int
+  monto          Int
+  metodoPago     MetodoPago
+  tipoOperacion  TipoOperacion
+  fechaPago      DateTime            @default(now())
+  reserva        Reserva             @relation(fields: [reservaId], references: [id])
+  notificaciones NotificacionEmail[]
 
   @@map("pago")
 }
@@ -297,4 +322,25 @@ model DocumentoFacturacion {
 
   @@unique([tipoDocumento, folioSii])
   @@map("documento_facturacion")
+}
+
+model NotificacionEmail {
+  id            Int                     @id @default(autoincrement())
+  tipo          TipoNotificacionEmail
+  reservaId     Int
+  pagoId        Int?
+  destinatario  String                  @db.VarChar(191)
+  idioma        String                  @default("es") @db.VarChar(5)
+  asunto        String                  @db.VarChar(255)
+  estado        EstadoNotificacionEmail @default(PENDIENTE)
+  intentos      Int                     @default(0)
+  ultimoError   String?                 @db.Text
+  enviadoAt     DateTime?
+  creadoAt      DateTime                @default(now())
+  actualizadoAt DateTime                @updatedAt
+  reserva       Reserva                 @relation(fields: [reservaId], references: [id], onDelete: Cascade)
+  pago          Pago?                   @relation(fields: [pagoId], references: [id], onDelete: SetNull)
+
+  @@index([reservaId, tipo])
+  @@map("notificacion_email")
 }

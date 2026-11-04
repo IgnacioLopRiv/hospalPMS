@@ -10,6 +10,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { MetodoPago, Prisma, TipoOperacion } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
 
@@ -34,7 +35,10 @@ interface PagoInput {
  */
 @Controller('pagos')
 export class PagosController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2
+  ) {}
 
   @Get()
   async findAll(@Query('reservaId') reservaId?: string) {
@@ -63,7 +67,7 @@ export class PagosController {
       throw new BadRequestException(`tipoOperacion inválido. Opciones: ${TIPOS_OPERACION.join(', ')}.`);
     }
     try {
-      return await this.prisma.pago.create({
+      const created = await this.prisma.pago.create({
         data: {
           reservaId: input.reservaId,
           monto: input.monto,
@@ -71,6 +75,23 @@ export class PagosController {
           tipoOperacion: input.tipoOperacion as TipoOperacion,
         },
       });
+
+      // Asegurar referencia única
+      const referencia = `PAY-${String(created.id).padStart(6, '0')}`;
+      const updated = await this.prisma.pago.update({
+        where: { id: created.id },
+        data: { referencia },
+      });
+
+      // Disparar evento de notificación por correo (excepto reembolsos)
+      if (updated.tipoOperacion !== TipoOperacion.REEMBOLSO) {
+        this.eventEmitter.emit('pago.registrado', {
+          reservaId: updated.reservaId,
+          pagoId: updated.id,
+        });
+      }
+
+      return updated;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
         throw new BadRequestException('La reserva especificada no existe.');

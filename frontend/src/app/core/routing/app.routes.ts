@@ -13,9 +13,24 @@ export const routes: Routes = [
     loadComponent: () => import('../auth/presentation/pages/home/home.page').then((m) => m.HomePage),
   },
   {
-    path: 'main',
+    path: 'recepcion',
     canActivate: [authGuard],
-    loadComponent: () => import('../../features/dashboard/presentation/pages/main/main.page').then((m) => m.MainPage),
+    loadComponent: () => import('../../features/reservations/presentation/pages/check-page/check-page.page').then(m => m.CheckPagePage),
+  },
+  {
+    path: 'check-page',
+    redirectTo: 'recepcion',
+    pathMatch: 'full',
+  },
+  {
+    path: 'main',
+    redirectTo: 'recepcion',
+    pathMatch: 'full',
+  },
+  {
+    path: 'inicio',
+    redirectTo: 'recepcion',
+    pathMatch: 'full',
   },
   {
     path: 'sedes',
@@ -53,13 +68,18 @@ export const routes: Routes = [
     loadComponent: () => import('../../features/reservations/presentation/pages/reservas/reservas.page').then((m) => m.ReservasPage),
   },
   {
-    path: 'check-page',
+    path: 'recepcion',
     canActivate: [authGuard],
     loadComponent: () => import('../../features/reservations/presentation/pages/check-page/check-page.page').then(m => m.CheckPagePage),
   },
   {
+    path: 'check-page',
+    redirectTo: 'recepcion',
+    pathMatch: 'full',
+  },
+  {
     path: 'tarifas',
-    canActivate: [authGuard],
+    canActivate: [authGuard, permissionGuard('viewReports')],
     loadComponent: () => import('../../features/locations/presentation/pages/tarifas').then((m) => m.TarifasPage),
   },
   {

@@ -99,6 +99,7 @@ export interface Sede {
   id: number;
   nombre: string;
   ciudad: string;
+  email?: string | null;
   tipologias?: SedeTipologia[];
   habitaciones: SedeHabitacion[];
 }

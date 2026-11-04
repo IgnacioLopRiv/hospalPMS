@@ -36,7 +36,7 @@
 
 /* @import "@ionic/angular/css/palettes/dark.always.css"; */
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
-@import '@ionic/angular/css/palettes/dark.system.css';
+/* @import '@ionic/angular/css/palettes/dark.system.css'; */
 
 html,
 body {
@@ -85,6 +85,116 @@ input[type="number"]::-webkit-inner-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
+}
+
+/* ==========================================================================
+   ENCABEZADO DE PÁGINA Y BOTÓN DE ACCIÓN PRINCIPAL CONSISTENTES (HOSPAL PMS)
+   ========================================================================== */
+
+.page-header-standard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+
+  .header-left-group {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    min-width: 0;
+  }
+
+  .page-header-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    border-radius: 10px;
+    background: #eff6ff;
+    color: #1e50d8;
+    font-size: 1.35rem;
+    box-shadow: 0 1px 2px rgba(30, 80, 216, 0.08);
+  }
+
+  .page-header-titles {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+
+    h1.page-title {
+      margin: 0;
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: -0.3px;
+      line-height: 1.2;
+    }
+
+    p.page-subtitle {
+      margin: 0;
+      font-size: 0.88rem;
+      color: #64748b;
+      line-height: 1.35;
+
+      strong {
+        color: #0f172a;
+      }
+    }
+  }
+
+  .page-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+  }
+}
+
+.btn-action-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 40px;
+  padding: 0.55rem 1rem;
+  border: 1px solid #1e50d8;
+  border-radius: 8px;
+  background: #1e50d8;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  box-sizing: border-box;
+  white-space: nowrap;
+  transition: background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+
+  ion-icon {
+    font-size: 1.15rem;
+    flex-shrink: 0;
+  }
+
+  &:hover:not(:disabled) {
+    background: #1740b0;
+    border-color: #1740b0;
+  }
+
+  &:disabled,
+  &[disabled] {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #1e50d8;
+    outline-offset: 2px;
+  }
 }
 
 /* ==========================================================================

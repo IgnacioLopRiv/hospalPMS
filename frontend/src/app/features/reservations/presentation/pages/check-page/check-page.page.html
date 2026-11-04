@@ -1,14 +1,26 @@
 <div class="check-page-container">
   @if (!modalOnly) {
   <!-- Encabezado de la página -->
-  <header class="top-bar">
-    <div>
-      <h1 class="page-title">Check-in & Check-out</h1>
+  <header class="page-header-standard">
+    <div class="header-left-group">
+      <div class="page-header-icon">
+        <ion-icon name="swap-horizontal-outline"></ion-icon>
+      </div>
+      <div class="page-header-titles">
+        <h1 class="page-title">Recepción</h1>
+        <p class="page-subtitle">
+          @if (sede(); as currentSede) {
+            Registra las llegadas y salidas de hoy en <strong>{{ currentSede.nombre }}</strong>
+          } @else {
+            Registra las llegadas y salidas de hoy
+          }
+        </p>
+      </div>
     </div>
-    <div class="top-actions">
-      <button type="button" class="btn-top-action" (click)="openNewEntryForm()">
+    <div class="page-header-actions">
+      <button type="button" class="btn-action-primary" (click)="openNewEntryForm()">
         <ion-icon name="enter-outline"></ion-icon>
-        <span>Nuevo Ingreso</span>
+        <span>Nuevo ingreso</span>
       </button>
     </div>
   </header>

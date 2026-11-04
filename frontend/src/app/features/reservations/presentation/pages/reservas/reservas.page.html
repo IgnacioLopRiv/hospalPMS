@@ -1,4 +1,24 @@
 <div class="reservas-view-container">
+  <div class="reservas-page-header-wrapper">
+    <header class="page-header-standard">
+      <div class="header-left-group">
+        <div class="page-header-icon">
+          <ion-icon name="calendar-outline"></ion-icon>
+        </div>
+        <div class="page-header-titles">
+          <h1 class="page-title">Reservas</h1>
+          <p class="page-subtitle">
+            @if (sede(); as currentSede) {
+              Calendario de ocupación de <strong>{{ currentSede.nombre }}</strong>
+            } @else {
+              Calendario de ocupación y reservas
+            }
+          </p>
+        </div>
+      </div>
+    </header>
+  </div>
+
   <header class="scheduler-toolbar">
     <div class="kpi-chips" aria-label="Resumen de reservas para el día seleccionado">
       <div class="kpi-chip">

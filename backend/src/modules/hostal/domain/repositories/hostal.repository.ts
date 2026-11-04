@@ -7,6 +7,7 @@ export interface HostalData {
   giro: string;
   direccion: string;
   logoUrl?: string | null;
+  email?: string | null;
 }
 
 /**

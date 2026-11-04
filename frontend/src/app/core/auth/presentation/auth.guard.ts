@@ -50,6 +50,6 @@ export const permissionGuard = (permission: Permission): CanActivateFn => {
       return true;
     }
 
-    return router.createUrlTree(['/main']);
+    return router.createUrlTree(['/recepcion']);
   };
 };

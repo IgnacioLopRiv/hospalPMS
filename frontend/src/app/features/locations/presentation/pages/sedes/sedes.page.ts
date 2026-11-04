@@ -49,7 +49,7 @@ export class SedesPage {
 
   selectSede(sede: Sede): void {
     this.sedeService.selectSede(sede);
-    this.router.navigate(['/check-page']);
+    this.router.navigate(['/recepcion']);
   }
 
   /**
@@ -114,6 +114,11 @@ export class SedesPage {
           type: 'text',
           placeholder: 'Ciudad (ej. Viña del Mar)',
         },
+        {
+          name: 'email',
+          type: 'email',
+          placeholder: 'Correo de la sede (opcional, ej. contacto@sede.cl)',
+        },
       ],
       buttons: [
         {
@@ -125,10 +130,20 @@ export class SedesPage {
           cssClass: 'btn-confirm',
           handler: async (data) => {
             if (!data.nombre?.trim() || !data.ciudad?.trim()) {
+              alert.message = 'El nombre y la ciudad son obligatorios.';
+              return false;
+            }
+            const emailTrimmed = data.email?.trim();
+            if (emailTrimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
+              alert.message = 'Ingresa un correo electrónico válido o deja el campo vacío.';
               return false;
             }
             try {
-              await this.sedeService.createSede({ nombre: data.nombre, ciudad: data.ciudad });
+              await this.sedeService.createSede({
+                nombre: data.nombre,
+                ciudad: data.ciudad,
+                email: emailTrimmed || null,
+              });
               return true;
             } catch {
               alert.message = 'No se pudo guardar la sede. Verifica la conexión y que exista un hostal registrado en la base de datos.';
@@ -168,6 +183,12 @@ export class SedesPage {
           value: sede.ciudad,
           placeholder: 'Ciudad',
         },
+        {
+          name: 'email',
+          type: 'email',
+          value: sede.email || '',
+          placeholder: 'Correo de la sede (opcional)',
+        },
       ],
       buttons: [
         {
@@ -179,10 +200,20 @@ export class SedesPage {
           cssClass: 'btn-confirm',
           handler: async (data) => {
             if (!data.nombre?.trim() || !data.ciudad?.trim()) {
+              alert.message = 'El nombre y la ciudad son obligatorios.';
+              return false;
+            }
+            const emailTrimmed = data.email?.trim();
+            if (emailTrimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
+              alert.message = 'Ingresa un correo electrónico válido o deja el campo vacío.';
               return false;
             }
             try {
-              await this.sedeService.updateSedeInfo(sede.id, { nombre: data.nombre, ciudad: data.ciudad });
+              await this.sedeService.updateSedeInfo(sede.id, {
+                nombre: data.nombre,
+                ciudad: data.ciudad,
+                email: emailTrimmed || null,
+              });
               return true;
             } catch {
               alert.message = 'No se pudieron actualizar los datos de la sede. Verifica la conexión con el servidor.';

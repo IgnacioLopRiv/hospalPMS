@@ -24,6 +24,7 @@ export class PrismaHostalRepository implements HostalRepository {
       raw.giro,
       raw.direccion,
       raw.logoUrl,
+      raw.email,
     );
   }
 

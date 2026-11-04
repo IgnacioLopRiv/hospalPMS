@@ -10,6 +10,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EstadoReserva, MetodoPago, Prisma, TipoDocumento, TipoOperacion } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
 
@@ -30,7 +31,10 @@ interface ReservaInput {
 
 @Controller('reservas')
 export class ReservasController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2
+  ) {}
 
   @Get()
   async findAll(@Query('sedeId') sedeId?: string) {
@@ -43,22 +47,46 @@ export class ReservasController {
 
   @Post()
   async create(@Body() input: ReservaInput) {
+    let createdPaymentId: number | null = null;
     const reservation = await this.prisma.$transaction(async (transaction) => {
       const saved = await transaction.reserva.create({
         data: this.toDatabase(input) as Prisma.ReservaUncheckedCreateInput,
       });
-      await this.recordPayment(transaction, saved.id, input, 0);
-      if (saved.estado === EstadoReserva.EN_CURSO) {
-        await this.issueCheckInReceipt(transaction, saved);
+
+      // Asignar código amigable único
+      const codigo = `HP-${String(saved.id).padStart(6, '0')}`;
+      const withCode = await transaction.reserva.update({
+        where: { id: saved.id },
+        data: { codigo },
+      });
+
+      createdPaymentId = await this.recordPayment(transaction, withCode.id, input, 0);
+      if (withCode.estado === EstadoReserva.EN_CURSO) {
+        await this.issueCheckInReceipt(transaction, withCode);
       }
-      return saved;
+      return withCode;
     });
+
+    // Disparar confirmación de reserva
+    this.eventEmitter.emit('reserva.creada', { reservaId: reservation.id });
+
+    // Disparar comprobante de pago si hubo abono inicial
+    if (createdPaymentId) {
+      this.eventEmitter.emit('pago.registrado', {
+        reservaId: reservation.id,
+        pagoId: createdPaymentId,
+      });
+    }
+
     return this.toFrontend(reservation);
   }
 
   @Patch(':id')
   async update(@Param('id', ParseIntPipe) id: number, @Body() input: ReservaInput) {
     try {
+      let createdPaymentId: number | null = null;
+      let didCheckout = false;
+
       const reservation = await this.prisma.$transaction(async (transaction) => {
         const previous = await transaction.reserva.findUnique({ where: { id } });
         if (!previous) throw new NotFoundException(`No existe la reserva ${id}.`);
@@ -66,12 +94,31 @@ export class ReservasController {
           where: { id },
           data: this.toDatabase(input, true) as Prisma.ReservaUncheckedUpdateInput,
         });
-        await this.recordPayment(transaction, id, input, previous.montoPagado ?? 0);
+        createdPaymentId = await this.recordPayment(transaction, id, input, previous.montoPagado ?? 0);
         if (previous.estado !== EstadoReserva.EN_CURSO && saved.estado === EstadoReserva.EN_CURSO) {
           await this.issueCheckInReceipt(transaction, saved);
         }
+
+        if (previous.estado !== EstadoReserva.FINALIZADA && saved.estado === EstadoReserva.FINALIZADA) {
+          didCheckout = true;
+        }
+
         return saved;
       });
+
+      // Disparar comprobante de pago si hubo un abono o pago adicional
+      if (createdPaymentId) {
+        this.eventEmitter.emit('pago.registrado', {
+          reservaId: reservation.id,
+          pagoId: createdPaymentId,
+        });
+      }
+
+      // Disparar resumen de salida al hacer check-out
+      if (didCheckout) {
+        this.eventEmitter.emit('reserva.checkout', { reservaId: reservation.id });
+      }
+
       return this.toFrontend(reservation);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
@@ -108,14 +155,15 @@ export class ReservasController {
     reservationId: number,
     input: ReservaInput,
     previousAmount: number,
-  ): Promise<void> {
+  ): Promise<number | null> {
     const newAmount = input.monto_pagado;
     const metodoPago = input.metodo_pago === 'transferencia' ? MetodoPago.TRANSFERENCIA
       : input.metodo_pago === 'efectivo' ? MetodoPago.EFECTIVO
         : undefined;
     const amount = (newAmount ?? previousAmount) - previousAmount;
-    if (!metodoPago || amount <= 0) return;
-    await transaction.pago.create({
+    if (!metodoPago || amount <= 0) return null;
+
+    const pago = await transaction.pago.create({
       data: {
         reservaId: reservationId,
         monto: amount,
@@ -123,6 +171,14 @@ export class ReservasController {
         tipoOperacion: input.pago_completo ? TipoOperacion.PAGO_FINAL : TipoOperacion.ABONO,
       },
     });
+
+    const referencia = `PAY-${String(pago.id).padStart(6, '0')}`;
+    await transaction.pago.update({
+      where: { id: pago.id },
+      data: { referencia },
+    });
+
+    return pago.id;
   }
 
   /**

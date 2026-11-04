@@ -81,6 +81,7 @@ export class HuespedesPage implements OnInit, OnDestroy {
   };
 
   private readonly sedeService = inject(SedeService);
+  readonly sede = this.sedeService.selectedSede;
 
   constructor(private hostalService: HostalService) {
     addIcons({

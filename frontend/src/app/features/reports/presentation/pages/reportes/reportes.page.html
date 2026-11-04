@@ -1,18 +1,25 @@
 <ion-content [fullscreen]="true">
   <div class="reportes-page-container">
     <main class="page-content">
-      <header class="top-bar">
-        <div>
-          <h1 class="page-title">Reportes</h1>
-          @if (sede(); as currentSede) {
-            <p class="sede-description">Resumen operativo de {{ currentSede.nombre }}</p>
-          } @else {
-            <p class="sede-description">Resumen operativo del mes</p>
-          }
+      <header class="page-header-standard">
+        <div class="header-left-group">
+          <div class="page-header-icon">
+            <ion-icon name="bar-chart-outline"></ion-icon>
+          </div>
+          <div class="page-header-titles">
+            <h1 class="page-title">Reportes</h1>
+            @if (sede(); as currentSede) {
+              <p class="page-subtitle">Resumen operativo de <strong>{{ currentSede.nombre }}</strong></p>
+            } @else {
+              <p class="page-subtitle">Resumen operativo del mes</p>
+            }
+          </div>
         </div>
-        <div class="report-period">
-          <ion-icon name="calendar-outline"></ion-icon>
-          <span>Junio 2026</span>
+        <div class="page-header-actions">
+          <div class="report-period">
+            <ion-icon name="calendar-outline"></ion-icon>
+            <span>Junio 2026</span>
+          </div>
         </div>
       </header>
 

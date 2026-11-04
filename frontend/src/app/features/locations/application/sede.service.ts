@@ -98,10 +98,11 @@ export class SedeService {
   /**
    * C (Crear): Agrega una nueva sede al listado
    */
-  async createSede(data: { nombre: string; ciudad: string }): Promise<Sede> {
+  async createSede(data: { nombre: string; ciudad: string; email?: string | null }): Promise<Sede> {
     const created = await firstValueFrom(this.repository.createSede({
       nombre: data.nombre.trim(),
       ciudad: data.ciudad.trim(),
+      email: data.email?.trim() || null,
     }));
     const nuevaSede: Sede = { ...created, tipologias: [], habitaciones: [] };
     this.sedes.update((list) => [...list, nuevaSede]);
@@ -109,21 +110,33 @@ export class SedeService {
   }
 
   /**
-   * U (Actualizar datos generales): Modifica nombre y ciudad de una sede
+   * U (Actualizar datos generales): Modifica nombre, ciudad y correo de una sede
    */
-  async updateSedeInfo(id: number, data: { nombre: string; ciudad: string }): Promise<void> {
+  async updateSedeInfo(id: number, data: { nombre: string; ciudad: string; email?: string | null }): Promise<void> {
+    const emailSanitized = data.email !== undefined ? (data.email?.trim() || null) : undefined;
     await firstValueFrom(this.repository.updateSede(id, {
       nombre: data.nombre.trim(),
       ciudad: data.ciudad.trim(),
+      ...(emailSanitized !== undefined ? { email: emailSanitized } : {}),
     }));
     this.sedes.update((list) => list.map((sede) =>
-      sede.id === id ? { ...sede, nombre: data.nombre.trim(), ciudad: data.ciudad.trim() } : sede
+      sede.id === id ? {
+        ...sede,
+        nombre: data.nombre.trim(),
+        ciudad: data.ciudad.trim(),
+        ...(emailSanitized !== undefined ? { email: emailSanitized } : {}),
+      } : sede
     ));
 
     // Si la sede editada es la seleccionada, actualizarla
     const selected = this.selectedSede();
     if (selected && selected.id === id) {
-      const updated = { ...selected, nombre: data.nombre.trim(), ciudad: data.ciudad.trim() };
+      const updated: Sede = {
+        ...selected,
+        nombre: data.nombre.trim(),
+        ciudad: data.ciudad.trim(),
+        ...(emailSanitized !== undefined ? { email: emailSanitized } : {}),
+      };
       this.selectedSede.set(updated);
       this.saveSelectedSede(updated);
     }

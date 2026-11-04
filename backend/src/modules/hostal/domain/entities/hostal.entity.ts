@@ -13,5 +13,6 @@ export class Hostal {
     public readonly giro: string,
     public readonly direccion: string,
     public readonly logoUrl: string | null,
+    public readonly email: string | null = null,
   ) {}
 }
