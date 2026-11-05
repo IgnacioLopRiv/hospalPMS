@@ -5,9 +5,7 @@ import { InsumoInventario } from '../../domain/entities/insumo-inventario.entity
 import { InsumoInventarioRepository } from '../../domain/repositories/insumo-inventario.repository';
 
 @Injectable()
-export class PrismaInsumoInventarioRepository
-  implements InsumoInventarioRepository
-{
+export class PrismaInsumoInventarioRepository implements InsumoInventarioRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   private toEntity(raw: PrismaInsumoInventario): InsumoInventario {
@@ -32,7 +30,9 @@ export class PrismaInsumoInventarioRepository
   }
 
   async findById(id: number): Promise<InsumoInventario | null> {
-    const raw = await this.prisma.insumoInventario.findUnique({ where: { id } });
+    const raw = await this.prisma.insumoInventario.findUnique({
+      where: { id },
+    });
     return raw ? this.toEntity(raw) : null;
   }
 
@@ -60,7 +60,10 @@ export class PrismaInsumoInventarioRepository
       activo: boolean;
     }>,
   ): Promise<InsumoInventario> {
-    const raw = await this.prisma.insumoInventario.update({ where: { id }, data });
+    const raw = await this.prisma.insumoInventario.update({
+      where: { id },
+      data,
+    });
     return this.toEntity(raw);
   }
 

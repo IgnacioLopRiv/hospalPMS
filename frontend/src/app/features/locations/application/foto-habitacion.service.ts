@@ -1,33 +1,53 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { FotoHabitacionRepository } from '../domain/foto-habitacion.repository';
 import { FotoHabitacion } from '../domain/foto-habitacion.model';
 
-const STORAGE_KEY = 'hospal_fotos_habitaciones';
 const MAX_IMAGE_WIDTH = 1280;
 const MAX_IMAGE_HEIGHT = 960;
 const JPEG_QUALITY = 0.7;
 
-function isFotoHabitacion(value: unknown): value is FotoHabitacion {
-  if (typeof value !== 'object' || value === null) {
-    return false;
-  }
-  const photo = value as Record<string, unknown>;
-  return (typeof photo['id'] === 'number' || typeof photo['id'] === 'string') &&
-    (typeof photo['habitacionId'] === 'number' || typeof photo['habitacionId'] === 'string') &&
-    typeof photo['url'] === 'string' &&
-    typeof photo['fechaSubida'] === 'string' &&
-    (photo['titulo'] === undefined || typeof photo['titulo'] === 'string') &&
-    (photo['descripcion'] === undefined || typeof photo['descripcion'] === 'string');
-}
-
 @Injectable({ providedIn: 'root' })
 export class FotoHabitacionService {
-  private readonly storedPhotos = signal<FotoHabitacion[]>(this.readStoredPhotos());
+  private readonly repository = inject(FotoHabitacionRepository);
+  private readonly storedPhotos = signal<FotoHabitacion[]>([]);
   readonly photos = this.storedPhotos.asReadonly();
+  private readonly loadedRooms = new Set<string>();
+  private readonly loadingRooms = new Map<string, Promise<FotoHabitacion[]>>();
 
   forRoom(habitacionId: number | string): FotoHabitacion[] {
+    const key = String(habitacionId);
+    if (!this.loadedRooms.has(key) && !this.loadingRooms.has(key)) {
+      void this.loadRoomPhotos(habitacionId).catch(() => undefined);
+    }
     return this.storedPhotos().filter((photo) =>
       String(photo.habitacionId) === String(habitacionId)
     );
+  }
+
+  async loadRoomPhotos(habitacionId: number | string): Promise<FotoHabitacion[]> {
+    const key = String(habitacionId);
+    if (this.loadedRooms.has(key)) {
+      return this.forRoom(habitacionId);
+    }
+    const active = this.loadingRooms.get(key);
+    if (active) return active;
+
+    const promise = firstValueFrom(this.repository.listPhotos(Number(habitacionId)))
+      .then((photos) => {
+        if (this.loadedRooms.has(key)) return this.forRoom(habitacionId);
+        const others = this.storedPhotos().filter(
+          (photo) => String(photo.habitacionId) !== key,
+        );
+        this.storedPhotos.set([...others, ...photos]);
+        this.loadedRooms.add(key);
+        return photos;
+      })
+      .finally(() => {
+        this.loadingRooms.delete(key);
+      });
+    this.loadingRooms.set(key, promise);
+    return promise;
   }
 
   async addPhoto(input: {
@@ -41,24 +61,27 @@ export class FotoHabitacionService {
     }
 
     const url = await this.compressImage(input.file);
-    const photo: FotoHabitacion = {
-      id: this.createId(),
-      habitacionId: input.habitacionId,
+    const photo = await firstValueFrom(this.repository.createPhoto(Number(input.habitacionId), {
       url,
       titulo: input.titulo?.trim() || undefined,
       descripcion: input.descripcion?.trim() || undefined,
-      fechaSubida: new Date().toISOString(),
-    };
-    this.persist([...this.storedPhotos(), photo]);
+    }));
+    this.storedPhotos.set([...this.storedPhotos(), photo]);
+    this.loadedRooms.add(String(input.habitacionId));
     return photo;
   }
 
-  removePhoto(photoId: FotoHabitacion['id']): void {
-    this.persist(this.storedPhotos().filter((photo) => photo.id !== photoId));
+  async removePhoto(photoId: FotoHabitacion['id']): Promise<void> {
+    await firstValueFrom(this.repository.deletePhoto(Number(photoId)));
+    this.storedPhotos.set(this.storedPhotos().filter((photo) => photo.id !== photoId));
   }
 
-  removeRoomPhotos(habitacionId: number | string): void {
-    this.persist(this.storedPhotos().filter((photo) =>
+  async removeRoomPhotos(habitacionId: number | string): Promise<void> {
+    const photos = this.forRoom(habitacionId);
+    for (const photo of photos) {
+      await firstValueFrom(this.repository.deletePhoto(Number(photo.id)));
+    }
+    this.storedPhotos.set(this.storedPhotos().filter((photo) =>
       String(photo.habitacionId) !== String(habitacionId)
     ));
   }
@@ -117,35 +140,5 @@ export class FotoHabitacionService {
       reader.onerror = () => reject(new Error('No se pudo leer la imagen comprimida.'));
       reader.readAsDataURL(blob);
     });
-  }
-
-  private readStoredPhotos(): FotoHabitacion[] {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return [];
-    }
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed) || !parsed.every(isFotoHabitacion)) {
-      throw new Error(`Los datos guardados en ${STORAGE_KEY} no tienen un formato válido.`);
-    }
-    return parsed;
-  }
-
-  private persist(photos: FotoHabitacion[]): void {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(photos));
-    } catch (error) {
-      if (error instanceof DOMException &&
-          (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
-        throw new Error('No hay espacio suficiente en el almacenamiento del navegador. Elimina algunas fotos e inténtalo de nuevo.');
-      }
-      throw error;
-    }
-    this.storedPhotos.set(photos);
-  }
-
-  private createId(): string {
-    return globalThis.crypto?.randomUUID?.() ??
-      `foto-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
   }
 }

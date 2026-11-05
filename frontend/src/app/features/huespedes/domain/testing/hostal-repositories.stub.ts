@@ -11,19 +11,21 @@ export function createHostalRepositoryStubs(): {
   let reservas: Reserva[] = [];
 
   const huespedRepository: HuespedRepository = {
-    list: () => of(huespedes),
+    list: (sedeId?: number) => of(sedeId ? huespedes.filter((row) => row.sedeId === sedeId) : huespedes),
     create: (data: CreateHuesped) => {
       const saved = { ...data, id: Math.max(0, ...huespedes.map((row) => row.id)) + 1 };
       huespedes = [...huespedes, saved];
       return of(saved);
     },
-    update: (id, data) => {
-      huespedes = huespedes.map((row) => row.id === id ? { ...row, ...data } : row);
+    update: (id, data, sedeId) => {
+      huespedes = huespedes.map((row) =>
+        row.id === id && (sedeId === undefined || row.sedeId === sedeId) ? { ...row, ...data } : row
+      );
       return of(huespedes.find((row) => row.id === id)!);
     },
-    remove: (id) => {
+    remove: (id, sedeId) => {
       const deletedIds = new Set(reservas.filter((row) => row.id_huesped === id).map((row) => row.id_reserva));
-      huespedes = huespedes.filter((row) => row.id !== id);
+      huespedes = huespedes.filter((row) => !(row.id === id && (sedeId === undefined || row.sedeId === sedeId)));
       reservas = reservas.filter((row) => !deletedIds.has(row.id_reserva));
       return of(undefined);
     },
@@ -36,11 +38,11 @@ export function createHostalRepositoryStubs(): {
       reservas = [...reservas, saved];
       return of(saved);
     },
-    update: (id: number, data: UpdateReserva) => {
+    update: (id: number, data: UpdateReserva, _sedeId?: number) => {
       reservas = reservas.map((row) => row.id_reserva === id ? { ...row, ...data } : row);
       return of(reservas.find((row) => row.id_reserva === id)!);
     },
-    remove: (id) => {
+    remove: (id, _sedeId) => {
       reservas = reservas.filter((row) => row.id_reserva !== id);
       return of(undefined);
     },

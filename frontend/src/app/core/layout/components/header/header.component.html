@@ -49,7 +49,7 @@
 
 @if (configOptionsOpen()) {
   <app-config-options
-    (close)="closeConfigOptions()"
+    (closed)="closeConfigOptions()"
     (manageProfiles)="openEditPerfiles()"
   ></app-config-options>
 }

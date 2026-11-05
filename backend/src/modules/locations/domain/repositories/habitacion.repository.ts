@@ -33,5 +33,8 @@ export abstract class HabitacionRepository {
     }>,
   ): Promise<Habitacion>;
   abstract delete(id: number): Promise<void>;
-  abstract updateEstado(id: number, estado: EstadoHabitacion): Promise<Habitacion>;
+  abstract updateEstado(
+    id: number,
+    estado: EstadoHabitacion,
+  ): Promise<Habitacion>;
 }

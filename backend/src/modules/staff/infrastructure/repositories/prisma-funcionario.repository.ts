@@ -5,7 +5,10 @@ import type {
 } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
 import { FuncionarioRepository } from '../../domain/repositories/funcionario.repository';
-import { Funcionario, RolFuncionario } from '../../domain/entities/funcionario.entity';
+import {
+  Funcionario,
+  RolFuncionario,
+} from '../../domain/entities/funcionario.entity';
 
 /**
  * Adaptador de repositorio Prisma para Funcionario – Infrastructure layer
@@ -61,7 +64,7 @@ export class PrismaFuncionarioRepository implements FuncionarioRepository {
     rol: RolFuncionario;
   }): Promise<Funcionario> {
     const raw = await this.prisma.funcionario.create({
-      data: { ...data, rol: data.rol as PrismaRol },
+      data: { ...data, rol: data.rol },
     });
     return this.toEntity(raw);
   }
@@ -80,7 +83,10 @@ export class PrismaFuncionarioRepository implements FuncionarioRepository {
       ...data,
       ...(data.rol !== undefined ? { rol: data.rol as PrismaRol } : {}),
     };
-    const raw = await this.prisma.funcionario.update({ where: { id }, data: prismaData });
+    const raw = await this.prisma.funcionario.update({
+      where: { id },
+      data: prismaData,
+    });
     return this.toEntity(raw);
   }
 

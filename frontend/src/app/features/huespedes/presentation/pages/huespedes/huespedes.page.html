@@ -444,6 +444,10 @@
               <input name="editArrivalTime" type="time" required [(ngModel)]="editReservationForm.hora_llegada">
             </label>
             <label class="entry-field">
+              <span>Horario estimado de salida</span>
+              <input name="editDepartureTime" type="time" [(ngModel)]="editReservationForm.hora_salida">
+            </label>
+            <label class="entry-field">
               <span>Cantidad de personas</span>
               <input name="editPersonCount" type="number" required min="1" step="1"
                 [(ngModel)]="editReservationForm.cantidad_personas"

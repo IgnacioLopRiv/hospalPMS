@@ -1,7 +1,6 @@
 import {
   Component,
   OnInit,
-  OnDestroy,
   DestroyRef,
   inject,
   signal,
@@ -30,7 +29,7 @@ export function useEffect(
   standalone: true,
   imports: [CommonModule, IonIcon],
 })
-export class ClockComponent implements OnInit, OnDestroy {
+export class ClockComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   /**
@@ -88,9 +87,5 @@ export class ClockComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     // Sincronización inicial con la fecha/hora en vivo
     this.now.set(new Date());
-  }
-
-  ngOnDestroy(): void {
-    // La limpieza principal es gestionada automáticamente por useEffect y DestroyRef
   }
 }

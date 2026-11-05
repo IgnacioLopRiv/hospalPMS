@@ -76,14 +76,16 @@ export class HuespedesPage implements OnInit, OnDestroy {
     fecha_llegada: '',
     fecha_salida: '',
     hora_llegada: '14:00',
+    hora_salida: '12:00',
     cantidad_personas: 1,
     id_habitacion: '',
   };
 
   private readonly sedeService = inject(SedeService);
+  private readonly hostalService = inject(HostalService);
   readonly sede = this.sedeService.selectedSede;
 
-  constructor(private hostalService: HostalService) {
+  constructor() {
     addIcons({
       peopleOutline,
       checkmarkCircleOutline,
@@ -252,6 +254,7 @@ export class HuespedesPage implements OnInit, OnDestroy {
       fecha_llegada: reservation.fecha_llegada,
       fecha_salida: reservation.fecha_salida,
       hora_llegada: reservation.hora_llegada ?? '14:00',
+      hora_salida: reservation.hora_salida ?? '12:00',
       cantidad_personas: reservation.cantidad_personas ?? 1,
       id_habitacion: String(reservation.id_habitacion),
     };
@@ -280,6 +283,7 @@ export class HuespedesPage implements OnInit, OnDestroy {
         fecha_llegada: this.editReservationForm.fecha_llegada,
         fecha_salida: this.editReservationForm.fecha_salida,
         hora_llegada: this.editReservationForm.hora_llegada,
+        hora_salida: this.editReservationForm.hora_salida || '12:00',
         cantidad_personas: this.editReservationForm.cantidad_personas,
       });
       this.guestSuccessMessage = 'Reserva actualizada correctamente.';

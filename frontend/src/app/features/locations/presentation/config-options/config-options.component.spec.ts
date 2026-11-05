@@ -25,6 +25,19 @@ describe('ConfigOptionsComponent', () => {
     fixture.detectChanges();
   }));
 
+  afterEach(async () => {
+    const modals = Array.from(document.querySelectorAll('ion-modal'));
+    await Promise.all(
+      modals.map((modal) =>
+        (modal as HTMLElement & { dismiss?: () => Promise<boolean> }).dismiss?.()
+      )
+    );
+    fixture.destroy();
+    document.querySelectorAll('ion-modal').forEach((modal) => modal.remove());
+    (document.activeElement as HTMLElement | null)?.blur();
+    document.body.classList.remove('modal-open', 'entry-modal-open');
+  });
+
   it('should create', () => {
     expect(component).toBeTruthy();
   });

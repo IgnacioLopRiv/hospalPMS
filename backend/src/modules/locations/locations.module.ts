@@ -13,6 +13,7 @@ import { SedesController } from './infrastructure/controllers/sedes.controller';
 import { CaracteristicasController } from './infrastructure/controllers/caracteristicas.controller';
 import { TarifasController } from './infrastructure/controllers/tarifas.controller';
 import { CatalogosSedeController } from './infrastructure/controllers/catalogos-sede.controller';
+import { FotosHabitacionController } from './infrastructure/controllers/fotos-habitacion.controller';
 import { TarifaAbonoController } from './infrastructure/controllers/tarifa-abono.controller';
 import { TarifaAbonoRepository } from './domain/repositories/tarifa-abono.repository';
 import { TarifaRepository } from './domain/repositories/tarifa.repository';
@@ -36,6 +37,7 @@ const USE_CASES = [
   controllers: [
     SedesController,
     CatalogosSedeController,
+    FotosHabitacionController,
     TarifaAbonoController,
     TarifasController,
     CaracteristicasController,

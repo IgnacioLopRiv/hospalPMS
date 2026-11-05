@@ -33,8 +33,9 @@ export interface Reserva {
   fecha_llegada: string;
   fecha_salida: string;
   hora_llegada?: string;
+  hora_salida?: string;
   cantidad_personas?: number;
-  estado_reserva: 'HOSPEDADO' | 'CHECK-IN HOY' | 'CHECK-OUT HOY' | 'CONFIRMADA' | 'FINALIZADA';
+  estado_reserva: 'HOSPEDADO' | 'CHECK-IN HOY' | 'CHECK-OUT HOY' | 'CONFIRMADA' | 'FINALIZADA' | 'CANCELADA';
   precio_total?: number;
   porcentaje_abono?: number;
   monto_pagado?: number;
@@ -100,6 +101,8 @@ export interface Sede {
   nombre: string;
   ciudad: string;
   email?: string | null;
+  horaCheckIn?: string;
+  horaCheckOut?: string;
   tipologias?: SedeTipologia[];
   habitaciones: SedeHabitacion[];
 }

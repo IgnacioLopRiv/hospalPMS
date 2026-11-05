@@ -5,9 +5,7 @@ import { InventarioHabitacion } from '../../domain/entities/inventario-habitacio
 import { InventarioHabitacionRepository } from '../../domain/repositories/inventario-habitacion.repository';
 
 @Injectable()
-export class PrismaInventarioHabitacionRepository
-  implements InventarioHabitacionRepository
-{
+export class PrismaInventarioHabitacionRepository implements InventarioHabitacionRepository {
   constructor(private readonly prisma: PrismaService) {}
   async findBySedeId(sedeId: number): Promise<InventarioHabitacion[]> {
     const rows = await this.prisma.inventarioHabitacion.findMany({
@@ -25,7 +23,6 @@ export class PrismaInventarioHabitacionRepository
     return rows.map((row) => this.toEntity(row));
   }
 
-
   private toEntity(raw: PrismaInventarioHabitacion): InventarioHabitacion {
     return new InventarioHabitacion(
       raw.id,
@@ -37,7 +34,9 @@ export class PrismaInventarioHabitacionRepository
     );
   }
 
-  async findByHabitacionId(habitacionId: number): Promise<InventarioHabitacion[]> {
+  async findByHabitacionId(
+    habitacionId: number,
+  ): Promise<InventarioHabitacion[]> {
     const rows = await this.prisma.inventarioHabitacion.findMany({
       where: { habitacionId },
       orderBy: { fechaAsignacion: 'desc' },
@@ -66,7 +65,10 @@ export class PrismaInventarioHabitacionRepository
     id: number,
     data: Partial<{ cantidad: number; estado: string }>,
   ): Promise<InventarioHabitacion> {
-    const raw = await this.prisma.inventarioHabitacion.update({ where: { id }, data });
+    const raw = await this.prisma.inventarioHabitacion.update({
+      where: { id },
+      data,
+    });
     return this.toEntity(raw);
   }
 

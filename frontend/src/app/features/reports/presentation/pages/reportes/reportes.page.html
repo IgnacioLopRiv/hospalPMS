@@ -18,18 +18,26 @@
         <div class="page-header-actions">
           <div class="report-period">
             <ion-icon name="calendar-outline"></ion-icon>
-            <span>Junio 2026</span>
+            <span>{{ formatMonth(resumen()?.fecha) || 'Mes actual' }}</span>
           </div>
         </div>
       </header>
 
+      @if (error()) {
+        <div class="reports-error" role="alert">
+          <p>{{ error() }}</p>
+          <button type="button" (click)="loadResumen()">Reintentar</button>
+        </div>
+      } @else if (!resumen()) {
+        <div class="reports-loading" role="status">Cargando reportes...</div>
+      } @else if (resumen(); as r) {
       <section class="kpi-grid" aria-label="Indicadores principales">
         <article class="kpi-card card-blue">
           <div class="kpi-icon"><ion-icon name="bed-outline"></ion-icon></div>
           <div class="kpi-data">
             <span>HABITACIONES OCUPADAS</span>
-            <strong>24</strong>
-            <small>de 32 habitaciones</small>
+            <strong>{{ r.habitaciones.ocupadas }}</strong>
+            <small>de {{ r.habitaciones.total }} habitaciones</small>
           </div>
         </article>
 
@@ -37,7 +45,7 @@
           <div class="kpi-icon"><ion-icon name="bed-outline"></ion-icon></div>
           <div class="kpi-data">
             <span>HABITACIONES DESOCUPADAS</span>
-            <strong>8</strong>
+            <strong>{{ r.habitaciones.disponibles }}</strong>
             <small>disponibles actualmente</small>
           </div>
         </article>
@@ -46,8 +54,8 @@
           <div class="kpi-icon"><ion-icon name="calendar-outline"></ion-icon></div>
           <div class="kpi-data">
             <span>RESERVAS DEL MES</span>
-            <strong>86</strong>
-            <small>reservas registradas</small>
+            <strong>{{ r.reservas.mes }}</strong>
+            <small>{{ r.reservas.canceladasMes }} canceladas</small>
           </div>
         </article>
       </section>
@@ -63,29 +71,24 @@
           </div>
 
           <div class="occupancy-summary">
-            <strong>75%</strong>
-            <span>ocupación promedio</span>
+            <strong>{{ r.habitaciones.tasaOcupacion }}%</strong>
+            <span>ocupación actual</span>
           </div>
 
-          <div class="progress-track" role="progressbar" aria-label="Tasa de ocupación" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100">
-            <span class="progress-value"></span>
+          <div class="progress-track" role="progressbar" aria-label="Tasa de ocupación" [attr.aria-valuenow]="r.habitaciones.tasaOcupacion" aria-valuemin="0" aria-valuemax="100">
+            <span class="progress-value" [style.width.%]="r.habitaciones.tasaOcupacion"></span>
           </div>
 
           <div class="legend-row">
-            <span><i class="legend-dot occupied"></i>Ocupadas <strong>24</strong></span>
-            <span><i class="legend-dot available"></i>Disponibles <strong>8</strong></span>
+            <span><i class="legend-dot occupied"></i>Ocupadas <strong>{{ r.habitaciones.ocupadas }}</strong></span>
+            <span><i class="legend-dot available"></i>Disponibles <strong>{{ r.habitaciones.disponibles }}</strong></span>
           </div>
 
-          <div class="occupancy-bars" aria-hidden="true">
-            <span style="height: 48%"></span>
-            <span style="height: 64%"></span>
-            <span style="height: 57%"></span>
-            <span style="height: 78%"></span>
-            <span style="height: 70%"></span>
-            <span style="height: 88%"></span>
-            <span style="height: 75%"></span>
+          <div class="report-details">
+            <span>En curso: <strong>{{ r.reservas.enCurso }}</strong></span>
+            <span>Pendientes: <strong>{{ r.reservas.pendientes }}</strong></span>
+            <span>Estadía promedio: <strong>{{ r.reservas.estadiaPromedioNoches }} noches</strong></span>
           </div>
-          <div class="bars-labels" aria-hidden="true"><span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
         </article>
 
         <article class="report-card income-card">
@@ -99,32 +102,28 @@
 
           <div class="income-total">
             <span>Ingresos acumulados del mes</span>
-            <strong>$12.480.000</strong>
+            <strong>{{ formatMoney(r.ingresos.mes) }}</strong>
           </div>
 
           <div class="income-comparison">
             <div>
               <span>Este año</span>
-              <strong>$68.920.000</strong>
+              <strong>{{ formatMoney(r.ingresos.anio) }}</strong>
             </div>
             <div>
               <span>Año anterior</span>
-              <strong>$61.300.000</strong>
+              <strong>{{ formatMoney(r.ingresos.anioAnterior) }}</strong>
             </div>
           </div>
 
-          <div class="income-chart" aria-hidden="true">
-            <span style="height: 45%"></span>
-            <span style="height: 58%"></span>
-            <span style="height: 52%"></span>
-            <span style="height: 72%"></span>
-            <span style="height: 66%"></span>
-            <span style="height: 84%"></span>
-            <span style="height: 92%"></span>
+          <div class="report-details">
+            <span>Mes anterior: <strong>{{ formatMoney(r.ingresos.mesAnterior) }}</strong></span>
+            <span>Por cobrar: <strong>{{ formatMoney(r.ingresos.pendiente) }}</strong></span>
+            <span>Insumos bajo mínimo: <strong>{{ r.inventario.bajoMinimo }}</strong></span>
           </div>
-          <div class="bars-labels" aria-hidden="true"><span>Ene</span><span>Feb</span><span>Mar</span><span>Abr</span><span>May</span><span>Jun</span><span>Jul</span></div>
         </article>
       </section>
+      }
     </main>
   </div>
 </ion-content>

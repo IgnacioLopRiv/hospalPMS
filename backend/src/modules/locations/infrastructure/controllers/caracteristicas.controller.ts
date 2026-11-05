@@ -57,16 +57,24 @@ export class CaracteristicasController {
   }
 
   @Patch(':id')
-  async update(@Param('id', ParseIntPipe) id: number, @Body() input: CaracteristicaInput) {
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() input: CaracteristicaInput,
+  ) {
     const data = {
       ...(input.nombre !== undefined ? { nombre: input.nombre.trim() } : {}),
-      ...(input.icono !== undefined ? { icono: input.icono?.trim() ?? null } : {}),
+      ...(input.icono !== undefined
+        ? { icono: input.icono?.trim() ?? null }
+        : {}),
       ...(input.activo !== undefined ? { activo: input.activo } : {}),
     };
     try {
       return await this.prisma.caracteristica.update({ where: { id }, data });
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
         throw new NotFoundException(`No existe la característica ${id}.`);
       }
       throw error;
@@ -77,12 +85,17 @@ export class CaracteristicasController {
   async remove(@Param('id', ParseIntPipe) id: number) {
     try {
       await this.prisma.$transaction(async (tx) => {
-        await tx.tipologiaCaracteristica.deleteMany({ where: { caracteristicaId: id } });
+        await tx.tipologiaCaracteristica.deleteMany({
+          where: { caracteristicaId: id },
+        });
         await tx.caracteristica.delete({ where: { id } });
       });
       return { deleted: true };
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
         throw new NotFoundException(`No existe la característica ${id}.`);
       }
       throw error;
@@ -96,11 +109,18 @@ export class CaracteristicasController {
     @Param('caracteristicaId', ParseIntPipe) caracteristicaId: number,
   ) {
     try {
-      await this.prisma.tipologiaCaracteristica.create({ data: { tipologiaId, caracteristicaId } });
+      await this.prisma.tipologiaCaracteristica.create({
+        data: { tipologiaId, caracteristicaId },
+      });
       return { assigned: true };
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new ConflictException('La característica ya está asignada a esta tipología.');
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'La característica ya está asignada a esta tipología.',
+        );
       }
       throw error;
     }
@@ -114,12 +134,19 @@ export class CaracteristicasController {
   ) {
     try {
       await this.prisma.tipologiaCaracteristica.delete({
-        where: { tipologiaId_caracteristicaId: { tipologiaId, caracteristicaId } },
+        where: {
+          tipologiaId_caracteristicaId: { tipologiaId, caracteristicaId },
+        },
       });
       return { unassigned: true };
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-        throw new NotFoundException('La relación tipología-característica no existe.');
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        throw new NotFoundException(
+          'La relación tipología-característica no existe.',
+        );
       }
       throw error;
     }

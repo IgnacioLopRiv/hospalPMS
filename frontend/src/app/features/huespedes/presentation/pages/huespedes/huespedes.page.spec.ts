@@ -9,6 +9,7 @@ import { CheckPagePage } from '../../../../reservations/presentation/pages/check
 import { InventarioRepository } from '../../../../inventory/domain/inventario.repository';
 import { createEmptyInventarioRepositoryStub } from '../../../../inventory/domain/testing/inventario.repository.stub';
 import { TarifasRepository } from '../../../../locations/domain/tarifas.repository';
+import { FotoHabitacionRepository } from '../../../../locations/domain/foto-habitacion.repository';
 import { HuespedesPage } from './huespedes.page';
 import { GuestCardView, Huesped } from '../../../../../shared/domain/hostal.model';
 
@@ -41,6 +42,21 @@ describe('HuespedesPage', () => {
         { provide: HostalService, useValue: hostalServiceStub },
         { provide: SedeService, useValue: sedeServiceStub },
         { provide: InventarioRepository, useValue: createEmptyInventarioRepositoryStub() },
+        {
+          provide: FotoHabitacionRepository,
+          useValue: {
+            listPhotos: () => of([]),
+            createPhoto: (_habitacionId: number, data: { url: string; titulo?: string; descripcion?: string }) => of({
+              id: 1,
+              habitacionId: 1,
+              url: data.url,
+              titulo: data.titulo,
+              descripcion: data.descripcion,
+              fechaSubida: new Date().toISOString(),
+            }),
+            deletePhoto: () => of(undefined),
+          },
+        },
         {
           provide: TarifasRepository,
           useValue: {

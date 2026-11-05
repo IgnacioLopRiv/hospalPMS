@@ -14,6 +14,7 @@ export interface RegisterEntryInput {
   arrivalDate: string;
   departureDate: string;
   arrivalTime: string;
+  departureTime?: string;
   payment?: {
     totalAmount: number;
     paidAmount: number;
@@ -35,6 +36,7 @@ export interface ReservationCalendarEntry {
   arrivalDate: string;
   departureDate: string;
   arrivalTime: string;
+  departureTime: string;
   status: Reserva['estado_reserva'];
   totalAmount: number;
   amountPaid: number;
@@ -91,11 +93,11 @@ export class HostalService {
     if (this.loadingSede?.id === sedeId) return this.loadingSede.promise;
 
     const promise = Promise.all([
-      firstValueFrom(this.huespedRepository.list()),
+      firstValueFrom(this.huespedRepository.list(sedeId)),
       firstValueFrom(this.reservasRepository.listBySede(sedeId)),
     ]).then(([guests, reservations]) => {
       if (this.sedeService.selectedSede()?.id !== sedeId) return;
-      this.guests = guests.map((guest) => this.fromDomainHuesped(guest, sedeId));
+      this.guests = guests.map((guest) => this.fromDomainHuesped(guest, guest.sedeId || sedeId));
       this.reservations = reservations.map((reservation) => this.normalizeReservation(reservation));
       this.loadedSedeId = sedeId;
       this.refreshView();
@@ -107,7 +109,7 @@ export class HostalService {
   }
 
   private normalizeReservation(reservation: Reserva): Reserva {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = this.localDateKey(new Date());
     if (reservation.estado_reserva === 'CONFIRMADA' && reservation.fecha_llegada === today) {
       return { ...reservation, estado_reserva: 'CHECK-IN HOY' };
     }
@@ -115,6 +117,13 @@ export class HostalService {
       return { ...reservation, estado_reserva: 'CHECK-OUT HOY' };
     }
     return reservation;
+  }
+
+  private localDateKey(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   onSedeChanged(): void {
@@ -135,7 +144,7 @@ export class HostalService {
     const tipologias = this.getManagedTypologies();
     const reservas = this.getReservations().filter((reservation) => {
       const room = habitaciones.find((item) => item.id_habitacion === reservation.id_habitacion);
-      return reservation.estado_reserva !== 'FINALIZADA' &&
+      return !['FINALIZADA', 'CANCELADA'].includes(reservation.estado_reserva) &&
         huespedes.some((guest) => guest.id_huesped === reservation.id_huesped) &&
         !!room && tipologias.some((typology) => typology.id_tipologia === room.id_tipologia);
     });
@@ -273,7 +282,8 @@ export class HostalService {
         roomType: typology?.nombre_tipologia ?? '',
         arrivalDate: reservation.fecha_llegada,
         departureDate: reservation.fecha_salida,
-        arrivalTime: reservation.hora_llegada ?? '',
+        arrivalTime: reservation.hora_llegada ?? '14:00',
+        departureTime: reservation.hora_salida ?? '12:00',
         status: reservation.estado_reserva,
         totalAmount: reservation.precio_total ?? 0,
         amountPaid: reservation.monto_pagado ?? 0,
@@ -317,7 +327,7 @@ export class HostalService {
     }
 
     const response = await firstValueFrom(this.huespedRepository.update(
-      guestId, this.toDomainHuespedInput(updatedGuest)
+      guestId, this.toDomainHuespedInput(updatedGuest), this.sedeId
     ));
     const savedGuest = this.fromDomainHuesped(response, existingGuest.id_sede);
     this.guests = guests.map((guest) => guest.id_huesped === guestId ? savedGuest : guest);
@@ -331,7 +341,7 @@ export class HostalService {
       throw new Error('El huésped ya no está registrado. Actualiza la lista e inténtalo otra vez.');
     }
 
-    await firstValueFrom(this.huespedRepository.remove(guestId));
+    await firstValueFrom(this.huespedRepository.remove(guestId, this.sedeId));
     this.guests = guests.filter((guest) => guest.id_huesped !== guestId);
     this.reservations = this.getReservations().filter((reservation) => reservation.id_huesped !== guestId);
     this.refreshView();
@@ -374,7 +384,7 @@ export class HostalService {
 
   async updateReservation(
     reservationId: number,
-    changes: Pick<Reserva, 'id_habitacion' | 'fecha_llegada' | 'fecha_salida' | 'hora_llegada' | 'cantidad_personas'>
+    changes: Pick<Reserva, 'id_habitacion' | 'fecha_llegada' | 'fecha_salida' | 'hora_llegada' | 'cantidad_personas'> & { hora_salida?: string }
   ): Promise<Reserva> {
     const reservations = this.getReservations();
     const existingReservation = reservations.find((reservation) => reservation.id_reserva === reservationId);
@@ -390,6 +400,9 @@ export class HostalService {
     }
     if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(changes.hora_llegada ?? '')) {
       throw new Error('Ingresa un horario de llegada válido.');
+    }
+    if (changes.hora_salida && !/^([01]\d|2[0-3]):[0-5]\d$/.test(changes.hora_salida)) {
+      throw new Error('Ingresa un horario de salida válido.');
     }
 
     const rooms = this.getManagedRooms();
@@ -409,7 +422,7 @@ export class HostalService {
       throw new Error('La cantidad de personas supera la capacidad de la habitación seleccionada.');
     }
 
-    const updatedReservation = await firstValueFrom(this.reservasRepository.update(reservationId, changes));
+    const updatedReservation = await firstValueFrom(this.reservasRepository.update(reservationId, changes, this.sedeId));
     this.reservations = reservations.map((reservation) =>
       reservation.id_reserva === reservationId ? this.normalizeReservation(updatedReservation) : reservation
     );
@@ -419,12 +432,25 @@ export class HostalService {
 
   async cancelReservation(reservationId: number): Promise<void> {
     const reservations = this.getReservations();
-    if (!reservations.some((reservation) => reservation.id_reserva === reservationId)) {
+    const reservation = reservations.find((item) => item.id_reserva === reservationId);
+    if (!reservation) {
       throw new Error('La reserva ya no existe. Actualiza la lista e inténtalo otra vez.');
     }
+    if (reservation.estado_reserva === 'FINALIZADA') {
+      throw new Error('Una reserva finalizada no puede cancelarse.');
+    }
+    if (reservation.estado_reserva === 'CANCELADA') {
+      return;
+    }
 
-    await firstValueFrom(this.reservasRepository.remove(reservationId));
-    this.reservations = reservations.filter((reservation) => reservation.id_reserva !== reservationId);
+    const saved = await firstValueFrom(this.reservasRepository.update(
+      reservationId,
+      { ...reservation, estado_reserva: 'CANCELADA' } as UpdateReserva,
+      this.sedeId,
+    ));
+    this.reservations = reservations.map((item) =>
+      item.id_reserva === reservationId ? this.normalizeReservation(saved) : item
+    );
     this.refreshView();
   }
 
@@ -472,7 +498,7 @@ export class HostalService {
 
   private async persistReservationUpdate(reservations: Reserva[], updatedReservation: Reserva): Promise<Reserva> {
     const saved = await firstValueFrom(this.reservasRepository.update(
-      updatedReservation.id_reserva, updatedReservation as UpdateReserva
+      updatedReservation.id_reserva, updatedReservation as UpdateReserva, this.sedeId
     ));
     const normalized = this.normalizeReservation(saved);
     this.reservations = reservations.map((reservation) =>
@@ -499,10 +525,10 @@ export class HostalService {
     );
     const reservas = this.getReservations();
 
-    return habitacionesCandidatas.filter((habitacion) =>
+      return habitacionesCandidatas.filter((habitacion) =>
       !reservas.some((reserva) =>
         reserva.id_reserva !== excludeReservationId &&
-        reserva.estado_reserva !== 'FINALIZADA' &&
+        !['FINALIZADA', 'CANCELADA'].includes(reserva.estado_reserva) &&
         reserva.id_habitacion === habitacion.id_habitacion &&
         arrivalDate < reserva.fecha_salida &&
         departureDate > reserva.fecha_llegada
@@ -599,6 +625,7 @@ export class HostalService {
       fecha_llegada: input.arrivalDate,
       fecha_salida: input.departureDate,
       hora_llegada: input.arrivalTime,
+      hora_salida: input.departureTime ?? '12:00',
       cantidad_personas: input.personCount,
       estado_reserva: 'CONFIRMADA',
       ...(input.payment ? {
@@ -648,6 +675,7 @@ export class HostalService {
 
   private toDomainHuespedInput(guest: Partial<Huesped>): CreateHuesped {
     return {
+      sedeId: guest.id_sede ?? this.sedeId,
       rutPasaporte: guest.documento?.trim().toUpperCase() ?? '',
       nombres: guest.nombre?.trim() ?? '',
       apellidos: guest.apellido?.trim() ?? '',

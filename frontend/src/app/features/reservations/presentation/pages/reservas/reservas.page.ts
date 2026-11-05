@@ -57,6 +57,8 @@ export interface ReservationBlock {
   roomType: string;
   arrivalDate: string;
   departureDate: string;
+  arrivalTime: string;
+  departureTime: string;
   status: ReservationCalendarEntry['status'];
 }
 
@@ -151,6 +153,7 @@ export class ReservasPage implements OnInit {
     const managedRooms = this.managedRoomNumbers();
     return this.reservations().filter((reservation) =>
       managedRooms.has(reservation.roomNumber) &&
+      reservation.status !== 'CANCELADA' &&
       reservation.arrivalDate < end &&
       reservation.departureDate >= start
     );
@@ -161,6 +164,7 @@ export class ReservasPage implements OnInit {
     const managedRooms = this.managedRoomNumbers();
     return this.reservations().filter((reservation) =>
       managedRooms.has(reservation.roomNumber) &&
+      reservation.status !== 'CANCELADA' &&
       reservation.arrivalDate <= selected &&
       reservation.departureDate > selected
     );
@@ -169,12 +173,14 @@ export class ReservasPage implements OnInit {
   readonly reservationCount = computed(() => this.selectedDateReservations().length);
   readonly arrivalCount = computed(() =>
     this.reservations().filter((reservation) =>
+      reservation.status !== 'CANCELADA' &&
       reservation.arrivalDate === this.selectedDate() &&
       this.managedRoomNumbers().has(reservation.roomNumber)
     ).length
   );
   readonly departureCount = computed(() =>
     this.reservations().filter((reservation) =>
+      reservation.status !== 'CANCELADA' &&
       reservation.departureDate === this.selectedDate() &&
       this.managedRoomNumbers().has(reservation.roomNumber)
     ).length
@@ -298,6 +304,8 @@ export class ReservasPage implements OnInit {
       roomType: reservation.roomType,
       arrivalDate: reservation.arrivalDate,
       departureDate: reservation.departureDate,
+      arrivalTime: reservation.arrivalTime || '14:00',
+      departureTime: reservation.departureTime || '12:00',
       status: reservation.status,
     };
   }

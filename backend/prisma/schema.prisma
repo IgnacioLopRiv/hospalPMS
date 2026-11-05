@@ -96,7 +96,7 @@ model Sede {
   telefono            String?            @db.VarChar(20)
   email               String?            @db.VarChar(191)
   horaCheckIn         String?            @default("15:00") @db.VarChar(10)
-  horaCheckOut        String?            @default("11:00") @db.VarChar(10)
+  horaCheckOut        String?            @default("12:00") @db.VarChar(10)
   politicaCancelacion String?            @db.Text
   serviciosIncluidos  String?            @db.Text
   urlEncuesta         String?            @db.VarChar(500)
@@ -108,6 +108,7 @@ model Sede {
   insumos             InsumoInventario[]
   tarifaAbono         TarifaAbono?
   tarifas             Tarifa[]
+  huespedes           Huesped[]
 
   @@map("sede")
 }
@@ -210,6 +211,7 @@ model Habitacion {
   tipologia          Tipologia              @relation(fields: [tipologiaId], references: [id])
   reservas           Reserva[]
   inventario         InventarioHabitacion[]
+  fotos              FotoHabitacion[]
 
   @@unique([sedeId, numero])
   @@map("habitacion")
@@ -250,12 +252,28 @@ model InventarioHabitacion {
   insumo          InsumoInventario @relation(fields: [insumoId], references: [id])
   habitacion      Habitacion       @relation(fields: [habitacionId], references: [id])
 
+  @@index([insumoId, estado])
+  @@index([habitacionId, estado])
   @@map("inventario_habitacion")
+}
+
+model FotoHabitacion {
+  id          Int        @id @default(autoincrement())
+  habitacionId Int
+  url         String     @db.Text
+  titulo      String?    @db.VarChar(255)
+  descripcion String?    @db.Text
+  fechaSubida DateTime   @default(now())
+  habitacion  Habitacion @relation(fields: [habitacionId], references: [id], onDelete: Cascade)
+
+  @@index([habitacionId, fechaSubida])
+  @@map("foto_habitacion")
 }
 
 model Huesped {
   id                 Int       @id @default(autoincrement())
-  rutPasaporte       String    @unique @db.VarChar(20)
+  sedeId             Int
+  rutPasaporte       String    @db.VarChar(20)
   nombres            String
   apellidos          String
   paisResidencia     String
@@ -263,8 +281,11 @@ model Huesped {
   telefono           String    @db.VarChar(20)
   esRecurrente       Boolean   @default(false)
   diasUltimoRegistro Int?
+  sede               Sede      @relation(fields: [sedeId], references: [id])
   reservas           Reserva[]
 
+  @@unique([sedeId, rutPasaporte])
+  @@index([sedeId])
   @@map("huesped")
 }
 
@@ -277,6 +298,7 @@ model Reserva {
   fechaCheckIn     DateTime
   fechaCheckOut    DateTime
   horaLlegada      String?                @db.VarChar(5)
+  horaSalida       String?                @default("12:00") @db.VarChar(5)
   cantidadPersonas Int                    @default(1)
   precioTotal      Int?
   porcentajeAbono  Int?

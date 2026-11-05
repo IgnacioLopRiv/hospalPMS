@@ -132,9 +132,14 @@ describe('HostalService HTTP persistence', () => {
       email: 'nuevo@example.com',
     });
     expect(updated.email).toBe('nuevo@example.com');
+    expect(huespedRepository.update).toHaveBeenCalledWith(
+      guest.id_huesped,
+      jasmine.objectContaining({ sedeId: TEST_SEDE_ID }),
+      TEST_SEDE_ID,
+    );
 
     await service.deleteGuest(guest.id_huesped);
-    expect(huespedRepository.remove).toHaveBeenCalledWith(guest.id_huesped);
+    expect(huespedRepository.remove).toHaveBeenCalledWith(guest.id_huesped, TEST_SEDE_ID);
     expect(service.getGuests()).toEqual([]);
   });
 

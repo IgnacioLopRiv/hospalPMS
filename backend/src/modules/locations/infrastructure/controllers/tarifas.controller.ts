@@ -10,7 +10,12 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
-import { Tarifa, TarifaPeriodo, TIPOS_PERIODO, TipoTemporada } from '../../domain/entities/tarifa.entity';
+import {
+  Tarifa,
+  TarifaPeriodo,
+  TIPOS_PERIODO,
+  TipoTemporada,
+} from '../../domain/entities/tarifa.entity';
 import { SedeRepository } from '../../domain/repositories/sede.repository';
 import { TarifaAbonoRepository } from '../../domain/repositories/tarifa-abono.repository';
 import { TarifaRepository } from '../../domain/repositories/tarifa.repository';
@@ -53,7 +58,10 @@ export class TarifasController {
   }
 
   @Post('sedes/:sedeId/tarifas')
-  async create(@Param('sedeId', ParseIntPipe) sedeId: number, @Body() input: TarifaInput) {
+  async create(
+    @Param('sedeId', ParseIntPipe) sedeId: number,
+    @Body() input: TarifaInput,
+  ) {
     if (!(await this.sedes.findById(sedeId))) {
       throw new NotFoundException(`No existe la sede ${sedeId}.`);
     }
@@ -67,7 +75,8 @@ export class TarifasController {
       nombre,
       precioBase: this.parsePrecioBase(input.precioBase) ?? null,
       ...Tarifa.calcularVigencia(periodos),
-      tipoTemporada: this.parseTipoTemporada(input.tipoTemporada) ?? TipoTemporada.ALTA,
+      tipoTemporada:
+        this.parseTipoTemporada(input.tipoTemporada) ?? TipoTemporada.ALTA,
       activa: input.activa ?? true,
       periodos,
       precios,
@@ -81,19 +90,33 @@ export class TarifasController {
   }
 
   @Patch('tarifas/:id')
-  async update(@Param('id', ParseIntPipe) id: number, @Body() input: TarifaInput) {
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() input: TarifaInput,
+  ) {
     const current = await this.findOrFail(id);
     if (input.activa !== undefined && typeof input.activa !== 'boolean') {
       throw new BadRequestException('activa debe ser true o false.');
     }
-    const periodos = input.periodos !== undefined ? this.parsePeriodos(input.periodos) : undefined;
+    const periodos =
+      input.periodos !== undefined
+        ? this.parsePeriodos(input.periodos)
+        : undefined;
     const row = await this.tarifas.update(id, {
-      ...(input.nombre !== undefined ? { nombre: this.parseNombre(input.nombre) } : {}),
-      ...(input.tipoTemporada !== undefined ? { tipoTemporada: this.parseTipoTemporada(input.tipoTemporada) } : {}),
+      ...(input.nombre !== undefined
+        ? { nombre: this.parseNombre(input.nombre) }
+        : {}),
+      ...(input.tipoTemporada !== undefined
+        ? { tipoTemporada: this.parseTipoTemporada(input.tipoTemporada) }
+        : {}),
       ...(input.activa !== undefined ? { activa: input.activa } : {}),
-      ...(input.precioBase !== undefined ? { precioBase: this.parsePrecioBase(input.precioBase) } : {}),
+      ...(input.precioBase !== undefined
+        ? { precioBase: this.parsePrecioBase(input.precioBase) }
+        : {}),
       ...(periodos ? { periodos, ...Tarifa.calcularVigencia(periodos) } : {}),
-      ...(input.precios !== undefined ? { precios: await this.parsePrecios(current.sedeId, input.precios) } : {}),
+      ...(input.precios !== undefined
+        ? { precios: await this.parsePrecios(current.sedeId, input.precios) }
+        : {}),
     });
     return this.toFrontend(row);
   }
@@ -116,7 +139,9 @@ export class TarifasController {
       throw new BadRequestException('El nombre de la tarifa es obligatorio.');
     }
     if (nombre.trim().length > 191) {
-      throw new BadRequestException('El nombre de la tarifa no puede superar 191 caracteres.');
+      throw new BadRequestException(
+        'El nombre de la tarifa no puede superar 191 caracteres.',
+      );
     }
     return nombre.trim();
   }
@@ -124,7 +149,9 @@ export class TarifasController {
   private parseTipoTemporada(tipo: unknown): TipoTemporada | undefined {
     if (tipo === undefined) return undefined;
     if (!Object.values(TipoTemporada).includes(tipo as TipoTemporada)) {
-      throw new BadRequestException(`tipoTemporada inválido. Opciones: ${Object.values(TipoTemporada).join(', ')}.`);
+      throw new BadRequestException(
+        `tipoTemporada inválido. Opciones: ${Object.values(TipoTemporada).join(', ')}.`,
+      );
     }
     return tipo as TipoTemporada;
   }
@@ -132,28 +159,41 @@ export class TarifasController {
   private parsePrecioBase(precio: unknown): number | null | undefined {
     if (precio === undefined || precio === null) return precio;
     if (typeof precio !== 'number' || !Number.isFinite(precio) || precio < 0) {
-      throw new BadRequestException('precioBase debe ser un número mayor o igual a cero.');
+      throw new BadRequestException(
+        'precioBase debe ser un número mayor o igual a cero.',
+      );
     }
     return Math.round(precio);
   }
 
   private parsePeriodos(periodos: unknown): TarifaPeriodo[] {
     if (!Array.isArray(periodos) || periodos.length === 0) {
-      throw new BadRequestException('La tarifa debe tener al menos un periodo de aplicación.');
+      throw new BadRequestException(
+        'La tarifa debe tener al menos un periodo de aplicación.',
+      );
     }
     return periodos.map((value, index) => {
       const periodo = value as Partial<TarifaPeriodo>;
-      const error = (detalle: string) => new BadRequestException(`Periodo ${index + 1}: ${detalle}`);
-      if (!periodo || typeof periodo !== 'object' || !TIPOS_PERIODO.includes(periodo.tipo as TarifaPeriodo['tipo'])) {
+      const error = (detalle: string) =>
+        new BadRequestException(`Periodo ${index + 1}: ${detalle}`);
+      if (
+        !periodo ||
+        typeof periodo !== 'object' ||
+        !TIPOS_PERIODO.includes(periodo.tipo as TarifaPeriodo['tipo'])
+      ) {
         throw error(`tipo inválido. Opciones: ${TIPOS_PERIODO.join(', ')}.`);
       }
       const normalized: TarifaPeriodo = {
-        id: typeof periodo.id === 'string' && periodo.id ? periodo.id : `periodo-${index + 1}`,
+        id:
+          typeof periodo.id === 'string' && periodo.id
+            ? periodo.id
+            : `periodo-${index + 1}`,
         tipo: periodo.tipo!,
         meses: Array.isArray(periodo.meses) ? periodo.meses : [],
         diasSemana: Array.isArray(periodo.diasSemana) ? periodo.diasSemana : [],
         diasMes: Array.isArray(periodo.diasMes) ? periodo.diasMes : [],
-        fechaInicio: typeof periodo.fechaInicio === 'string' ? periodo.fechaInicio : '',
+        fechaInicio:
+          typeof periodo.fechaInicio === 'string' ? periodo.fechaInicio : '',
         fechaFin: typeof periodo.fechaFin === 'string' ? periodo.fechaFin : '',
         fechas: Array.isArray(periodo.fechas) ? periodo.fechas : [],
         ...(Number.isInteger(periodo.anio) ? { anio: periodo.anio } : {}),
@@ -161,49 +201,86 @@ export class TarifasController {
       };
       switch (normalized.tipo) {
         case 'date-range':
-          if (!FECHA.test(normalized.fechaInicio) || !FECHA.test(normalized.fechaFin) || normalized.fechaInicio > normalized.fechaFin) {
+          if (
+            !FECHA.test(normalized.fechaInicio) ||
+            !FECHA.test(normalized.fechaFin) ||
+            normalized.fechaInicio > normalized.fechaFin
+          ) {
             throw error('el rango de fechas no es válido.');
           }
           break;
         case 'specific-dates':
-          if (normalized.fechas.length === 0 || !normalized.fechas.every((fecha) => typeof fecha === 'string' && FECHA.test(fecha))) {
+          if (
+            normalized.fechas.length === 0 ||
+            !normalized.fechas.every(
+              (fecha) => typeof fecha === 'string' && FECHA.test(fecha),
+            )
+          ) {
             throw error('debe incluir fechas con formato YYYY-MM-DD.');
           }
           break;
         case 'specific-month-days':
-          if (normalized.anio === undefined || normalized.mes === undefined || normalized.mes < 0 || normalized.mes > 11 || normalized.diasMes.length === 0) {
+          if (
+            normalized.anio === undefined ||
+            normalized.mes === undefined ||
+            normalized.mes < 0 ||
+            normalized.mes > 11 ||
+            normalized.diasMes.length === 0
+          ) {
             throw error('debe indicar año, mes y al menos un día.');
           }
           break;
         case 'months':
-          if (normalized.meses.length === 0) throw error('debe seleccionar al menos un mes.');
+          if (normalized.meses.length === 0)
+            throw error('debe seleccionar al menos un mes.');
           break;
         case 'weekdays':
-          if (normalized.diasSemana.length === 0) throw error('debe seleccionar al menos un día de la semana.');
+          if (normalized.diasSemana.length === 0)
+            throw error('debe seleccionar al menos un día de la semana.');
           break;
         case 'month-days':
-          if (normalized.diasMes.length === 0) throw error('debe seleccionar al menos un día del mes.');
+          if (normalized.diasMes.length === 0)
+            throw error('debe seleccionar al menos un día del mes.');
           break;
       }
       return normalized;
     });
   }
 
-  private async parsePrecios(sedeId: number, precios: unknown): Promise<Record<number, number>> {
+  private async parsePrecios(
+    sedeId: number,
+    precios: unknown,
+  ): Promise<Record<number, number>> {
     if (!precios || typeof precios !== 'object' || Array.isArray(precios)) {
-      throw new BadRequestException('precios debe ser un objeto { tipologiaId: precio }.');
+      throw new BadRequestException(
+        'precios debe ser un objeto { tipologiaId: precio }.',
+      );
     }
-    const tipologiasSede = new Set((await this.tipologias.findBySedeId(sedeId)).map((tipologia) => tipologia.id));
-    return Object.fromEntries(Object.entries(precios).map(([key, precio]) => {
-      const tipologiaId = Number(key);
-      if (!tipologiasSede.has(tipologiaId)) {
-        throw new BadRequestException(`La tipología ${key} no pertenece a la sede ${sedeId}.`);
-      }
-      if (typeof precio !== 'number' || !Number.isFinite(precio) || precio < 0) {
-        throw new BadRequestException(`El precio de la tipología ${key} debe ser un número mayor o igual a cero.`);
-      }
-      return [tipologiaId, Math.round(precio)];
-    }));
+    const tipologiasSede = new Set(
+      (await this.tipologias.findBySedeId(sedeId)).map(
+        (tipologia) => tipologia.id,
+      ),
+    );
+    return Object.fromEntries(
+      Object.entries(precios).map(([key, precio]) => {
+        const tipologiaId = Number(key);
+        if (!tipologiasSede.has(tipologiaId)) {
+          throw new BadRequestException(
+            `La tipología ${key} no pertenece a la sede ${sedeId}.`,
+          );
+        }
+        if (
+          typeof precio !== 'number' ||
+          !Number.isFinite(precio) ||
+          precio < 0
+        ) {
+          throw new BadRequestException(
+            `El precio de la tipología ${key} debe ser un número mayor o igual a cero.`,
+          );
+        }
+        return [tipologiaId, Math.round(precio)];
+      }),
+    );
   }
 
   private toFrontend(tarifa: Tarifa) {

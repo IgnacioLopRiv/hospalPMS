@@ -11,9 +11,7 @@ import { HostalesController } from './infrastructure/controllers/hostales.contro
  */
 @Module({
   controllers: [HostalesController],
-  providers: [
-    { provide: HostalRepository, useClass: PrismaHostalRepository },
-  ],
+  providers: [{ provide: HostalRepository, useClass: PrismaHostalRepository }],
   exports: [HostalRepository],
 })
 export class HostalModule {}

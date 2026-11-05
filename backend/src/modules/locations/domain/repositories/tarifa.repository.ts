@@ -1,4 +1,8 @@
-import { Tarifa, TarifaPeriodo, TipoTemporada } from '../entities/tarifa.entity';
+import {
+  Tarifa,
+  TarifaPeriodo,
+  TipoTemporada,
+} from '../entities/tarifa.entity';
 
 export interface TarifaData {
   sedeId: number;
@@ -20,6 +24,9 @@ export abstract class TarifaRepository {
   abstract findBySedeId(sedeId: number): Promise<Tarifa[]>;
   abstract findById(id: number): Promise<Tarifa | null>;
   abstract create(data: TarifaData): Promise<Tarifa>;
-  abstract update(id: number, data: Partial<Omit<TarifaData, 'sedeId'>>): Promise<Tarifa>;
+  abstract update(
+    id: number,
+    data: Partial<Omit<TarifaData, 'sedeId'>>,
+  ): Promise<Tarifa>;
   abstract delete(id: number): Promise<void>;
 }

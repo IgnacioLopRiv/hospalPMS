@@ -38,6 +38,14 @@ services:
     ports:
       - "3000:3000"
 
+  frontend:
+    build: ./frontend
+    container_name: hospal-frontend
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+
   mailpit:
     image: axllent/mailpit:latest
     container_name: hospal-mailpit

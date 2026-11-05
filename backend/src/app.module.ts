@@ -12,6 +12,7 @@ import { GuestsModule } from './modules/guests/guests.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { ReservationsModule } from './modules/reservations/reservations.module';
 import { BillingModule } from './modules/billing/billing.module';
+import { ReportsModule } from './modules/reports/reports.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
@@ -27,6 +28,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     ReservationsModule,
     InventoryModule,
     BillingModule,
+    ReportsModule,
     NotificationsModule,
   ],
   controllers: [AppController],

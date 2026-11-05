@@ -11,7 +11,10 @@ import { InventarioController } from './infrastructure/controllers/inventario.co
 @Module({
   controllers: [InventarioController],
   providers: [
-    { provide: InsumoInventarioRepository, useClass: PrismaInsumoInventarioRepository },
+    {
+      provide: InsumoInventarioRepository,
+      useClass: PrismaInsumoInventarioRepository,
+    },
     {
       provide: InventarioHabitacionRepository,
       useClass: PrismaInventarioHabitacionRepository,

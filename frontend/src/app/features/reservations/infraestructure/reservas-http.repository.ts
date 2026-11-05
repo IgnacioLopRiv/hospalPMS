@@ -18,11 +18,15 @@ export class ReservasHttpRepository extends ReservasRepository {
     return this.http.post<Reserva>(this.endpoint, data);
   }
 
-  update(id: number, data: UpdateReserva): Observable<Reserva> {
-    return this.http.patch<Reserva>(`${this.endpoint}/${id}`, data);
+  update(id: number, data: UpdateReserva, sedeId?: number): Observable<Reserva> {
+    return this.http.patch<Reserva>(`${this.endpoint}/${id}`, data, {
+      params: sedeId ? { sedeId } : undefined,
+    });
   }
 
-  remove(id: number): Observable<void> {
-    return this.http.delete<{ deleted: boolean }>(`${this.endpoint}/${id}`).pipe(map(() => undefined));
+  remove(id: number, sedeId?: number): Observable<void> {
+    return this.http.delete<{ deleted: boolean }>(`${this.endpoint}/${id}`, {
+      params: sedeId ? { sedeId } : undefined,
+    }).pipe(map(() => undefined));
   }
 }

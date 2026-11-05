@@ -14,13 +14,13 @@ import { NotificationDispatcherService } from '../application/notification-dispa
 export class NotificacionesController {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly dispatcher: NotificationDispatcherService
+    private readonly dispatcher: NotificationDispatcherService,
   ) {}
 
   @Get()
   async listNotifications(
     @Query('reservaId') reservaId?: string,
-    @Query('limit') limit?: string
+    @Query('limit') limit?: string,
   ) {
     const take = limit ? Math.min(Number(limit), 100) : 20;
     return this.prisma.notificacionEmail.findMany({
@@ -46,17 +46,24 @@ export class NotificacionesController {
 
   @Post(':id/reenviar')
   async resendNotification(@Param('id', ParseIntPipe) id: number) {
-    const notif = await this.prisma.notificacionEmail.findUnique({ where: { id } });
+    const notif = await this.prisma.notificacionEmail.findUnique({
+      where: { id },
+    });
     if (!notif) {
       throw new NotFoundException(`No existe la notificación #${id}.`);
     }
 
     const success = await this.dispatcher.dispatch({
-      type: notif.tipo as any,
+      type: notif.tipo,
       reservaId: notif.reservaId,
       pagoId: notif.pagoId,
     });
 
-    return { success, message: success ? 'Notificación reenviada exitosamente.' : 'El reenvío falló; revisa los logs.' };
+    return {
+      success,
+      message: success
+        ? 'Notificación reenviada exitosamente.'
+        : 'El reenvío falló; revisa los logs.',
+    };
   }
 }

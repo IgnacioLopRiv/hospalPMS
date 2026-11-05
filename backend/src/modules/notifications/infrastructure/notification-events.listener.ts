@@ -23,7 +23,9 @@ export class NotificationEventsListener {
 
   @OnEvent('reserva.creada', { async: true })
   async handleReservaCreada(event: BookingCreatedEvent): Promise<void> {
-    this.logger.log(`Evento 'reserva.creada' recibido para reserva #${event.reservaId}`);
+    this.logger.log(
+      `Evento 'reserva.creada' recibido para reserva #${event.reservaId}`,
+    );
     await this.dispatcher.dispatch({
       type: 'CONFIRMACION_RESERVA',
       reservaId: event.reservaId,
@@ -32,7 +34,9 @@ export class NotificationEventsListener {
 
   @OnEvent('pago.registrado', { async: true })
   async handlePagoRegistrado(event: PaymentRecordedEvent): Promise<void> {
-    this.logger.log(`Evento 'pago.registrado' recibido para reserva #${event.reservaId}, pago #${event.pagoId}`);
+    this.logger.log(
+      `Evento 'pago.registrado' recibido para reserva #${event.reservaId}, pago #${event.pagoId}`,
+    );
     await this.dispatcher.dispatch({
       type: 'COMPROBANTE_PAGO',
       reservaId: event.reservaId,
@@ -42,7 +46,9 @@ export class NotificationEventsListener {
 
   @OnEvent('reserva.checkout', { async: true })
   async handleReservaCheckout(event: CheckoutCompletedEvent): Promise<void> {
-    this.logger.log(`Evento 'reserva.checkout' recibido para reserva #${event.reservaId}`);
+    this.logger.log(
+      `Evento 'reserva.checkout' recibido para reserva #${event.reservaId}`,
+    );
     await this.dispatcher.dispatch({
       type: 'RESUMEN_CHECKOUT',
       reservaId: event.reservaId,

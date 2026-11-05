@@ -35,7 +35,7 @@ export class EmailTemplateService {
   // ---------------------------------------------------------------------------
   private renderBookingConfirmation(
     p: BaseNotificationPayload,
-    locale: SupportedLocale
+    locale: SupportedLocale,
   ): EmailRenderResult {
     const isEs = locale === 'es';
     const checkInStr = this.formatDate(p.reservation.fechaCheckIn, locale);
@@ -108,11 +108,12 @@ export class EmailTemplateService {
             ${isEs ? 'Estadía' : 'Stay'}
           </td>
           <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #0f172a; font-size: 14px; text-align: right;">
-            ${p.reservation.noches} ${isEs ? (p.reservation.noches === 1 ? 'noche' : 'noches') : (p.reservation.noches === 1 ? 'night' : 'nights')} · ${p.reservation.cantidadPersonas} ${isEs ? (p.reservation.cantidadPersonas === 1 ? 'huésped' : 'huéspedes') : (p.reservation.cantidadPersonas === 1 ? 'guest' : 'guests')}
+            ${p.reservation.noches} ${isEs ? (p.reservation.noches === 1 ? 'noche' : 'noches') : p.reservation.noches === 1 ? 'night' : 'nights'} · ${p.reservation.cantidadPersonas} ${isEs ? (p.reservation.cantidadPersonas === 1 ? 'huésped' : 'huéspedes') : p.reservation.cantidadPersonas === 1 ? 'guest' : 'guests'}
           </td>
         </tr>
         ${
-          p.reservation.precioTotal !== undefined && p.reservation.precioTotal !== null
+          p.reservation.precioTotal !== undefined &&
+          p.reservation.precioTotal !== null
             ? `
         <tr>
           <td style="padding: 12px 16px; color: #64748b; font-size: 13px; font-weight: 600;">
@@ -154,7 +155,12 @@ export class EmailTemplateService {
       </p>
     `;
 
-    const html_body = this.wrapInBaseLayout(p.sede, subject, contentHtml, locale);
+    const html_body = this.wrapInBaseLayout(
+      p.sede,
+      subject,
+      contentHtml,
+      locale,
+    );
 
     const text_body = isEs
       ? `CONFIRMACIÓN DE RESERVA — ${p.sede.nombre}
@@ -198,27 +204,32 @@ ${this.footerText(p.sede, locale)}`;
   // ---------------------------------------------------------------------------
   private renderPaymentReceipt(
     p: PaymentReceiptPayload,
-    locale: SupportedLocale
+    locale: SupportedLocale,
   ): EmailRenderResult {
     const isEs = locale === 'es';
     const fechaPagoStr = this.formatDateTime(p.payment.fechaPago, locale);
     const montoStr = this.formatCurrency(p.payment.monto);
     const saldo =
-      p.reservation.saldoPendiente !== undefined && p.reservation.saldoPendiente !== null
+      p.reservation.saldoPendiente !== undefined &&
+      p.reservation.saldoPendiente !== null
         ? p.reservation.saldoPendiente
-        : Math.max(0, (p.reservation.precioTotal || 0) - (p.reservation.montoPagado || 0));
+        : Math.max(
+            0,
+            (p.reservation.precioTotal || 0) - (p.reservation.montoPagado || 0),
+          );
 
     const subject = isEs
       ? `Comprobante de Pago #${p.payment.referencia} — ${p.sede.nombre}`
       : `Payment Receipt #${p.payment.referencia} — ${p.sede.nombre}`;
 
-    const docNote = p.payment.documentoTipo && p.payment.documentoFolio
-      ? (isEs
+    const docNote =
+      p.payment.documentoTipo && p.payment.documentoFolio
+        ? isEs
           ? `Documento tributario emitido: <strong>${p.payment.documentoTipo} Electrónica N° ${p.payment.documentoFolio}</strong>.`
-          : `Issued tax document: <strong>Electronic ${p.payment.documentoTipo} #${p.payment.documentoFolio}</strong>.`)
-      : (isEs
+          : `Issued tax document: <strong>Electronic ${p.payment.documentoTipo} #${p.payment.documentoFolio}</strong>.`
+        : isEs
           ? `El documento tributario correspondiente (Boleta o Factura electrónica) se encuentra en proceso de emisión ante el Servicio de Impuestos Internos.`
-          : `The official electronic tax document is currently being issued with the tax authority.`);
+          : `The official electronic tax document is currently being issued with the tax authority.`;
 
     const contentHtml = `
       <h2 style="margin: 0 0 12px; color: #0f172a; font-size: 20px; font-weight: 700;">
@@ -279,7 +290,7 @@ ${this.footerText(p.sede, locale)}`;
             ${isEs ? 'Saldo pendiente' : 'Outstanding balance'}
           </td>
           <td style="padding: 12px 16px; color: ${saldo > 0 ? '#b91c1c' : '#166534'}; font-size: 14px; font-weight: 700; text-align: right;">
-            ${saldo > 0 ? this.formatCurrency(saldo) : (isEs ? 'Pagado en su totalidad' : 'Fully paid')}
+            ${saldo > 0 ? this.formatCurrency(saldo) : isEs ? 'Pagado en su totalidad' : 'Fully paid'}
           </td>
         </tr>
       </table>
@@ -291,7 +302,12 @@ ${this.footerText(p.sede, locale)}`;
       </div>
     `;
 
-    const html_body = this.wrapInBaseLayout(p.sede, subject, contentHtml, locale);
+    const html_body = this.wrapInBaseLayout(
+      p.sede,
+      subject,
+      contentHtml,
+      locale,
+    );
 
     const text_body = isEs
       ? `COMPROBANTE DE PAGO — ${p.sede.nombre}
@@ -329,13 +345,13 @@ ${this.footerText(p.sede, locale)}`;
   // ---------------------------------------------------------------------------
   private renderPreArrivalGuide(
     p: BaseNotificationPayload,
-    locale: SupportedLocale
+    locale: SupportedLocale,
   ): EmailRenderResult {
     const isEs = locale === 'es';
     const checkInStr = this.formatDate(p.reservation.fechaCheckIn, locale);
     const horaIn = p.sede.horaCheckIn || '15:00';
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-      `${p.sede.direccion}, ${p.sede.ciudad}`
+      `${p.sede.direccion}, ${p.sede.ciudad}`,
     )}`;
 
     const subject = isEs
@@ -402,7 +418,12 @@ ${this.footerText(p.sede, locale)}`;
       </div>
     `;
 
-    const html_body = this.wrapInBaseLayout(p.sede, subject, contentHtml, locale);
+    const html_body = this.wrapInBaseLayout(
+      p.sede,
+      subject,
+      contentHtml,
+      locale,
+    );
 
     const text_body = isEs
       ? `RECORDATORIO PRE-LLEGADA — ${p.sede.nombre}
@@ -442,7 +463,7 @@ ${this.footerText(p.sede, locale)}`;
   // ---------------------------------------------------------------------------
   private renderCheckoutSummary(
     p: BaseNotificationPayload,
-    locale: SupportedLocale
+    locale: SupportedLocale,
   ): EmailRenderResult {
     const isEs = locale === 'es';
     const totalStr = this.formatCurrency(p.reservation.precioTotal || 0);
@@ -531,7 +552,12 @@ ${this.footerText(p.sede, locale)}`;
       }
     `;
 
-    const html_body = this.wrapInBaseLayout(p.sede, subject, contentHtml, locale);
+    const html_body = this.wrapInBaseLayout(
+      p.sede,
+      subject,
+      contentHtml,
+      locale,
+    );
 
     const text_body = isEs
       ? `RESUMEN DE ESTADÍA — ${p.sede.nombre}
@@ -569,7 +595,7 @@ ${this.footerText(p.sede, locale)}`;
     sede: BaseNotificationPayload['sede'],
     title: string,
     contentHtml: string,
-    locale: SupportedLocale
+    locale: SupportedLocale,
   ): string {
     const isEs = locale === 'es';
     const logoHtml = sede.hostalLogoUrl
@@ -642,7 +668,10 @@ ${this.footerText(p.sede, locale)}`;
 </html>`;
   }
 
-  private footerText(sede: BaseNotificationPayload['sede'], locale: SupportedLocale): string {
+  private footerText(
+    sede: BaseNotificationPayload['sede'],
+    locale: SupportedLocale,
+  ): string {
     const isEs = locale === 'es';
     const email = sede.email || sede.hostalEmail || '';
     const phone = sede.telefono || '';

@@ -14,6 +14,7 @@ export class PrismaHuespedRepository implements HuespedRepository {
   private toEntity(raw: PrismaHuesped): Huesped {
     return new Huesped(
       raw.id,
+      raw.sedeId,
       raw.rutPasaporte,
       raw.nombres,
       raw.apellidos,
@@ -23,8 +24,9 @@ export class PrismaHuespedRepository implements HuespedRepository {
     );
   }
 
-  async findAll(): Promise<Huesped[]> {
+  async findAll(sedeId?: number): Promise<Huesped[]> {
     const rows = await this.prisma.huesped.findMany({
+      where: sedeId ? { sedeId } : undefined,
       orderBy: [{ apellidos: 'asc' }, { nombres: 'asc' }],
     });
     return rows.map((r) => this.toEntity(r));
@@ -35,12 +37,23 @@ export class PrismaHuespedRepository implements HuespedRepository {
     return raw ? this.toEntity(raw) : null;
   }
 
-  async findByRutPasaporte(rutPasaporte: string): Promise<Huesped | null> {
-    const raw = await this.prisma.huesped.findUnique({ where: { rutPasaporte } });
+  async findByRutPasaporte(
+    sedeId: number,
+    rutPasaporte: string,
+  ): Promise<Huesped | null> {
+    const raw = await this.prisma.huesped.findUnique({
+      where: {
+        sedeId_rutPasaporte: {
+          sedeId,
+          rutPasaporte,
+        },
+      },
+    });
     return raw ? this.toEntity(raw) : null;
   }
 
   async create(data: {
+    sedeId: number;
     rutPasaporte: string;
     nombres: string;
     apellidos: string;
@@ -55,6 +68,7 @@ export class PrismaHuespedRepository implements HuespedRepository {
   async update(
     id: number,
     data: Partial<{
+      sedeId: number;
       rutPasaporte: string;
       nombres: string;
       apellidos: string;

@@ -24,7 +24,8 @@ export class MailService implements OnModuleInit {
 
   constructor(private readonly config: ConfigService) {
     this.defaultFrom =
-      this.config.get<string>('MAIL_FROM') || 'HosPal PMS <no-reply@hospal.local>';
+      this.config.get<string>('MAIL_FROM') ||
+      'HosPal PMS <no-reply@hospal.local>';
     this.initTransporter();
   }
 
@@ -37,7 +38,8 @@ export class MailService implements OnModuleInit {
     const port = Number(this.config.get<number>('MAIL_PORT') || 1025);
     const user = this.config.get<string>('MAIL_USER');
     const pass = this.config.get<string>('MAIL_PASS');
-    const secure = this.config.get<string>('MAIL_SECURE') === 'true' || port === 465;
+    const secure =
+      this.config.get<string>('MAIL_SECURE') === 'true' || port === 465;
 
     const transportOptions: any = {
       host,
@@ -51,7 +53,7 @@ export class MailService implements OnModuleInit {
 
     this.transporter = nodemailer.createTransport(transportOptions);
     this.logger.log(
-      `MailService configurado para ${host}:${port} (secure=${secure}, user=${user || 'ninguno'}, from=${this.defaultFrom})`
+      `MailService configurado para ${host}:${port} (secure=${secure}, user=${user || 'ninguno'}, from=${this.defaultFrom})`,
     );
   }
 
@@ -69,7 +71,7 @@ export class MailService implements OnModuleInit {
     } catch (error: any) {
       const details = error?.response || error?.message || String(error);
       this.logger.warn(
-        `No se pudo verificar la conexión SMTP al arrancar: ${details}. Las notificaciones intentarán conectar al momento del envío.`
+        `No se pudo verificar la conexión SMTP al arrancar: ${details}. Las notificaciones intentarán conectar al momento del envío.`,
       );
       return false;
     }
@@ -94,7 +96,9 @@ export class MailService implements OnModuleInit {
       }
 
       const info = await this.transporter!.sendMail(mailOptions);
-      this.logger.log(`Correo enviado a ${options.to} [${options.subject}] (id: ${info.messageId})`);
+      this.logger.log(
+        `Correo enviado a ${options.to} [${options.subject}] (id: ${info.messageId})`,
+      );
       return { success: true, messageId: info.messageId };
     } catch (error: any) {
       const fullError = [
@@ -105,7 +109,10 @@ export class MailService implements OnModuleInit {
         .filter(Boolean)
         .join(' ');
 
-      this.logger.error(`Error enviando correo a ${options.to}: ${fullError}`, error?.stack);
+      this.logger.error(
+        `Error enviando correo a ${options.to}: ${fullError}`,
+        error?.stack,
+      );
       return { success: false, error: fullError };
     }
   }

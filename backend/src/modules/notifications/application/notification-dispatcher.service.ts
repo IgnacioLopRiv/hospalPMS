@@ -21,7 +21,7 @@ export class NotificationDispatcherService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly templateService: EmailTemplateService,
-    private readonly mailService: MailService
+    private readonly mailService: MailService,
   ) {}
 
   /**
@@ -61,7 +61,9 @@ export class NotificationDispatcherService {
       });
 
       if (!reserva) {
-        this.logger.warn(`No se encontró la reserva #${reservaId} para despachar ${type}.`);
+        this.logger.warn(
+          `No se encontró la reserva #${reservaId} para despachar ${type}.`,
+        );
         return false;
       }
 
@@ -71,7 +73,9 @@ export class NotificationDispatcherService {
       const hostal = sede?.hostal;
 
       if (!huesped || !huesped.email) {
-        this.logger.warn(`La reserva #${reservaId} no cuenta con email de huésped.`);
+        this.logger.warn(
+          `La reserva #${reservaId} no cuenta con email de huésped.`,
+        );
         return false;
       }
 
@@ -84,7 +88,7 @@ export class NotificationDispatcherService {
       const checkOutMs = new Date(reserva.fechaCheckOut).getTime();
       const noches = Math.max(
         1,
-        Math.round((checkOutMs - checkInMs) / (1000 * 60 * 60 * 24))
+        Math.round((checkOutMs - checkInMs) / (1000 * 60 * 60 * 24)),
       );
 
       // Desglose de pago asociado si aplica
@@ -95,14 +99,17 @@ export class NotificationDispatcherService {
           : reserva.pagos[0];
 
         if (!pago) {
-          this.logger.warn(`No se encontró el pago #${pagoId} para la reserva #${reservaId}.`);
+          this.logger.warn(
+            `No se encontró el pago #${pagoId} para la reserva #${reservaId}.`,
+          );
           return false;
         }
 
         const doc = reserva.documentos[0];
         paymentData = {
           id: pago.id,
-          referencia: pago.referencia || `PAY-${String(pago.id).padStart(6, '0')}`,
+          referencia:
+            pago.referencia || `PAY-${String(pago.id).padStart(6, '0')}`,
           monto: pago.monto,
           metodoPago: pago.metodoPago,
           tipoOperacion: pago.tipoOperacion,
@@ -134,7 +141,8 @@ export class NotificationDispatcherService {
           serviciosIncluidos: sede?.serviciosIncluidos || null,
           urlEncuesta: sede?.urlEncuesta || null,
           sitioWeb: sede?.sitioWeb || null,
-          hostalNombre: hostal?.nombreFantasia || hostal?.razonSocial || 'HosPal',
+          hostalNombre:
+            hostal?.nombreFantasia || hostal?.razonSocial || 'HosPal',
           hostalEmail: hostal?.email || null,
           hostalLogoUrl: hostal?.logoUrl || null,
         },
@@ -150,7 +158,10 @@ export class NotificationDispatcherService {
           tipologiaNombre: habitacion?.tipologia?.nombre || 'Estándar',
           precioTotal: reserva.precioTotal,
           montoPagado: reserva.montoPagado,
-          saldoPendiente: Math.max(0, (reserva.precioTotal || 0) - (reserva.montoPagado || 0)),
+          saldoPendiente: Math.max(
+            0,
+            (reserva.precioTotal || 0) - (reserva.montoPagado || 0),
+          ),
           pagoCompleto: reserva.pagoCompleto,
         },
         payment: paymentData,
@@ -184,7 +195,7 @@ export class NotificationDispatcherService {
       while (attempts < MAX_RETRIES && !sentSuccess) {
         attempts++;
         this.logger.log(
-          `Intento ${attempts}/${MAX_RETRIES} enviando ${type} a ${huesped.email}`
+          `Intento ${attempts}/${MAX_RETRIES} enviando ${type} a ${huesped.email}`,
         );
 
         const result = await this.mailService.sendMail({
@@ -232,7 +243,7 @@ export class NotificationDispatcherService {
 
       this.logger.error(
         `Error procesando notificación ${type} para reserva #${reservaId}: ${errMsg}`,
-        error?.stack
+        error?.stack,
       );
       return false;
     }

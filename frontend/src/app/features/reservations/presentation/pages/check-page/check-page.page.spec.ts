@@ -12,6 +12,7 @@ import { InventarioRepository } from '../../../../inventory/domain/inventario.re
 import { createEmptyInventarioRepositoryStub } from '../../../../inventory/domain/testing/inventario.repository.stub';
 import { InventarioService } from '../../../../inventory/application/inventario.service';
 import { Tarifa, TarifasRepository } from '../../../../locations/domain/tarifas.repository';
+import { FotoHabitacionRepository } from '../../../../locations/domain/foto-habitacion.repository';
 import { Huesped } from '../../../../../shared/domain/hostal.model';
 import { of } from 'rxjs';
 import { CheckPagePage } from './check-page.page';
@@ -39,6 +40,21 @@ describe('CheckPagePage', () => {
         { provide: HuespedRepository, useValue: repositories.huespedRepository },
         { provide: ReservasRepository, useValue: repositories.reservasRepository },
         { provide: InventarioRepository, useValue: createEmptyInventarioRepositoryStub() },
+        {
+          provide: FotoHabitacionRepository,
+          useValue: {
+            listPhotos: () => of([]),
+            createPhoto: (_habitacionId: number, data: { url: string; titulo?: string; descripcion?: string }) => of({
+              id: 1,
+              habitacionId: 1,
+              url: data.url,
+              titulo: data.titulo,
+              descripcion: data.descripcion,
+              fechaSubida: new Date().toISOString(),
+            }),
+            deletePhoto: () => of(undefined),
+          },
+        },
         {
           provide: TarifasRepository,
           useValue: {

@@ -17,10 +17,6 @@ import { NotificacionesController } from './infrastructure/notificaciones.contro
     NotificationEventsListener,
     PreArrivalNotificationScheduler,
   ],
-  exports: [
-    EmailTemplateService,
-    MailService,
-    NotificationDispatcherService,
-  ],
+  exports: [EmailTemplateService, MailService, NotificationDispatcherService],
 })
 export class NotificationsModule {}

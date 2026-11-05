@@ -9,7 +9,7 @@ export class PreArrivalNotificationScheduler {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly dispatcher: NotificationDispatcherService
+    private readonly dispatcher: NotificationDispatcherService,
   ) {}
 
   /**
@@ -45,7 +45,7 @@ export class PreArrivalNotificationScheduler {
 
       if (upcomingReservas.length > 0) {
         this.logger.log(
-          `Encontradas ${upcomingReservas.length} reservas para recordatorio pre-llegada.`
+          `Encontradas ${upcomingReservas.length} reservas para recordatorio pre-llegada.`,
         );
 
         for (const reserva of upcomingReservas) {
@@ -58,7 +58,7 @@ export class PreArrivalNotificationScheduler {
     } catch (error: any) {
       this.logger.error(
         `Error al ejecutar el cronjob de recordatorios pre-llegada: ${error?.message}`,
-        error?.stack
+        error?.stack,
       );
     }
   }

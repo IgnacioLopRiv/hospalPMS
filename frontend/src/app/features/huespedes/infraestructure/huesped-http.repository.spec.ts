@@ -23,14 +23,15 @@ describe('HuespedHttpRepository', () => {
 
   afterEach(() => httpTesting.verify());
 
-  it('lists huéspedes from GET /huespedes and maps the API DTO', () => {
+  it('lists huéspedes from GET /huespedes scoped by sede and maps the API DTO', () => {
     let result: unknown;
-    repository.list().subscribe((huespedes) => result = huespedes);
+    repository.list(5).subscribe((huespedes) => result = huespedes);
 
-    const request = httpTesting.expectOne(endpoint);
+    const request = httpTesting.expectOne(`${endpoint}?sedeId=5`);
     expect(request.request.method).toBe('GET');
     request.flush([{
       id_huesped: 12,
+      id_sede: 5,
       documento: '12.345.678-9',
       nombre: 'Ana',
       apellido: 'Pérez',
@@ -43,6 +44,7 @@ describe('HuespedHttpRepository', () => {
 
     expect(result).toEqual([jasmine.objectContaining({
       id: 12,
+      sedeId: 5,
       rutPasaporte: '12.345.678-9',
       nombres: 'Ana',
       apellidos: 'Pérez',
@@ -54,6 +56,7 @@ describe('HuespedHttpRepository', () => {
   it('creates huéspedes using the controller field names', () => {
     let result: unknown;
     repository.create({
+      sedeId: 5,
       rutPasaporte: '12.345.678-9',
       nombres: 'Ana',
       apellidos: 'Pérez',
@@ -65,6 +68,8 @@ describe('HuespedHttpRepository', () => {
     const request = httpTesting.expectOne(endpoint);
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual(jasmine.objectContaining({
+      id_sede: 5,
+      sedeId: 5,
       documento: '12.345.678-9',
       nombre: 'Ana',
       apellido: 'Pérez',
@@ -72,6 +77,7 @@ describe('HuespedHttpRepository', () => {
     }));
     request.flush({
       id_huesped: 12,
+      id_sede: 5,
       documento: '12.345.678-9',
       nombre: 'Ana',
       apellido: 'Pérez',
@@ -79,16 +85,17 @@ describe('HuespedHttpRepository', () => {
       telefono: '+56912345678',
       email: 'ana@example.com',
     });
-    expect(result).toEqual(jasmine.objectContaining({ id: 12, nombres: 'Ana' }));
+    expect(result).toEqual(jasmine.objectContaining({ id: 12, sedeId: 5, nombres: 'Ana' }));
   });
 
   it('updates and removes huéspedes with PATCH and DELETE', () => {
-    repository.update(12, { email: 'nuevo@example.com' }).subscribe();
-    const updateRequest = httpTesting.expectOne(`${endpoint}/12`);
+    repository.update(12, { email: 'nuevo@example.com' }, 5).subscribe();
+    const updateRequest = httpTesting.expectOne(`${endpoint}/12?sedeId=5`);
     expect(updateRequest.request.method).toBe('PATCH');
     expect(updateRequest.request.body).toEqual({ email: 'nuevo@example.com' });
     updateRequest.flush({
       id_huesped: 12,
+      id_sede: 5,
       documento: '12.345.678-9',
       nombre: 'Ana',
       apellido: 'Pérez',
@@ -97,8 +104,8 @@ describe('HuespedHttpRepository', () => {
       email: 'nuevo@example.com',
     });
 
-    repository.remove(12).subscribe();
-    const deleteRequest = httpTesting.expectOne(`${endpoint}/12`);
+    repository.remove(12, 5).subscribe();
+    const deleteRequest = httpTesting.expectOne(`${endpoint}/12?sedeId=5`);
     expect(deleteRequest.request.method).toBe('DELETE');
     deleteRequest.flush({ deleted: true });
   });

@@ -34,7 +34,9 @@ export class PrismaHostalRepository implements HostalRepository {
   }
 
   async findAll(): Promise<Hostal[]> {
-    const rows = await this.prisma.hostal.findMany({ orderBy: { razonSocial: 'asc' } });
+    const rows = await this.prisma.hostal.findMany({
+      orderBy: { razonSocial: 'asc' },
+    });
     return rows.map((r) => this.toEntity(r));
   }
 

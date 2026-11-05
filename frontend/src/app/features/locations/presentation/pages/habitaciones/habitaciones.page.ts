@@ -595,7 +595,7 @@ export class HabitacionesPage implements OnInit, OnDestroy {
     }
 
     try {
-      this.fotoHabitacionService.removeRoomPhotos(room.id);
+      await this.fotoHabitacionService.removeRoomPhotos(room.id);
     } catch (error) {
       this.setPhotoNotice(
         error instanceof Error ? error.message : 'No se pudieron eliminar las fotos de la habitación.',

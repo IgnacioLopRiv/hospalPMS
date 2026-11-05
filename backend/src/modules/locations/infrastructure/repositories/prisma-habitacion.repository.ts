@@ -83,9 +83,7 @@ export class PrismaHabitacionRepository implements HabitacionRepository {
   }): Promise<Habitacion> {
     const prismaData: Prisma.HabitacionUncheckedCreateInput = {
       ...data,
-      estado: data.estado
-        ? this.mapEstadoToPrisma(data.estado)
-        : 'DISPONIBLE',
+      estado: data.estado ? this.mapEstadoToPrisma(data.estado) : 'DISPONIBLE',
     };
     const raw = await this.prisma.habitacion.create({ data: prismaData });
     return this.toEntity(raw);
@@ -112,7 +110,10 @@ export class PrismaHabitacionRepository implements HabitacionRepository {
           ? undefined
           : this.mapEstadoToPrisma(data.estado),
     };
-    const raw = await this.prisma.habitacion.update({ where: { id }, data: prismaData });
+    const raw = await this.prisma.habitacion.update({
+      where: { id },
+      data: prismaData,
+    });
     return this.toEntity(raw);
   }
 
@@ -120,7 +121,10 @@ export class PrismaHabitacionRepository implements HabitacionRepository {
     await this.prisma.habitacion.delete({ where: { id } });
   }
 
-  async updateEstado(id: number, estado: EstadoHabitacion): Promise<Habitacion> {
+  async updateEstado(
+    id: number,
+    estado: EstadoHabitacion,
+  ): Promise<Habitacion> {
     const raw = await this.prisma.habitacion.update({
       where: { id },
       data: { estado: this.mapEstadoToPrisma(estado) },

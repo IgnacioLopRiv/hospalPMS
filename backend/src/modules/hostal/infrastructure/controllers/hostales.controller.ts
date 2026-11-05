@@ -37,23 +37,39 @@ export class HostalesController {
     try {
       return await this.repository.create(this.normalize(input));
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new ConflictException('Ya existe un hostal registrado con ese RUT empresarial.');
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'Ya existe un hostal registrado con ese RUT empresarial.',
+        );
       }
       throw error;
     }
   }
 
   @Patch(':id')
-  async update(@Param('id', ParseIntPipe) id: number, @Body() input: Partial<HostalData>) {
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() input: Partial<HostalData>,
+  ) {
     this.validate(input, true);
     try {
       return await this.repository.update(id, this.normalize(input));
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new ConflictException('Ya existe un hostal registrado con ese RUT empresarial.');
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'Ya existe un hostal registrado con ese RUT empresarial.',
+        );
       }
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
         throw new NotFoundException(`No existe el hostal ${id}.`);
       }
       throw error;
@@ -66,34 +82,58 @@ export class HostalesController {
       await this.repository.delete(id);
       return { deleted: true };
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
         throw new NotFoundException(`No existe el hostal ${id}.`);
       }
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
-        throw new ConflictException('No se puede eliminar un hostal que todavía tiene sedes asociadas.');
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2003'
+      ) {
+        throw new ConflictException(
+          'No se puede eliminar un hostal que todavía tiene sedes asociadas.',
+        );
       }
       throw error;
     }
   }
 
   private validate(input: Partial<HostalData>, partial = false): void {
-    const required: (keyof HostalData)[] = ['rutEmpresa', 'razonSocial', 'nombreFantasia', 'giro', 'direccion'];
+    const required: (keyof HostalData)[] = [
+      'rutEmpresa',
+      'razonSocial',
+      'nombreFantasia',
+      'giro',
+      'direccion',
+    ];
     if (!partial && required.some((field) => !input[field]?.trim())) {
-      throw new BadRequestException('RUT, razón social, nombre de fantasía, giro y dirección son obligatorios.');
+      throw new BadRequestException(
+        'RUT, razón social, nombre de fantasía, giro y dirección son obligatorios.',
+      );
     }
-    if (input.email !== undefined && input.email !== null && input.email.trim() !== '') {
+    if (
+      input.email !== undefined &&
+      input.email !== null &&
+      input.email.trim() !== ''
+    ) {
       const emailTrimmed = input.email.trim();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
-        throw new BadRequestException('El formato del correo del hostal no es válido.');
+        throw new BadRequestException(
+          'El formato del correo del hostal no es válido.',
+        );
       }
     }
   }
 
   private normalize<T extends Partial<HostalData>>(input: T): T {
-    return Object.fromEntries(Object.entries(input).map(([key, value]) => {
-      if (typeof value !== 'string') return [key, value];
-      const trimmed = value.trim();
-      return [key, key === 'rutEmpresa' ? trimmed.toUpperCase() : trimmed];
-    })) as T;
+    return Object.fromEntries(
+      Object.entries(input).map(([key, value]) => {
+        if (typeof value !== 'string') return [key, value];
+        const trimmed = value.trim();
+        return [key, key === 'rutEmpresa' ? trimmed.toUpperCase() : trimmed];
+      }),
+    ) as T;
   }
 }

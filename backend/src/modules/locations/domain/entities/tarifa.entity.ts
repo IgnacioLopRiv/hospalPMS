@@ -15,11 +15,20 @@ export type TipoPeriodo =
   | 'specific-dates';
 
 export const TIPOS_PERIODO: TipoPeriodo[] = [
-  'months', 'weekdays', 'month-days', 'specific-month-days', 'date-range', 'specific-dates',
+  'months',
+  'weekdays',
+  'month-days',
+  'specific-month-days',
+  'date-range',
+  'specific-dates',
 ];
 
 /** Periodos con fechas concretas; el resto se repite cada año/semana/mes. */
-const TIPOS_PERIODO_ACOTADOS: TipoPeriodo[] = ['date-range', 'specific-dates', 'specific-month-days'];
+const TIPOS_PERIODO_ACOTADOS: TipoPeriodo[] = [
+  'date-range',
+  'specific-dates',
+  'specific-month-days',
+];
 
 /**
  * Regla de aplicación de una tarifa (meses, días de semana, rango de fechas, etc.).
@@ -65,24 +74,39 @@ export class Tarifa {
    * Si algún periodo es recurrente (meses, días de semana, días del mes),
    * la tarifa no tiene límite y ambas fechas quedan en null.
    */
-  static calcularVigencia(periodos: TarifaPeriodo[]): { fechaInicio: Date | null; fechaFin: Date | null } {
+  static calcularVigencia(periodos: TarifaPeriodo[]): {
+    fechaInicio: Date | null;
+    fechaFin: Date | null;
+  } {
     const sinLimite = { fechaInicio: null, fechaFin: null };
-    if (periodos.length === 0 || periodos.some((periodo) => !TIPOS_PERIODO_ACOTADOS.includes(periodo.tipo))) {
+    if (
+      periodos.length === 0 ||
+      periodos.some((periodo) => !TIPOS_PERIODO_ACOTADOS.includes(periodo.tipo))
+    ) {
       return sinLimite;
     }
 
-    const fechas = periodos.flatMap((periodo): string[] => {
-      switch (periodo.tipo) {
-        case 'date-range': return [periodo.fechaInicio, periodo.fechaFin];
-        case 'specific-dates': return periodo.fechas;
-        case 'specific-month-days': {
-          const inicio = new Date(Date.UTC(periodo.anio!, periodo.mes!, 1));
-          const fin = new Date(Date.UTC(periodo.anio!, periodo.mes! + 1, 0));
-          return [inicio.toISOString().slice(0, 10), fin.toISOString().slice(0, 10)];
+    const fechas = periodos
+      .flatMap((periodo): string[] => {
+        switch (periodo.tipo) {
+          case 'date-range':
+            return [periodo.fechaInicio, periodo.fechaFin];
+          case 'specific-dates':
+            return periodo.fechas;
+          case 'specific-month-days': {
+            const inicio = new Date(Date.UTC(periodo.anio!, periodo.mes, 1));
+            const fin = new Date(Date.UTC(periodo.anio!, periodo.mes! + 1, 0));
+            return [
+              inicio.toISOString().slice(0, 10),
+              fin.toISOString().slice(0, 10),
+            ];
+          }
+          default:
+            return [];
         }
-        default: return [];
-      }
-    }).filter(Boolean).sort();
+      })
+      .filter(Boolean)
+      .sort();
 
     if (fechas.length === 0) return sinLimite;
     return {

@@ -521,7 +521,8 @@ export class CheckPagePage implements OnInit, OnDestroy {
       this.entryForm.arrivalDate < this.entryForm.departureDate &&
       Number.isInteger(this.entryForm.personCount) &&
       this.entryForm.personCount >= 1 &&
-      /^([01]\d|2[0-3]):[0-5]\d$/.test(this.entryForm.arrivalTime);
+      /^([01]\d|2[0-3]):[0-5]\d$/.test(this.entryForm.arrivalTime) &&
+      (!this.entryForm.departureTime || /^([01]\d|2[0-3]):[0-5]\d$/.test(this.entryForm.departureTime));
   }
 
   isEntryStepValid(form: NgForm): boolean {
@@ -535,6 +536,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
       Number.isInteger(this.entryForm.personCount) &&
       this.entryForm.personCount >= 1 &&
       /^([01]\d|2[0-3]):[0-5]\d$/.test(this.entryForm.arrivalTime) &&
+      (!this.entryForm.departureTime || /^([01]\d|2[0-3]):[0-5]\d$/.test(this.entryForm.departureTime)) &&
       this.availableRooms.some((room) => room.id_habitacion === Number(this.entryForm.roomId));
   }
 
@@ -592,6 +594,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
         arrivalDate: this.entryForm.arrivalDate,
         departureDate: this.entryForm.departureDate,
         arrivalTime: this.entryForm.arrivalTime,
+        departureTime: this.entryForm.departureTime || '12:00',
         payment: {
           totalAmount: this.reservationQuote.total,
           paidAmount: this.paymentAmount,
@@ -783,6 +786,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
     arrivalDate: string;
     departureDate: string;
     arrivalTime: string;
+    departureTime: string;
     personCount: number;
     roomId: string;
   } {
@@ -801,6 +805,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
       arrivalDate: arrival,
       departureDate: this.localDateString(departureDate),
       arrivalTime: '14:00',
+      departureTime: '12:00',
       personCount: 1,
       roomId: '',
     };
@@ -848,7 +853,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
       roomType: entry.roomType,
       dateRange: `${this.formatDate(entry.arrivalDate)} → ${this.formatDate(entry.departureDate)}`,
       nights,
-      scheduledTime: type === 'checkin' ? entry.arrivalTime || 'Por confirmar' : 'Por confirmar',
+      scheduledTime: type === 'checkin' ? (entry.arrivalTime || '14:00') : (entry.departureTime || '12:00'),
       timeWindowLabel: type === 'checkin' ? 'Hora de llegada' : 'Hora de salida',
       statusBadge: type === 'checkin' ? 'CHECK-IN HOY' : 'CHECK-OUT HOY',
       avatarColor: colors[index % colors.length],

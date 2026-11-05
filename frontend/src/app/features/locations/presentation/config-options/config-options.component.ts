@@ -25,7 +25,7 @@ export class ConfigOptionsComponent {
   private readonly auth = inject(AuthService);
   private readonly sedeService = inject(SedeService);
 
-  readonly close = output<void>();
+  readonly closed = output<void>();
   readonly manageProfiles = output<void>();
   readonly logout = output<void>();
 
@@ -42,7 +42,7 @@ export class ConfigOptionsComponent {
   }
 
   dismiss(): void {
-    this.close.emit();
+    this.closed.emit();
   }
 
   handleManageProfiles(): void {

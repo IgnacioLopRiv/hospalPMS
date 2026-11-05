@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import type { TarifaAbono as PrismaTarifaAbono } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
-import { PORCENTAJE_ABONO_POR_DEFECTO, TarifaAbono } from '../../domain/entities/tarifa-abono.entity';
+import {
+  PORCENTAJE_ABONO_POR_DEFECTO,
+  TarifaAbono,
+} from '../../domain/entities/tarifa-abono.entity';
 import { TarifaAbonoRepository } from '../../domain/repositories/tarifa-abono.repository';
 
 /**
@@ -29,7 +32,10 @@ export class PrismaTarifaAbonoRepository implements TarifaAbonoRepository {
     return this.toEntity(row);
   }
 
-  async save(data: { sedeId: number; porcentajeAbono: number }): Promise<TarifaAbono> {
+  async save(data: {
+    sedeId: number;
+    porcentajeAbono: number;
+  }): Promise<TarifaAbono> {
     const row = await this.prisma.tarifaAbono.upsert({
       where: { sedeId: data.sedeId },
       create: { sedeId: data.sedeId, porcentajeAbono: data.porcentajeAbono },

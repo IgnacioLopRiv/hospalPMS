@@ -198,8 +198,9 @@
                       [style.background-color]="category.theme.background"
                       [style.border-color]="category.theme.border"
                       [style.color]="category.theme.text"
-                      [title]="reservation.guestName + ' · ' + reservation.arrivalDate + ' — ' + reservation.departureDate">
+                      [title]="reservation.guestName + ' · ' + reservation.arrivalDate + ' ' + reservation.arrivalTime + ' — ' + reservation.departureDate + ' ' + reservation.departureTime">
                       <span class="guest-name">{{ reservation.guestName }}</span>
+                      <span class="reservation-time">{{ reservation.arrivalTime }} - {{ reservation.departureTime }}</span>
                     </div>
                   }
                 </div>

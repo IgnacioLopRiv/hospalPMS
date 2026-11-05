@@ -16,7 +16,11 @@ import { Prisma, RolFuncionario } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../../../../database/prisma.service';
 
-const ROLES_VALIDOS: RolFuncionario[] = ['ADMINISTRADOR', 'RECEPCIONISTA', 'PERSONAL_LIMPIEZA'];
+const ROLES_VALIDOS: RolFuncionario[] = [
+  'ADMINISTRADOR',
+  'RECEPCIONISTA',
+  'PERSONAL_LIMPIEZA',
+];
 
 interface FuncionarioInput {
   sedeId?: number;
@@ -83,7 +87,9 @@ export class FuncionariosController {
   @Post()
   async create(@Body() input: FuncionarioInput) {
     if (!input.email?.trim() || !input.password?.trim()) {
-      throw new BadRequestException('Faltan campos obligatorios: email y password.');
+      throw new BadRequestException(
+        'Faltan campos obligatorios: email y password.',
+      );
     }
 
     let nombres = input.nombres?.trim();
@@ -109,9 +115,13 @@ export class FuncionariosController {
 
     let sedeId = input.sedeId;
     if (!sedeId) {
-      const firstSede = await this.prisma.sede.findFirst({ orderBy: { id: 'asc' } });
+      const firstSede = await this.prisma.sede.findFirst({
+        orderBy: { id: 'asc' },
+      });
       if (!firstSede) {
-        throw new BadRequestException('Debe existir al menos una sede para registrar funcionarios.');
+        throw new BadRequestException(
+          'Debe existir al menos una sede para registrar funcionarios.',
+        );
       }
       sedeId = firstSede.id;
     }
@@ -136,21 +146,32 @@ export class FuncionariosController {
       });
       return this.toFrontend(f);
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new ConflictException('Ya existe un funcionario con ese RUT o email.');
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'Ya existe un funcionario con ese RUT o email.',
+        );
       }
       throw error;
     }
   }
 
   @Patch(':id')
-  async update(@Param('id', ParseIntPipe) id: number, @Body() input: FuncionarioInput) {
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() input: FuncionarioInput,
+  ) {
     let rol: RolFuncionario | undefined = undefined;
     if (input.rol || input.role) {
       const roleInput = (input.rol || input.role || '').toUpperCase();
       if (roleInput === 'ADMIN' || roleInput === 'ADMINISTRADOR') {
         rol = 'ADMINISTRADOR';
-      } else if (roleInput === 'PERSONAL_LIMPIEZA' || roleInput === 'LIMPIEZA') {
+      } else if (
+        roleInput === 'PERSONAL_LIMPIEZA' ||
+        roleInput === 'LIMPIEZA'
+      ) {
         rol = 'PERSONAL_LIMPIEZA';
       } else {
         rol = 'RECEPCIONISTA';
@@ -165,11 +186,15 @@ export class FuncionariosController {
       apellidos = parts.slice(1).join(' ') || undefined;
     }
 
-    const passwordHash = input.password ? await bcrypt.hash(input.password, 10) : undefined;
+    const passwordHash = input.password
+      ? await bcrypt.hash(input.password, 10)
+      : undefined;
     const data = {
       ...(nombres !== undefined ? { nombres } : {}),
       ...(apellidos !== undefined ? { apellidos } : {}),
-      ...(input.email !== undefined ? { email: input.email.trim().toLowerCase() } : {}),
+      ...(input.email !== undefined
+        ? { email: input.email.trim().toLowerCase() }
+        : {}),
       ...(input.sedeId !== undefined ? { sedeId: input.sedeId } : {}),
       ...(rol !== undefined ? { rol } : {}),
       ...(passwordHash !== undefined ? { passwordHash } : {}),
@@ -178,10 +203,16 @@ export class FuncionariosController {
       const f = await this.prisma.funcionario.update({ where: { id }, data });
       return this.toFrontend(f);
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
         throw new ConflictException('Ya existe un funcionario con ese email.');
       }
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
         throw new NotFoundException(`No existe el funcionario ${id}.`);
       }
       throw error;
@@ -194,7 +225,10 @@ export class FuncionariosController {
       await this.prisma.funcionario.delete({ where: { id } });
       return { deleted: true };
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
         throw new NotFoundException(`No existe el funcionario ${id}.`);
       }
       throw error;

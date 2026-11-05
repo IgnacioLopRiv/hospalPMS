@@ -247,6 +247,10 @@
               <input name="arrivalTime" type="time" required [(ngModel)]="entryForm.arrivalTime">
             </label>
             <label class="entry-field">
+              <span>Horario estimado de salida</span>
+              <input name="departureTime" type="time" [(ngModel)]="entryForm.departureTime">
+            </label>
+            <label class="entry-field">
               <span>Cantidad de personas</span>
               <input name="personCount" type="number" required min="1" step="1" [(ngModel)]="entryForm.personCount" (ngModelChange)="clearRoomSelection()">
             </label>

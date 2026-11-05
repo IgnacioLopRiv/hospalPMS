@@ -1,2 +1,2 @@
-GRANT ALL PRIVILEGES ON *.* TO 'hospal_user'@'%';
+GRANT ALL PRIVILEGES ON `hospalDB`.* TO 'hospal_user'@'%';
 FLUSH PRIVILEGES;

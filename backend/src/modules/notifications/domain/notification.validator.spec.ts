@@ -26,13 +26,13 @@ describe('NotificationValidator', () => {
 
   it('valida con éxito un payload correcto de confirmación', () => {
     expect(() =>
-      NotificationValidator.validate('CONFIRMACION_RESERVA', validBasePayload)
+      NotificationValidator.validate('CONFIRMACION_RESERVA', validBasePayload),
     ).not.toThrow();
   });
 
   it('falla si el payload es nulo', () => {
     expect(() =>
-      NotificationValidator.validate('CONFIRMACION_RESERVA', null)
+      NotificationValidator.validate('CONFIRMACION_RESERVA', null),
     ).toThrow(BadRequestException);
   });
 
@@ -42,7 +42,7 @@ describe('NotificationValidator', () => {
       guest: { ...validBasePayload.guest, email: 'no-es-correo' },
     };
     expect(() =>
-      NotificationValidator.validate('CONFIRMACION_RESERVA', invalid)
+      NotificationValidator.validate('CONFIRMACION_RESERVA', invalid),
     ).toThrow(BadRequestException);
   });
 
@@ -52,14 +52,14 @@ describe('NotificationValidator', () => {
       reservation: { ...validBasePayload.reservation, codigo: '' },
     };
     expect(() =>
-      NotificationValidator.validate('CONFIRMACION_RESERVA', invalid)
+      NotificationValidator.validate('CONFIRMACION_RESERVA', invalid),
     ).toThrow(BadRequestException);
   });
 
   it('valida campos específicos para comprobante de pago', () => {
     const withoutPayment = { ...validBasePayload };
     expect(() =>
-      NotificationValidator.validate('COMPROBANTE_PAGO', withoutPayment)
+      NotificationValidator.validate('COMPROBANTE_PAGO', withoutPayment),
     ).toThrow(BadRequestException);
 
     const withValidPayment = {
@@ -72,7 +72,7 @@ describe('NotificationValidator', () => {
       },
     };
     expect(() =>
-      NotificationValidator.validate('COMPROBANTE_PAGO', withValidPayment)
+      NotificationValidator.validate('COMPROBANTE_PAGO', withValidPayment),
     ).not.toThrow();
   });
 });

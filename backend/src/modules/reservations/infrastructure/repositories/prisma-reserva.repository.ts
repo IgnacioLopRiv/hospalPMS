@@ -87,9 +87,7 @@ export class PrismaReservaRepository implements ReservaRepository {
       habitacionId: data.habitacionId,
       fechaCheckIn: data.fechaCheckIn,
       fechaCheckOut: data.fechaCheckOut,
-      estado: data.estado
-        ? this.mapEstadoToPrisma(data.estado)
-        : 'CONFIRMADA',
+      estado: data.estado ? this.mapEstadoToPrisma(data.estado) : 'CONFIRMADA',
     };
     const raw = await this.prisma.reserva.create({
       data: prismaData,
@@ -112,7 +110,10 @@ export class PrismaReservaRepository implements ReservaRepository {
           ? undefined
           : this.mapEstadoToPrisma(data.estado),
     };
-    const raw = await this.prisma.reserva.update({ where: { id }, data: prismaData });
+    const raw = await this.prisma.reserva.update({
+      where: { id },
+      data: prismaData,
+    });
     return this.toEntity(raw);
   }
 

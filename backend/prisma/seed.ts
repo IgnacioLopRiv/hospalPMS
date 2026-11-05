@@ -53,26 +53,41 @@ async function main() {
 
   console.log(`✅ Características base verificadas/creadas.`);
 
-  // 3. Funcionario Administrador por defecto si existe alguna Sede
-  const firstSede = await prisma.sede.findFirst({ orderBy: { id: 'asc' } });
-  if (firstSede) {
-    const bcrypt = await import('bcryptjs');
-    const adminPasswordHash = await bcrypt.hash('Admin123', 10);
-    const admin = await prisma.funcionario.upsert({
-      where: { email: 'admintest@gmail.com' },
-      update: { passwordHash: adminPasswordHash },
-      create: {
-        sedeId: firstSede.id,
-        rut: '12345678-5',
-        nombres: 'Juan',
-        apellidos: 'Admin',
-        email: 'admintest@gmail.com',
-        passwordHash: adminPasswordHash,
-        rol: 'ADMINISTRADOR',
+  // 3. Sede por defecto si no existe ninguna
+  let firstSede = await prisma.sede.findFirst({ orderBy: { id: 'asc' } });
+  if (!firstSede) {
+    firstSede = await prisma.sede.create({
+      data: {
+        hostalId: hostal.id,
+        nombreSede: 'Sede Coquimbo',
+        direccion: 'Av. Costanera 1234',
+        ciudad: 'Coquimbo',
+        telefono: '+56 9 1234 5678',
+        email: 'contacto.coquimbo@hostallaspalmas.cl',
+        horaCheckIn: '15:00',
+        horaCheckOut: '12:00',
       },
     });
-    console.log(`✅ Funcionario administrador verificado: "${admin.email}" (ID: ${admin.id})`);
+    console.log(`✅ Sede por defecto creada: "${firstSede.nombreSede}" (ID: ${firstSede.id})`);
   }
+
+  // 4. Funcionario Administrador por defecto
+  const bcrypt = await import('bcryptjs');
+  const adminPasswordHash = await bcrypt.hash('Admin123', 10);
+  const admin = await prisma.funcionario.upsert({
+    where: { email: 'admintest@gmail.com' },
+    update: {},
+    create: {
+      sedeId: firstSede.id,
+      rut: '12345678-5',
+      nombres: 'Juan',
+      apellidos: 'Admin',
+      email: 'admintest@gmail.com',
+      passwordHash: adminPasswordHash,
+      rol: 'ADMINISTRADOR',
+    },
+  });
+  console.log(`✅ Funcionario administrador verificado: "${admin.email}" (ID: ${admin.id})`);
 
   console.log('🎉 Seed finalizado con éxito.');
 }

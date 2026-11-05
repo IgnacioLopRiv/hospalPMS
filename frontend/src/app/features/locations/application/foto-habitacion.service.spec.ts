@@ -1,61 +1,56 @@
+import { TestBed } from '@angular/core/testing';
+import { firstValueFrom, of } from 'rxjs';
 import { FotoHabitacionService } from './foto-habitacion.service';
+import { FotoHabitacionRepository } from '../domain/foto-habitacion.repository';
 import { FotoHabitacion } from '../domain/foto-habitacion.model';
 
-const STORAGE_KEY = 'hospal_fotos_habitaciones';
-
 describe('FotoHabitacionService', () => {
-  beforeEach(() => localStorage.removeItem(STORAGE_KEY));
-  afterEach(() => localStorage.removeItem(STORAGE_KEY));
+  let repository: jasmine.SpyObj<FotoHabitacionRepository>;
 
-  it('filters photos by room and persists removals using its dedicated key', () => {
+  beforeEach(() => {
+    repository = jasmine.createSpyObj<FotoHabitacionRepository>('FotoHabitacionRepository', [
+      'listPhotos',
+      'createPhoto',
+      'deletePhoto',
+    ]);
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: FotoHabitacionRepository, useValue: repository },
+      ],
+    });
+  });
+
+  it('filters photos by room from the repository', async () => {
     const photos: FotoHabitacion[] = [
       {
-        id: 'foto-1',
+        id: 1,
         habitacionId: 12,
         url: 'data:image/jpeg;base64,abc',
         titulo: 'Dormitorio',
         fechaSubida: '2026-10-05T00:00:00.000Z',
       },
-      {
-        id: 'foto-2',
-        habitacionId: '13',
-        url: 'data:image/jpeg;base64,def',
-        fechaSubida: '2026-10-05T00:00:00.000Z',
-      },
     ];
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(photos));
-    const service = new FotoHabitacionService();
+    repository.listPhotos.and.returnValue(of(photos));
+    const service = TestBed.inject(FotoHabitacionService);
 
-    expect(service.forRoom('12')).toEqual([photos[0]]);
-    service.removePhoto('foto-1');
-    expect(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]')).toEqual([photos[1]]);
+    await expectAsync(service.loadRoomPhotos(12)).toBeResolvedTo(photos);
+    expect(service.forRoom('12')).toEqual(photos);
+    expect(service.photos()).toEqual(photos);
     expect(localStorage.getItem('hospal.sedes')).toBeNull();
   });
 
-  it('removes only the selected room gallery', () => {
+  it('removes photos through the repository', async () => {
     const photos: FotoHabitacion[] = [
-      { id: 'a', habitacionId: 2, url: 'data:image/jpeg;base64,a', fechaSubida: '2026-10-05' },
-      { id: 'b', habitacionId: 3, url: 'data:image/jpeg;base64,b', fechaSubida: '2026-10-05' },
+      { id: 1, habitacionId: 2, url: 'data:image/jpeg;base64,a', fechaSubida: '2026-10-05' },
     ];
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(photos));
-    const service = new FotoHabitacionService();
+    repository.listPhotos.and.returnValue(of(photos));
+    repository.deletePhoto.and.returnValue(of(undefined));
+    const service = TestBed.inject(FotoHabitacionService);
 
-    service.removeRoomPhotos(2);
+    await service.loadRoomPhotos(2);
+    await service.removePhoto(1);
 
-    expect(service.photos()).toEqual([photos[1]]);
-  });
-
-  it('reports storage quota errors without changing the in-memory photo list', () => {
-    const photos: FotoHabitacion[] = [
-      { id: 'a', habitacionId: 2, url: 'data:image/jpeg;base64,a', fechaSubida: '2026-10-05' },
-    ];
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(photos));
-    const service = new FotoHabitacionService();
-    spyOn(Storage.prototype, 'setItem').and.callFake(() => {
-      throw new DOMException('Storage full', 'QuotaExceededError');
-    });
-
-    expect(() => service.removePhoto('a')).toThrowError(/No hay espacio suficiente/);
-    expect(service.photos()).toEqual(photos);
+    expect(repository.deletePhoto).toHaveBeenCalledWith(1);
+    expect(service.photos()).toEqual([]);
   });
 });

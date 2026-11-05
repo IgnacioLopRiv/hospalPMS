@@ -43,6 +43,8 @@ export class SedesController {
       direccion: sede.direccion,
       telefono: sede.telefono,
       email: sede.email,
+      horaCheckIn: sede.horaCheckIn ?? '15:00',
+      horaCheckOut: sede.horaCheckOut ?? '12:00',
       tipologias: sede.tipologias.map((typology) => ({
         id: typology.id,
         nombre: typology.nombre,
@@ -55,11 +57,18 @@ export class SedesController {
         id: room.id,
         numero: room.numero,
         tipologiaId: room.tipologiaId,
-        tipo: sede.tipologias.find((typology) => typology.id === room.tipologiaId)?.nombre ?? '',
+        tipo:
+          sede.tipologias.find((typology) => typology.id === room.tipologiaId)
+            ?.nombre ?? '',
         tamanoM2: room.tamanoM2,
         disposicionMuebles: room.disposicionMuebles ?? '',
         descripcion: room.descripcion ?? '',
-        estado: room.estado === 'OCUPADA' ? 'ocupada' : room.estado === 'EN_LIMPIEZA' ? 'en aseo' : 'libre',
+        estado:
+          room.estado === 'OCUPADA'
+            ? 'ocupada'
+            : room.estado === 'EN_LIMPIEZA'
+              ? 'en aseo'
+              : 'libre',
         huespedActual: room.huespedActual ?? undefined,
         aseoIniciado: room.aseoIniciado?.getTime(),
       })),
@@ -74,16 +83,23 @@ export class SedesController {
       throw new BadRequestException('nombre y ciudad son obligatorios.');
     }
 
-    const emailTrimmed = input.email !== undefined && input.email !== null ? input.email.trim() : null;
+    const emailTrimmed =
+      input.email !== undefined && input.email !== null
+        ? input.email.trim()
+        : null;
     if (emailTrimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
-      throw new BadRequestException('El formato del correo de la sede no es válido.');
+      throw new BadRequestException(
+        'El formato del correo de la sede no es válido.',
+      );
     }
 
     const hostal = input.hostalId
       ? await this.prisma.hostal.findUnique({ where: { id: input.hostalId } })
       : await this.prisma.hostal.findFirst({ orderBy: { id: 'asc' } });
     if (!hostal) {
-      throw new BadRequestException('Debe existir un hostal en la base de datos antes de crear sedes.');
+      throw new BadRequestException(
+        'Debe existir un hostal en la base de datos antes de crear sedes.',
+      );
     }
 
     const sede = await this.prisma.sede.create({
@@ -96,11 +112,22 @@ export class SedesController {
         email: emailTrimmed || null,
       },
     });
-    return { id: sede.id, hostalId: sede.hostalId, nombre: sede.nombreSede, ciudad: sede.ciudad, email: sede.email, tipologias: [], habitaciones: [] };
+    return {
+      id: sede.id,
+      hostalId: sede.hostalId,
+      nombre: sede.nombreSede,
+      ciudad: sede.ciudad,
+      email: sede.email,
+      tipologias: [],
+      habitaciones: [],
+    };
   }
 
   @Patch(':id')
-  async update(@Param('id', ParseIntPipe) id: number, @Body() input: SedeInput) {
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() input: SedeInput,
+  ) {
     let emailValue: string | null | undefined = undefined;
     if (input.email !== undefined) {
       if (input.email === null || input.email.trim() === '') {
@@ -108,7 +135,9 @@ export class SedesController {
       } else {
         const trimmed = input.email.trim();
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-          throw new BadRequestException('El formato del correo de la sede no es válido.');
+          throw new BadRequestException(
+            'El formato del correo de la sede no es válido.',
+          );
         }
         emailValue = trimmed;
       }
@@ -119,16 +148,29 @@ export class SedesController {
         ? { nombreSede: (input.nombreSede ?? input.nombre)?.trim() }
         : {}),
       ...(input.ciudad !== undefined ? { ciudad: input.ciudad.trim() } : {}),
-      ...(input.direccion !== undefined ? { direccion: input.direccion.trim() } : {}),
-      ...(input.telefono !== undefined ? { telefono: input.telefono?.trim() || null } : {}),
+      ...(input.direccion !== undefined
+        ? { direccion: input.direccion.trim() }
+        : {}),
+      ...(input.telefono !== undefined
+        ? { telefono: input.telefono?.trim() || null }
+        : {}),
       ...(emailValue !== undefined ? { email: emailValue } : {}),
     };
 
     try {
       const sede = await this.prisma.sede.update({ where: { id }, data });
-      return { id: sede.id, hostalId: sede.hostalId, nombre: sede.nombreSede, ciudad: sede.ciudad, email: sede.email };
+      return {
+        id: sede.id,
+        hostalId: sede.hostalId,
+        nombre: sede.nombreSede,
+        ciudad: sede.ciudad,
+        email: sede.email,
+      };
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
         throw new NotFoundException(`No existe la sede ${id}.`);
       }
       throw error;
@@ -145,11 +187,19 @@ export class SedesController {
       });
       return { deleted: true };
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
         throw new NotFoundException(`No existe la sede ${id}.`);
       }
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
-        throw new ConflictException(`No se puede eliminar la sede ${id}; todavía tiene registros asociados.`);
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2003'
+      ) {
+        throw new ConflictException(
+          `No se puede eliminar la sede ${id}; todavía tiene registros asociados.`,
+        );
       }
       throw error;
     }

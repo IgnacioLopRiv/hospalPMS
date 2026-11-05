@@ -15,7 +15,8 @@ import { HabitacionRepository } from '../../domain/repositories/habitacion.repos
 import { TipologiaRepository } from '../../domain/repositories/tipologia.repository';
 import { EstadoHabitacion } from '../../domain/entities/habitacion.entity';
 
-type FrontRoomState = 'libre' | 'ocupada' | 'en aseo' | 'reservada' | 'mantenimiento';
+type FrontRoomState =
+  'libre' | 'ocupada' | 'en aseo' | 'reservada' | 'mantenimiento';
 
 interface HabitacionInput {
   numero?: string;
@@ -60,7 +61,8 @@ export class CatalogosSedeController {
     return rooms.map((room) => ({
       id: room.id,
       numero: room.numero,
-      tipo: typologies.find((item) => item.id === room.tipologiaId)?.nombre ?? '',
+      tipo:
+        typologies.find((item) => item.id === room.tipologiaId)?.nombre ?? '',
       tipologiaId: room.tipologiaId,
       tamanoM2: room.tamanoM2,
       disposicionMuebles: room.disposicionMuebles ?? '',
@@ -72,7 +74,10 @@ export class CatalogosSedeController {
   }
 
   @Post('sedes/:sedeId/habitaciones')
-  async createRoom(@Param('sedeId', ParseIntPipe) sedeId: number, @Body() input: HabitacionInput) {
+  async createRoom(
+    @Param('sedeId', ParseIntPipe) sedeId: number,
+    @Body() input: HabitacionInput,
+  ) {
     if (!input.numero?.trim() || !input.tipologiaId) {
       throw new BadRequestException('numero y tipologiaId son obligatorios.');
     }
@@ -101,18 +106,39 @@ export class CatalogosSedeController {
   }
 
   @Patch('habitaciones/:id')
-  async updateRoom(@Param('id', ParseIntPipe) id: number, @Body() input: HabitacionInput) {
+  async updateRoom(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() input: HabitacionInput,
+  ) {
     try {
       const room = await this.habitaciones.update(id, {
         ...(input.numero !== undefined ? { numero: input.numero.trim() } : {}),
-        ...(input.tipologiaId !== undefined ? { tipologiaId: input.tipologiaId } : {}),
-        ...(input.cantidadPersonas !== undefined ? { cantidadPersonas: input.cantidadPersonas } : {}),
-        ...(input.estado !== undefined ? { estado: STATE_TO_DOMAIN[input.estado] } : {}),
+        ...(input.tipologiaId !== undefined
+          ? { tipologiaId: input.tipologiaId }
+          : {}),
+        ...(input.cantidadPersonas !== undefined
+          ? { cantidadPersonas: input.cantidadPersonas }
+          : {}),
+        ...(input.estado !== undefined
+          ? { estado: STATE_TO_DOMAIN[input.estado] }
+          : {}),
         ...(input.tamanoM2 !== undefined ? { tamanoM2: input.tamanoM2 } : {}),
-        ...(input.disposicionMuebles !== undefined ? { disposicionMuebles: input.disposicionMuebles } : {}),
-        ...(input.descripcion !== undefined ? { descripcion: input.descripcion } : {}),
-        ...(input.huespedActual !== undefined ? { huespedActual: input.huespedActual } : {}),
-        ...(input.aseoIniciado !== undefined ? { aseoIniciado: input.aseoIniciado ? new Date(input.aseoIniciado) : null } : {}),
+        ...(input.disposicionMuebles !== undefined
+          ? { disposicionMuebles: input.disposicionMuebles }
+          : {}),
+        ...(input.descripcion !== undefined
+          ? { descripcion: input.descripcion }
+          : {}),
+        ...(input.huespedActual !== undefined
+          ? { huespedActual: input.huespedActual }
+          : {}),
+        ...(input.aseoIniciado !== undefined
+          ? {
+              aseoIniciado: input.aseoIniciado
+                ? new Date(input.aseoIniciado)
+                : null,
+            }
+          : {}),
       });
       return {
         id: room.id,
@@ -134,7 +160,9 @@ export class CatalogosSedeController {
       await this.habitaciones.delete(id);
       return { deleted: true };
     } catch {
-      throw new ConflictException(`No se pudo eliminar la habitación ${id}; puede tener reservas o inventario asociado.`);
+      throw new ConflictException(
+        `No se pudo eliminar la habitación ${id}; puede tener reservas o inventario asociado.`,
+      );
     }
   }
 
@@ -152,9 +180,18 @@ export class CatalogosSedeController {
   }
 
   @Post('sedes/:sedeId/tipologias')
-  async createTypology(@Param('sedeId', ParseIntPipe) sedeId: number, @Body() input: TipologiaInput) {
-    if (!input.nombre?.trim() || !Number.isInteger(input.capacidad) || (input.capacidad ?? 0) < 1) {
-      throw new BadRequestException('nombre y capacidad válida son obligatorios.');
+  async createTypology(
+    @Param('sedeId', ParseIntPipe) sedeId: number,
+    @Body() input: TipologiaInput,
+  ) {
+    if (
+      !input.nombre?.trim() ||
+      !Number.isInteger(input.capacidad) ||
+      (input.capacidad ?? 0) < 1
+    ) {
+      throw new BadRequestException(
+        'nombre y capacidad válida son obligatorios.',
+      );
     }
     const row = await this.tipologias.create({
       sedeId,
@@ -176,14 +213,25 @@ export class CatalogosSedeController {
   }
 
   @Patch('tipologias/:id')
-  async updateTypology(@Param('id', ParseIntPipe) id: number, @Body() input: TipologiaInput) {
+  async updateTypology(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() input: TipologiaInput,
+  ) {
     try {
       const row = await this.tipologias.update(id, {
         ...(input.nombre !== undefined ? { nombre: input.nombre.trim() } : {}),
-        ...(input.capacidad !== undefined ? { capacidadMax: input.capacidad } : {}),
-        ...(input.descripcion !== undefined ? { descripcion: input.descripcion.trim() } : {}),
-        ...(input.color !== undefined ? { color: input.color.trim() || null } : {}),
-        ...(input.precioBase !== undefined ? { precioBase: input.precioBase } : {}),
+        ...(input.capacidad !== undefined
+          ? { capacidadMax: input.capacidad }
+          : {}),
+        ...(input.descripcion !== undefined
+          ? { descripcion: input.descripcion.trim() }
+          : {}),
+        ...(input.color !== undefined
+          ? { color: input.color.trim() || null }
+          : {}),
+        ...(input.precioBase !== undefined
+          ? { precioBase: input.precioBase }
+          : {}),
       });
       return {
         id: row.id,
@@ -204,7 +252,9 @@ export class CatalogosSedeController {
       await this.tipologias.delete(id);
       return { deleted: true };
     } catch {
-      throw new ConflictException(`No se pudo eliminar la tipología ${id}; puede tener habitaciones asociadas.`);
+      throw new ConflictException(
+        `No se pudo eliminar la tipología ${id}; puede tener habitaciones asociadas.`,
+      );
     }
   }
 

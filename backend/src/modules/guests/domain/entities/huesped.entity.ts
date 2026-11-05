@@ -4,6 +4,7 @@
 export class Huesped {
   constructor(
     public readonly id: number,
+    public sedeId: number,
     public rutPasaporte: string,
     public nombres: string,
     public apellidos: string,

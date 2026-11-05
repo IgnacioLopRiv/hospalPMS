@@ -1,4 +1,13 @@
-import { BadRequestException, Body, Controller, Get, NotFoundException, Param, ParseIntPipe, Put } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  ParseIntPipe,
+  Put,
+} from '@nestjs/common';
 import { PORCENTAJE_ABONO_POR_DEFECTO } from '../../domain/entities/tarifa-abono.entity';
 import { SedeRepository } from '../../domain/repositories/sede.repository';
 import { TarifaAbonoRepository } from '../../domain/repositories/tarifa-abono.repository';
@@ -32,14 +41,30 @@ export class TarifaAbonoController {
   }
 
   @Put()
-  async save(@Param('sedeId', ParseIntPipe) sedeId: number, @Body() input: TarifaAbonoInput) {
-    if (!Number.isInteger(input.porcentajeAbono) || input.porcentajeAbono! < 1 || input.porcentajeAbono! > 100) {
-      throw new BadRequestException('porcentajeAbono debe ser un entero entre 1 y 100.');
+  async save(
+    @Param('sedeId', ParseIntPipe) sedeId: number,
+    @Body() input: TarifaAbonoInput,
+  ) {
+    if (
+      !Number.isInteger(input.porcentajeAbono) ||
+      input.porcentajeAbono! < 1 ||
+      input.porcentajeAbono! > 100
+    ) {
+      throw new BadRequestException(
+        'porcentajeAbono debe ser un entero entre 1 y 100.',
+      );
     }
     if (!(await this.sedes.findById(sedeId))) {
       throw new NotFoundException(`No existe la sede ${sedeId}.`);
     }
-    const config = await this.repository.save({ sedeId, porcentajeAbono: input.porcentajeAbono! });
-    return { id: config.id, sedeId: config.sedeId, porcentajeAbono: config.porcentajeAbono };
+    const config = await this.repository.save({
+      sedeId,
+      porcentajeAbono: input.porcentajeAbono!,
+    });
+    return {
+      id: config.id,
+      sedeId: config.sedeId,
+      porcentajeAbono: config.porcentajeAbono,
+    };
   }
 }
