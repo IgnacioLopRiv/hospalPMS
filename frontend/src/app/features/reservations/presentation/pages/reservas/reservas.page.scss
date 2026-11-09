@@ -15,13 +15,12 @@ $text-muted: #64748b;
   height: 100%;
   min-height: 0;
   min-width: 0;
-  background-color: #ffffff;
+  background-color: var(--hospal-page-background);
   overflow: hidden;
 }
 
 .reservas-page-header-wrapper {
-  padding: 1.25rem 1.5rem 0.25rem 1.5rem;
-  background-color: #ffffff;
+  padding: var(--hospal-page-padding-y) var(--hospal-page-padding-x) 0.25rem;
   flex: 0 0 auto;
 
   .page-header-standard {
@@ -35,9 +34,8 @@ $text-muted: #64748b;
   justify-content: space-between;
   flex-wrap: wrap;
   flex: 0 0 auto;
-  padding: 0.8rem 1.5rem;
+  padding: 0.8rem var(--hospal-page-padding-x);
   border-bottom: 1px solid $border-color;
-  background-color: #ffffff;
   gap: 1rem;
 }
 
@@ -250,6 +248,7 @@ $text-muted: #64748b;
   overflow: auto;
   display: flex;
   flex-direction: column;
+  background-color: #ffffff;
 }
 
 .planner-header {
@@ -546,7 +545,7 @@ $text-muted: #64748b;
 @media (max-width: 900px) {
           .scheduler-toolbar {
             align-items: flex-start;
-            padding: 0.75rem 1rem;
+            padding: 0.75rem var(--hospal-page-padding-x);
           }
 
           .kpi-chips {

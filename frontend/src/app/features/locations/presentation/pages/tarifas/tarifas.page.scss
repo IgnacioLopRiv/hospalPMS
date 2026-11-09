@@ -13,7 +13,7 @@ $primary: #1e50d8;
   width: 100%;
   min-height: 100%;
   box-sizing: border-box;
-  padding: 2rem 2.5rem;
+  padding: var(--hospal-page-padding-y) var(--hospal-page-padding-x);
   color: $text-dark;
 }
 
@@ -732,7 +732,6 @@ $primary: #1e50d8;
 }
 
 @media (max-width: 700px) {
-  .tarifas-container { padding: 1.25rem 1rem; }
   .deposit-settings { flex-wrap: wrap; }
   .base-prices-header { align-items: flex-start; flex-direction: column; }
   .config-modal-backdrop { align-items: flex-end; padding: 0; }

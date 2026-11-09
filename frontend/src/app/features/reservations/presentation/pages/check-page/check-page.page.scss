@@ -16,7 +16,7 @@ $orange-border: #fed7aa;
 }
 
 .check-page-container {
-  padding: 2rem 2.5rem;
+  padding: var(--hospal-page-padding-y) var(--hospal-page-padding-x);
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
@@ -527,10 +527,6 @@ $orange-border: #fed7aa;
 }
 
 @media (max-width: 900px) {
-  .check-page-container {
-    padding: 1.5rem 1rem;
-  }
-
   .check-columns-grid {
     grid-template-columns: 1fr;
   }
@@ -545,10 +541,6 @@ $orange-border: #fed7aa;
 
   .kpi-grid {
     grid-template-columns: 1fr;
-  }
-
-  .check-page-container {
-    padding: 1rem 0.75rem;
   }
 
   .check-column {

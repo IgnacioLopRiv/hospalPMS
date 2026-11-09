@@ -4,7 +4,7 @@ $text-muted: #64748b;
 $border-color: #e5e9f2;
 
 :host { display: block; width: 100%; height: 100%; min-width: 0; }
-.inventory-page { width: 100%; height: 100%; min-width: 0; overflow: auto; box-sizing: border-box; padding: 1.5rem 2rem; color: $text-dark; }
+.inventory-page { width: 100%; height: 100%; min-width: 0; overflow: auto; box-sizing: border-box; padding: var(--hospal-page-padding-y) var(--hospal-page-padding-x); color: $text-dark; }
 .page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; }
 .page-header h1 { margin: 0 0 .35rem; font-size: 1.85rem; letter-spacing: -.5px; }
 .sede-description { display: flex; align-items: center; gap: .4rem; margin: 0; color: $text-muted; font-size: .95rem; }
@@ -60,7 +60,6 @@ td { padding: 1rem; border-top: 1px solid #edf0f5; vertical-align: middle; white
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
 
 @media (max-width: 600px) {
-  .inventory-page { padding: 1rem; }
   .page-header { align-items: flex-start; flex-direction: column; }
   .summary-cards { grid-template-columns: 1fr; }
   .table-heading { align-items: flex-start; flex-direction: column; }

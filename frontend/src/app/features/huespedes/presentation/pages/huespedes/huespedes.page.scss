@@ -10,7 +10,7 @@ $text-muted: #64748b;
 }
 
 .huespedes-page-container {
-  padding: 2rem 2.5rem;
+  padding: var(--hospal-page-padding-y) var(--hospal-page-padding-x);
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
@@ -494,10 +494,6 @@ p {
 }
 
 @media (max-width: 1100px) {
-          .huespedes-page-container {
-            padding: 1.5rem;
-          }
-
           .kpi-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
@@ -510,10 +506,6 @@ p {
         }
 
 @media (max-width: 600px) {
-          .huespedes-page-container {
-            padding: 1rem 0.75rem;
-          }
-
           .top-bar {
             align-items: flex-start;
             gap: 0.8rem;

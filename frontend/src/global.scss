@@ -38,6 +38,28 @@
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
 /* @import '@ionic/angular/css/palettes/dark.system.css'; */
 
+/* Color de fondo común para todas las páginas con layout */
+:root {
+  --hospal-page-background: #f4f6fc;
+  /* Margen interno común de las páginas: mantiene los títulos alineados */
+  --hospal-page-padding-y: 2rem;
+  --hospal-page-padding-x: 2.5rem;
+}
+
+@media (max-width: 900px) {
+  :root {
+    --hospal-page-padding-y: 1.5rem;
+    --hospal-page-padding-x: 1rem;
+  }
+}
+
+@media (max-width: 600px) {
+  :root {
+    --hospal-page-padding-y: 1rem;
+    --hospal-page-padding-x: 0.75rem;
+  }
+}
+
 html,
 body {
   width: 100%;

@@ -10,14 +10,17 @@ $text-muted: #64748b;
   box-sizing: border-box;
 }
 
+ion-content {
+  --background: var(--hospal-page-background);
+}
+
 .reportes-page-container {
-  padding: 2rem 2.5rem;
+  padding: var(--hospal-page-padding-y) var(--hospal-page-padding-x);
   width: 100%;
   min-height: 100%;
   min-width: 0;
   box-sizing: border-box;
   color: $text-dark;
-  background: #f8fafc;
 
   .page-content {
     min-width: 0;
@@ -89,16 +92,11 @@ $text-muted: #64748b;
 .legend-dot { width: 7px; height: 7px; border-radius: 50%; }
 
 @media (max-width: 760px) {
-  .reportes-page-container { padding: 1.25rem 1rem 2rem; }
   .top-bar { align-items: flex-start; flex-direction: column; }
   .kpi-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 480px) {
-  .reportes-page-container {
-    padding: 1rem 0.75rem 1.5rem;
-  }
-
   .kpi-card {
     gap: 0.75rem;
     padding: 0.9rem;

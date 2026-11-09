@@ -1,5 +1,4 @@
 $blue-primary: #1e50d8;
-$bg-light: #f4f6fc;
 
 :host {
   display: block;
@@ -26,7 +25,7 @@ ion-app {
   min-height: 0;
   height: calc(100dvh - 64px);
   overflow: hidden;
-  background-color: $bg-light;
+  background-color: var(--hospal-page-background);
 
   &.no-layout {
     display: block;
