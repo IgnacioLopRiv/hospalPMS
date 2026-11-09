@@ -8,122 +8,455 @@
           </div>
           <div class="page-header-titles">
             <h1 class="page-title">Reportes</h1>
-            @if (sede(); as currentSede) {
-              <p class="page-subtitle">Resumen operativo de <strong>{{ currentSede.nombre }}</strong></p>
+            @if (esGlobal()) {
+              <p class="page-subtitle">Analítica y transacciones de <strong>todas las sedes</strong> ({{ sedes().length }})</p>
+            } @else if (sede(); as currentSede) {
+              <p class="page-subtitle">Analítica y transacciones de <strong>{{ currentSede.nombre }}</strong></p>
             } @else {
-              <p class="page-subtitle">Resumen operativo del mes</p>
+              <p class="page-subtitle">Analítica y transacciones por período</p>
             }
           </div>
         </div>
         <div class="page-header-actions">
           <div class="report-period">
             <ion-icon name="calendar-outline"></ion-icon>
-            <span>{{ formatMonth(resumen()?.fecha) || 'Mes actual' }}</span>
+            <span>{{ periodoLabel() }}</span>
           </div>
+          <button type="button" class="btn-action-primary" (click)="exportarReporte()" [disabled]="transaccionesFiltradas().length === 0">
+            <ion-icon name="download-outline"></ion-icon>
+            <span>Exportar reporte</span>
+          </button>
         </div>
       </header>
 
-      @if (error()) {
+      @if (operacionesError()) {
         <div class="reports-error" role="alert">
-          <p>{{ error() }}</p>
-          <button type="button" (click)="loadResumen()">Reintentar</button>
+          <p>{{ operacionesError() }}</p>
+          @if (sede()) {
+            <button type="button" (click)="reloadOperaciones()">Reintentar</button>
+          }
         </div>
-      } @else if (!resumen()) {
-        <div class="reports-loading" role="status">Cargando reportes...</div>
-      } @else if (resumen(); as r) {
-      <section class="kpi-grid" aria-label="Indicadores principales">
+      }
+
+      <!-- Indicadores del período -->
+      <div class="section-heading">
+        <div>
+          <h2>Indicadores del período</h2>
+          <p>Reservas con llegada en el período · comparado con los {{ diasPeriodo() }} días anteriores</p>
+        </div>
+        @if (operacionesLoading()) {
+          <span class="loading-pill"><span class="spinner"></span>Actualizando…</span>
+        }
+      </div>
+
+      <section class="kpi-grid period-kpis" aria-label="Indicadores del período">
         <article class="kpi-card card-blue">
           <div class="kpi-icon"><ion-icon name="bed-outline"></ion-icon></div>
           <div class="kpi-data">
-            <span>HABITACIONES OCUPADAS</span>
-            <strong>{{ r.habitaciones.ocupadas }}</strong>
-            <small>de {{ r.habitaciones.total }} habitaciones</small>
+            <span>OCUPACIÓN</span>
+            <strong>{{ kpis().ocupacion | number:'1.0-1' }}%</strong>
+            <small>{{ kpis().nochesOcupadas }} de {{ kpis().capacidad }} noches-habitación</small>
+            @let ocupacionDelta = kpis().ocupacion - kpisAnteriores().ocupacion;
+            <em class="kpi-delta" [class.up]="ocupacionDelta > 0" [class.down]="ocupacionDelta < 0">
+              <ion-icon [name]="ocupacionDelta < 0 ? 'trending-down-outline' : 'trending-up-outline'"></ion-icon>
+              {{ ocupacionDelta | number:'1.0-1' }} pts
+            </em>
           </div>
         </article>
 
         <article class="kpi-card card-green">
-          <div class="kpi-icon"><ion-icon name="bed-outline"></ion-icon></div>
+          <div class="kpi-icon"><ion-icon name="cash-outline"></ion-icon></div>
           <div class="kpi-data">
-            <span>HABITACIONES DESOCUPADAS</span>
-            <strong>{{ r.habitaciones.disponibles }}</strong>
-            <small>disponibles actualmente</small>
+            <span>INGRESOS GENERADOS</span>
+            <strong>{{ formatMoney(kpis().ingresos) }}</strong>
+            <small>{{ formatMoney(kpis().cobrado) }} cobrado · {{ formatMoney(kpis().pendiente) }} por cobrar</small>
+            @let ingresosDelta = delta(kpis().ingresos, kpisAnteriores().ingresos);
+            @if (ingresosDelta !== null) {
+              <em class="kpi-delta" [class.up]="ingresosDelta > 0" [class.down]="ingresosDelta < 0">
+                <ion-icon [name]="ingresosDelta < 0 ? 'trending-down-outline' : 'trending-up-outline'"></ion-icon>
+                {{ ingresosDelta | number:'1.0-1' }}%
+              </em>
+            } @else {
+              <em class="kpi-delta">Sin período anterior</em>
+            }
+          </div>
+        </article>
+
+        <article class="kpi-card card-red">
+          <div class="kpi-icon"><ion-icon name="close-circle-outline"></ion-icon></div>
+          <div class="kpi-data">
+            <span>TASA DE CANCELACIÓN</span>
+            <strong>{{ kpis().tasaCancelacion | number:'1.0-1' }}%</strong>
+            <small>{{ kpis().canceladas }} de {{ kpis().reservas }} reservas</small>
+            @let cancelacionDelta = kpis().tasaCancelacion - kpisAnteriores().tasaCancelacion;
+            <em class="kpi-delta" [class.up]="cancelacionDelta < 0" [class.down]="cancelacionDelta > 0">
+              <ion-icon [name]="cancelacionDelta > 0 ? 'trending-up-outline' : 'trending-down-outline'"></ion-icon>
+              {{ cancelacionDelta | number:'1.0-1' }} pts
+            </em>
           </div>
         </article>
 
         <article class="kpi-card card-purple">
-          <div class="kpi-icon"><ion-icon name="calendar-outline"></ion-icon></div>
+          <div class="kpi-icon"><ion-icon name="pricetag-outline"></ion-icon></div>
           <div class="kpi-data">
-            <span>RESERVAS DEL MES</span>
-            <strong>{{ r.reservas.mes }}</strong>
-            <small>{{ r.reservas.canceladasMes }} canceladas</small>
+            <span>TARIFA PROMEDIO / NOCHE</span>
+            <strong>{{ formatMoney(kpis().tarifaPromedio) }}</strong>
+            <small>{{ kpis().nochesVendidas }} noches vendidas · {{ kpis().reservasValidas }} reservas</small>
+            @let adrDelta = delta(kpis().tarifaPromedio, kpisAnteriores().tarifaPromedio);
+            @if (adrDelta !== null) {
+              <em class="kpi-delta" [class.up]="adrDelta > 0" [class.down]="adrDelta < 0">
+                <ion-icon [name]="adrDelta < 0 ? 'trending-down-outline' : 'trending-up-outline'"></ion-icon>
+                {{ adrDelta | number:'1.0-1' }}%
+              </em>
+            } @else {
+              <em class="kpi-delta">Sin período anterior</em>
+            }
           </div>
         </article>
       </section>
 
-      <section class="reports-grid">
-        <article class="report-card occupancy-card">
+      <div class="analytics-layout">
+        <!-- Demanda por habitación y tarifa -->
+        <section class="report-card demand-card" aria-labelledby="demand-title">
           <div class="card-heading">
             <div>
-              <span class="eyebrow">CAPACIDAD DEL LOCAL</span>
-              <h2>Tasa de ocupación</h2>
+              <h2 id="demand-title">Demanda por habitación y tarifa</h2>
+              <p class="card-subtitle">Reservas no canceladas · {{ periodoLabel() }}</p>
             </div>
-            <div class="heading-icon blue-icon"><ion-icon name="trending-up-outline"></ion-icon></div>
+            <div class="heading-icon blue-icon"><ion-icon name="analytics-outline"></ion-icon></div>
           </div>
 
-          <div class="occupancy-summary">
-            <strong>{{ r.habitaciones.tasaOcupacion }}%</strong>
-            <span>ocupación actual</span>
+          <div class="segmented" role="tablist" aria-label="Tipo de ranking">
+            @for (item of vistasRanking; track item.value) {
+              <button type="button" role="tab" class="segment-btn" [class.active]="vistaRanking() === item.value" [attr.aria-selected]="vistaRanking() === item.value" (click)="vistaRanking.set(item.value)">
+                <ion-icon [name]="item.icon"></ion-icon>
+                {{ item.label }}
+              </button>
+            }
           </div>
 
-          <div class="progress-track" role="progressbar" aria-label="Tasa de ocupación" [attr.aria-valuenow]="r.habitaciones.tasaOcupacion" aria-valuemin="0" aria-valuemax="100">
-            <span class="progress-value" [style.width.%]="r.habitaciones.tasaOcupacion"></span>
-          </div>
+          @switch (vistaRanking()) {
+            @case ('tipologias') {
+              <ol class="ranking-list">
+                @for (item of tipologiasPopulares(); track item.clave; let i = $index) {
+                  <li class="ranking-item">
+                    <span class="ranking-pos" [class.leader]="i === 0 && item.reservas > 0">{{ i + 1 }}</span>
+                    <div class="ranking-body">
+                      <div class="ranking-head">
+                        <span class="ranking-name"><i class="legend-dot" [style.background-color]="item.color"></i>{{ item.nombre }}</span>
+                        <strong>{{ item.reservas }} <small>reservas</small></strong>
+                      </div>
+                      <div class="progress-track"><span class="progress-value" [style.width.%]="item.participacion" [style.background-color]="item.color"></span></div>
+                      <div class="ranking-meta">
+                        <span>{{ item.participacion | number:'1.0-0' }}% del total</span>
+                        <span>{{ item.noches }} noches</span>
+                        <span>{{ formatMoney(item.ingresos) }}</span>
+                      </div>
+                    </div>
+                  </li>
+                } @empty {
+                  <li class="ranking-empty">No hay tipologías registradas en esta sede.</li>
+                }
+              </ol>
+            }
+            @case ('tarifas') {
+              <ol class="ranking-list">
+                @for (item of tarifasMasAplicadas(); track item.clave; let i = $index) {
+                  <li class="ranking-item">
+                    <span class="ranking-pos" [class.leader]="i === 0">{{ i + 1 }}</span>
+                    <div class="ranking-body">
+                      <div class="ranking-head">
+                        <span class="ranking-name"><i class="legend-dot" [style.background-color]="item.color"></i>{{ item.nombre }}</span>
+                        <strong>{{ item.reservas }} <small>reservas</small></strong>
+                      </div>
+                      <div class="progress-track"><span class="progress-value" [style.width.%]="item.participacion" [style.background-color]="item.color"></span></div>
+                      <div class="ranking-meta">
+                        <span>{{ item.etiqueta }}</span>
+                        <span>{{ item.noches }} noches</span>
+                        <span>{{ formatMoney(item.ingresos) }}</span>
+                      </div>
+                    </div>
+                  </li>
+                } @empty {
+                  <li class="ranking-empty">Sin reservas en el período seleccionado.</li>
+                }
+              </ol>
+            }
+            @case ('pagos') {
+              <ol class="ranking-list">
+                @for (item of metodosPagoRanking(); track item.clave; let i = $index) {
+                  <li class="ranking-item">
+                    <span class="ranking-pos" [class.leader]="i === 0">{{ i + 1 }}</span>
+                    <div class="ranking-body">
+                      <div class="ranking-head">
+                        <span class="ranking-name"><i class="legend-dot" [style.background-color]="item.color"></i>{{ item.nombre }}</span>
+                        <strong>{{ item.reservas }} <small>reservas</small></strong>
+                      </div>
+                      <div class="progress-track"><span class="progress-value" [style.width.%]="item.participacion" [style.background-color]="item.color"></span></div>
+                      <div class="ranking-meta">
+                        <span>{{ item.participacion | number:'1.0-0' }}% del total</span>
+                        <span>{{ formatMoney(item.ingresos) }} recibido</span>
+                      </div>
+                    </div>
+                  </li>
+                } @empty {
+                  <li class="ranking-empty">Sin pagos en el período seleccionado.</li>
+                }
+              </ol>
+              <p class="card-note">
+                <ion-icon name="information-circle-outline"></ion-icon>
+                Los servicios adicionales aparecerán aquí cuando se registren por reserva.
+              </p>
+            }
+          }
+        </section>
 
-          <div class="legend-row">
-            <span><i class="legend-dot occupied"></i>Ocupadas <strong>{{ r.habitaciones.ocupadas }}</strong></span>
-            <span><i class="legend-dot available"></i>Disponibles <strong>{{ r.habitaciones.disponibles }}</strong></span>
-          </div>
-
-          <div class="report-details">
-            <span>En curso: <strong>{{ r.reservas.enCurso }}</strong></span>
-            <span>Pendientes: <strong>{{ r.reservas.pendientes }}</strong></span>
-            <span>Estadía promedio: <strong>{{ r.reservas.estadiaPromedioNoches }} noches</strong></span>
-          </div>
-        </article>
-
-        <article class="report-card income-card">
+        <!-- Filtros -->
+        <aside class="report-card filters-panel" aria-labelledby="filters-title">
           <div class="card-heading">
             <div>
-              <span class="eyebrow">RENDIMIENTO ECONÓMICO</span>
-              <h2>Ingresos</h2>
+              <h2 id="filters-title">Filtros</h2>
+              <p class="card-subtitle">Ajusta el período y el historial de transacciones</p>
             </div>
-            <div class="heading-icon green-icon"><ion-icon name="cash-outline"></ion-icon></div>
+            @if (filtrosActivos() > 0) {
+              <button type="button" class="btn-clear-filters" (click)="limpiarFiltros()">
+                <ion-icon name="close-circle-outline"></ion-icon>
+                Limpiar ({{ filtrosActivos() }})
+              </button>
+            }
           </div>
 
-          <div class="income-total">
-            <span>Ingresos acumulados del mes</span>
-            <strong>{{ formatMoney(r.ingresos.mes) }}</strong>
+          <div class="filters-stack">
+            <label class="filter-field">
+              <span class="search-input">
+                <ion-icon name="search-outline"></ion-icon>
+                <input type="text" aria-label="Buscar por ID de reserva o cliente" placeholder="ID de reserva o cliente..." [ngModel]="busqueda()" (ngModelChange)="setBusqueda($event)">
+              </span>
+            </label>
+
+            <div class="filter-field">
+              <span class="filter-label">Período</span>
+              <div class="chips" role="group" aria-label="Rangos predefinidos">
+                @for (item of datePresets; track item.value) {
+                  <button type="button" class="chip" [class.active]="preset() === item.value" [attr.aria-pressed]="preset() === item.value" (click)="applyPreset(item.value)">
+                    {{ item.label }}
+                  </button>
+                }
+                @if (preset() === 'personalizado') {
+                  <span class="chip active">Personalizado</span>
+                }
+              </div>
+              <div class="date-range">
+                <input class="filter-control" type="date" aria-label="Fecha de inicio" [ngModel]="fechaInicio()" (ngModelChange)="setFechaInicio($event)" [max]="fechaFin()">
+                <span>–</span>
+                <input class="filter-control" type="date" aria-label="Fecha de término" [ngModel]="fechaFin()" (ngModelChange)="setFechaFin($event)" [min]="fechaInicio()">
+              </div>
+              @if (!rangoValido()) {
+                <p class="filters-error" role="alert">La fecha de inicio debe ser anterior o igual a la fecha de término.</p>
+              }
+            </div>
+
+            <div class="filter-field">
+              <span class="filter-label">Sede</span>
+              <div class="chips" role="group" aria-label="Alcance del reporte">
+                <button type="button" class="chip" [class.active]="!esGlobal()" [attr.aria-pressed]="!esGlobal()" [attr.title]="sede()?.nombre ?? null" (click)="setAlcance('sede')">Actual</button>
+                <button type="button" class="chip" [class.active]="esGlobal()" [attr.aria-pressed]="esGlobal()" (click)="setAlcance('global')">Global</button>
+              </div>
+            </div>
+
+            <label class="filter-field">
+              <span class="filter-label">Tarifa / temporada</span>
+              <select class="filter-control" [ngModel]="tipoTarifaFiltro()" (ngModelChange)="setTipoTarifaFiltro($event)">
+                <option value="TODAS">Todas</option>
+                <option value="ALTA">Temporada alta</option>
+                <option value="BAJA">Temporada baja</option>
+                <option value="PROMOCIONAL">Promocional (con descuento)</option>
+                <option value="BASE">Precio base</option>
+              </select>
+            </label>
+
+            <label class="filter-field">
+              <span class="filter-label">Método de pago</span>
+              <select class="filter-control" [ngModel]="metodoPagoFiltro()" (ngModelChange)="setMetodoPagoFiltro($event)">
+                <option value="TODOS">Todos</option>
+                <option value="transferencia">Transferencia</option>
+                <option value="efectivo">Efectivo</option>
+                <option value="sin-registro">Sin registrar</option>
+              </select>
+            </label>
           </div>
 
-          <div class="income-comparison">
-            <div>
-              <span>Este año</span>
-              <strong>{{ formatMoney(r.ingresos.anio) }}</strong>
-            </div>
-            <div>
-              <span>Año anterior</span>
-              <strong>{{ formatMoney(r.ingresos.anioAnterior) }}</strong>
-            </div>
+          <div class="filter-summary">
+            <span class="filter-label">Resumen del filtro</span>
+            <ul>
+              @for (item of resumenEstados(); track item.estado) {
+                <li>
+                  <span class="pay-status" [ngClass]="'status-' + item.estado.toLowerCase()">{{ estadoPagoLabel(item.estado) }}</span>
+                  <small>({{ item.cantidad }})</small>
+                  <strong>{{ formatMoney(item.monto) }}</strong>
+                </li>
+              }
+            </ul>
           </div>
+        </aside>
+      </div>
 
-          <div class="report-details">
-            <span>Mes anterior: <strong>{{ formatMoney(r.ingresos.mesAnterior) }}</strong></span>
-            <span>Por cobrar: <strong>{{ formatMoney(r.ingresos.pendiente) }}</strong></span>
-            <span>Insumos bajo mínimo: <strong>{{ r.inventario.bajoMinimo }}</strong></span>
-          </div>
-        </article>
+      <!-- Historial de transacciones -->
+      <div class="section-heading">
+        <div>
+          <h2>Historial de transacciones</h2>
+          <p>{{ transaccionesFiltradas().length }} resultados · {{ formatMoney(totalFiltrado()) }} facturado</p>
+        </div>
+      </div>
+      <section class="report-card trx-card">
+        <div class="trx-table-wrapper">
+          <table class="trx-table">
+            <thead>
+              <tr>
+                <th scope="col">ID Transacción</th>
+                <th scope="col">Reserva</th>
+                <th scope="col">Tipología</th>
+                <th scope="col" class="num">Tarifa aplicada ($)</th>
+                <th scope="col">Estado del pago</th>
+                <th scope="col" class="actions-col">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (trx of transaccionesVisibles(); track trx.id) {
+                <tr class="trx-row" tabindex="0" (click)="openDetalle(trx)" (keydown.enter)="openDetalle(trx)" [class.row-cancelled]="trx.estadoPago === 'ANULADO'">
+                  <td data-label="ID Transacción">
+                    <span class="trx-id">{{ trx.id }}</span>
+                    <small class="cell-sub">{{ formatFecha(trx.llegada) }}</small>
+                  </td>
+                  <td data-label="Reserva">
+                    <span class="cell-main">{{ trx.reservaCodigo }} · {{ trx.huesped }}</span>
+                    <small class="cell-sub">@if (esGlobal()) {{{ trx.sede }} · }Hab. {{ trx.habitacion }} · {{ trx.noches }} {{ trx.noches === 1 ? 'noche' : 'noches' }}</small>
+                  </td>
+                  <td data-label="Tipología">
+                    <span class="ranking-name"><i class="legend-dot" [style.background-color]="trx.tipologiaColor"></i>{{ trx.tipologia }}</span>
+                    <span class="tag" [ngClass]="'tag-' + trx.tipoTarifa.toLowerCase()">{{ trx.tarifaNombre }}</span>
+                    @if (trx.esPromocional) {
+                      <span class="tag tag-promo">Promocional</span>
+                    }
+                  </td>
+                  <td data-label="Tarifa aplicada ($)" class="num">
+                    <strong>{{ formatMoney(trx.total) }}</strong>
+                    <small class="cell-sub">{{ formatMoney(trx.tarifaNocheBase) }} / noche</small>
+                  </td>
+                  <td data-label="Estado del pago">
+                    <span class="pay-status" [ngClass]="'status-' + trx.estadoPago.toLowerCase()">{{ estadoPagoLabel(trx.estadoPago) }}</span>
+                    <small class="cell-sub">{{ metodoPagoLabel(trx.metodoPago) }}</small>
+                  </td>
+                  <td data-label="Acciones" class="actions-col">
+                    <button type="button" class="btn-row-detail" (click)="$event.stopPropagation(); openDetalle(trx)" [attr.aria-label]="'Ver detalle de ' + trx.id">
+                      <ion-icon name="receipt-outline"></ion-icon>
+                      <span>Detalle</span>
+                    </button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr class="trx-empty-row">
+                  <td colspan="6">
+                    <div class="trx-empty">
+                      <ion-icon name="funnel-outline"></ion-icon>
+                      @if (operacionesLoading()) {
+                        <p>Cargando transacciones…</p>
+                      } @else if (transaccionesPeriodo().length === 0) {
+                        <p>No hay reservas con llegada en el período seleccionado.</p>
+                      } @else {
+                        <p>Ninguna transacción coincide con los filtros aplicados.</p>
+                        <button type="button" class="btn-outline" (click)="limpiarFiltros()">Limpiar filtros</button>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        @if (transaccionesFiltradas().length > transaccionesVisibles().length) {
+          <footer class="trx-footer">
+            <span>Mostrando {{ transaccionesVisibles().length }} de {{ transaccionesFiltradas().length }}</span>
+            <button type="button" class="btn-outline" (click)="mostrarMas()">Mostrar más</button>
+          </footer>
+        }
       </section>
-      }
     </main>
   </div>
+
+  @if (transaccionSeleccionada(); as trx) {
+    <div class="detail-backdrop" (click)="closeDetalle()">
+      <section class="detail-modal" role="dialog" aria-modal="true" aria-labelledby="detail-title" (click)="$event.stopPropagation()">
+        <header class="detail-header">
+          <div>
+            <h2 id="detail-title">Detalle de transacción</h2>
+            <p>{{ trx.id }} · Reserva {{ trx.reservaCodigo }} · {{ trx.huesped }}</p>
+          </div>
+          <div class="detail-header-side">
+            <span class="pay-status" [ngClass]="'status-' + trx.estadoPago.toLowerCase()">{{ estadoPagoLabel(trx.estadoPago) }}</span>
+            <button type="button" class="btn-close" (click)="closeDetalle()" aria-label="Cerrar detalle">
+              <ion-icon name="close-outline"></ion-icon>
+            </button>
+          </div>
+        </header>
+
+        <div class="detail-body">
+          <div class="detail-facts">
+            <div class="fact"><span>Huésped</span><strong>{{ trx.huesped }}</strong>@if (trx.huespedDocumento) {<small>{{ trx.huespedDocumento }}</small>}</div>
+            <div class="fact"><span>Habitación</span><strong>{{ trx.habitacion }}</strong><small>{{ trx.tipologia }}@if (esGlobal()) { · {{ trx.sede }}}</small></div>
+            <div class="fact"><span>Estadía</span><strong>{{ formatFecha(trx.llegada) }} → {{ formatFecha(trx.salida) }}</strong><small>{{ trx.personas }} {{ trx.personas === 1 ? 'persona' : 'personas' }}</small></div>
+            <div class="fact"><span>Tarifa</span><strong>{{ trx.tarifaNombre }}</strong><small>{{ tipoTarifaLabel(trx.tipoTarifa) }}@if (trx.esPromocional) { · Promocional}</small></div>
+          </div>
+
+          <dl class="breakdown">
+            <div class="breakdown-row"><dt>Días / noches</dt><dd>{{ trx.noches }}</dd></div>
+            <div class="breakdown-row"><dt>Tarifa base por noche (promedio)</dt><dd>{{ formatMoney(trx.tarifaNocheBase) }}</dd></div>
+            <div class="breakdown-row"><dt>Subtotal según tarifas</dt><dd>{{ formatMoney(trx.subtotalTarifa) }}</dd></div>
+            @if (trx.ajuste !== 0) {
+              <div class="breakdown-row" [class.discount]="trx.ajuste < 0" [class.surcharge]="trx.ajuste > 0">
+                <dt>{{ trx.ajuste < 0 ? 'Descuento aplicado' : 'Recargo / ajuste' }}</dt>
+                <dd>{{ trx.ajuste < 0 ? '-' : '+' }}{{ formatMoney(trx.ajuste < 0 ? -trx.ajuste : trx.ajuste) }}</dd>
+              </div>
+            }
+            <div class="breakdown-row muted"><dt>Neto (sin IVA)</dt><dd>{{ formatMoney(trx.netoSinIva) }}</dd></div>
+            <div class="breakdown-row muted"><dt>IVA incluido (19%)</dt><dd>{{ formatMoney(trx.ivaIncluido) }}</dd></div>
+            <div class="breakdown-row total"><dt>Total{{ trx.totalEstimado ? ' (estimado)' : '' }}</dt><dd>{{ formatMoney(trx.total) }}</dd></div>
+          </dl>
+
+          <div class="payment-summary">
+            <div class="pay-box"><span>Abono inicial ({{ trx.porcentajeAbono }}%)</span><strong>{{ formatMoney(trx.abonoInicial) }}</strong></div>
+            <div class="pay-box paid"><span>Pagado · {{ metodoPagoLabel(trx.metodoPago) }}</span><strong>{{ formatMoney(trx.pagado) }}</strong></div>
+            <div class="pay-box balance" [class.settled]="trx.saldo === 0"><span>Saldo pendiente</span><strong>{{ formatMoney(trx.saldo) }}</strong></div>
+          </div>
+
+          @if (trx.nochesDetalle.length > 0) {
+            <details class="nights-detail">
+              <summary>Ver tarifa aplicada por noche ({{ trx.nochesDetalle.length }})</summary>
+              <ul>
+                @for (night of trx.nochesDetalle; track night.fecha) {
+                  <li>
+                    <span>{{ formatFecha(night.fecha) }}</span>
+                    <span class="tag" [ngClass]="'tag-' + night.tipo.toLowerCase()">{{ night.tarifa }}</span>
+                    <strong>{{ formatMoney(night.precio) }}</strong>
+                  </li>
+                }
+              </ul>
+            </details>
+          }
+
+          @if (trx.totalEstimado) {
+            <p class="card-note">
+              <ion-icon name="information-circle-outline"></ion-icon>
+              La reserva no tiene un precio total registrado; se estimó con las tarifas vigentes de cada noche.
+            </p>
+          }
+        </div>
+
+        <footer class="detail-footer">
+          <span>Estado de la reserva: <strong>{{ trx.estadoReserva }}</strong></span>
+          <button type="button" class="btn-action-primary" (click)="closeDetalle()">Cerrar</button>
+        </footer>
+      </section>
+    </div>
+  }
 </ion-content>
