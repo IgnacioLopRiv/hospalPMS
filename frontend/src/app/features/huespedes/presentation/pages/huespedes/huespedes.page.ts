@@ -13,8 +13,7 @@ import {
   searchOutline,
   star,
   ellipsisVerticalOutline,
-  mailOutline,
-  callOutline,
+  logoWhatsapp,
   personOutline,
   createOutline,
   trashOutline,
@@ -25,7 +24,7 @@ import {
 import { HostalService } from '../../../application/hostal.service';
 import { SedeService } from '../../../../locations/application/sede.service';
 import { CheckPagePage } from '../../../../reservations/presentation/pages/check-page/check-page.page';
-import { GuestCardView, Habitacion, Huesped } from '../../../../../shared/domain/hostal.model';
+import { GuestCardView, GuestReservationDetail, Habitacion, Huesped, Reserva } from '../../../../../shared/domain/hostal.model';
 import { COUNTRY_OPTIONS } from '../../../../../shared/domain/country-options';
 import { CountryPickerComponent } from '../../../../../shared/presentation/country-picker/country-picker.component';
 
@@ -50,6 +49,7 @@ export class HuespedesPage implements OnInit, OnDestroy {
   @ViewChild('guestEditDialog') guestEditDialog?: ElementRef<HTMLDialogElement>;
   @ViewChild('reservationEditDialog') reservationEditDialog?: ElementRef<HTMLDialogElement>;
   @ViewChild('guestDeleteDialog') guestDeleteDialog?: ElementRef<HTMLDialogElement>;
+  @ViewChild('guestDetailDialog') guestDetailDialog?: ElementRef<HTMLDialogElement>;
 
   guests: GuestCardView[] = [];
   filteredGuests: GuestCardView[] = [];
@@ -69,6 +69,12 @@ export class HuespedesPage implements OnInit, OnDestroy {
   editingGuestId: number | null = null;
   editGuestForm: Omit<Huesped, 'id_huesped' | 'id_sede'> = this.createEmptyEditGuestForm();
   deletingGuestId: number | null = null;
+  guestDetail: {
+    guest: Huesped;
+    card?: GuestCardView;
+    active: GuestReservationDetail[];
+    history: GuestReservationDetail[];
+  } | null = null;
   editingReservationId: number | null = null;
   reservationError = '';
   availableReservationRooms: Habitacion[] = [];
@@ -96,8 +102,7 @@ export class HuespedesPage implements OnInit, OnDestroy {
       searchOutline,
       star,
       ellipsisVerticalOutline,
-      mailOutline,
-      callOutline,
+      logoWhatsapp,
       personOutline,
       createOutline,
       trashOutline,
@@ -135,9 +140,9 @@ export class HuespedesPage implements OnInit, OnDestroy {
     this.filteredGuests = this.guests.filter((guest) => {
       const matchesFilter =
         this.selectedFilter === 'todos' ? true :
-          this.selectedFilter === 'hospedados' ? guest.status === 'hospedado' :
-            this.selectedFilter === 'checkin' ? guest.status === 'checkin_hoy' :
-              this.selectedFilter === 'checkout' ? guest.status === 'checkout_hoy' :
+          this.selectedFilter === 'hospedados' ? this.hasStatus(guest, 'hospedado') :
+            this.selectedFilter === 'checkin' ? this.hasStatus(guest, 'checkin_hoy') :
+              this.selectedFilter === 'checkout' ? this.hasStatus(guest, 'checkout_hoy') :
                 this.selectedFilter === 'activos' ? guest.hasReservation :
                   this.selectedFilter === 'inactivos' ? !guest.hasReservation : true;
 
@@ -154,7 +159,88 @@ export class HuespedesPage implements OnInit, OnDestroy {
     if (!status) return this.guests.length;
     if (status === 'activos') return this.guests.filter((guest) => guest.hasReservation).length;
     if (status === 'inactivos') return this.guests.filter((guest) => !guest.hasReservation).length;
-    return this.guests.filter((g) => g.status === status).length;
+    return this.guests.filter((g) => this.hasStatus(g, status as GuestCardView['status'])).length;
+  }
+
+  /** A guest matches a status if any of their active reservations has it. */
+  private hasStatus(guest: GuestCardView, status: GuestCardView['status']): boolean {
+    return (guest.statuses ?? [guest.status]).includes(status);
+  }
+
+  /** WhatsApp Web chat link for the guest's phone, or null when there is no usable number. */
+  whatsappUrl(phone?: string): string | null {
+    const digits = (phone ?? '').replace(/\D/g, '');
+    return digits.length >= 6 ? `https://web.whatsapp.com/send?phone=${digits}` : null;
+  }
+
+  openGuestDetail(guestId: number): void {
+    const guest = this.hostalService.getGuests().find((item) => item.id_huesped === guestId);
+    if (!guest) {
+      this.guestError = 'No se encontró el huésped. Actualiza la lista e inténtalo otra vez.';
+      return;
+    }
+    const reservations = this.hostalService.getGuestReservationDetails(guestId);
+    const isPast = (detail: GuestReservationDetail) =>
+      ['FINALIZADA', 'CANCELADA'].includes(detail.reservation.estado_reserva);
+    this.guestDetail = {
+      guest,
+      card: this.guests.find((item) => item.id_huesped === guestId),
+      active: reservations.filter((detail) => !isPast(detail)),
+      history: reservations.filter(isPast).reverse(),
+    };
+    this.openMenuCardIndex = null;
+    this.setPageScrollLocked(true);
+    this.changeDetector.detectChanges();
+    const dialog = this.guestDetailDialog?.nativeElement;
+    if (dialog && !dialog.open) {
+      dialog.showModal();
+    }
+  }
+
+  closeGuestDetail(): void {
+    const dialog = this.guestDetailDialog?.nativeElement;
+    if (dialog?.open) {
+      dialog.close();
+    }
+    this.guestDetail = null;
+    this.setPageScrollLocked(false);
+  }
+
+  onGuestDetailDialogCancel(event: Event): void {
+    event.preventDefault();
+    this.closeGuestDetail();
+  }
+
+  /** Runs an action from the detail modal after closing it, so only one dialog is open. */
+  fromGuestDetail(action: 'edit' | 'assign' | 'delete'): void {
+    const guestId = this.guestDetail?.guest.id_huesped;
+    this.closeGuestDetail();
+    if (guestId === undefined) return;
+    if (action === 'edit') this.openGuestEditor(guestId);
+    else if (action === 'delete') this.requestGuestDeletion(guestId);
+    else this.assignReservationToGuest(guestId);
+  }
+
+  editReservationFromDetail(reservationId: number): void {
+    this.closeGuestDetail();
+    this.openReservationEditor(reservationId);
+  }
+
+  reservationStatusClass(status: Reserva['estado_reserva']): string {
+    const classes: Record<Reserva['estado_reserva'], string> = {
+      'HOSPEDADO': 'hospedado',
+      'CHECK-IN HOY': 'checkin_hoy',
+      'CHECK-OUT HOY': 'checkout_hoy',
+      'CONFIRMADA': 'confirmada',
+      'FINALIZADA': 'finalizada',
+      'CANCELADA': 'cancelada',
+    };
+    return classes[status];
+  }
+
+  formatDate(value: string): string {
+    const [year, month, day] = value.split('-');
+    return day && month && year ? `${day}/${month}/${year}` : value;
   }
 
   get isReservationRoomAvailable(): boolean {
@@ -240,10 +326,10 @@ export class HuespedesPage implements OnInit, OnDestroy {
     this.setPageScrollLocked(false);
   }
 
-  openReservationEditor(guest: GuestCardView): void {
-    if (guest.id_reserva === undefined) return;
+  openReservationEditor(reservationId: number | undefined): void {
+    if (reservationId === undefined) return;
     const reservation = this.hostalService.getReservations()
-      .find((item) => item.id_reserva === guest.id_reserva);
+      .find((item) => item.id_reserva === reservationId);
     if (!reservation) {
       this.reservationError = 'No se encontró la reserva. Actualiza la lista e inténtalo otra vez.';
       return;
@@ -337,6 +423,7 @@ export class HuespedesPage implements OnInit, OnDestroy {
     this.closeGuestEditDialog();
     this.closeReservationEditDialog();
     this.closeGuestDeleteDialog();
+    if (this.guestDetailDialog?.nativeElement.open) this.guestDetailDialog.nativeElement.close();
     this.setPageScrollLocked(false);
   }
 

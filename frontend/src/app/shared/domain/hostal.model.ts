@@ -62,6 +62,19 @@ export interface GuestCardView {
   metric2Value: string;
   recurrentNote?: string;
   isVip?: boolean;
+  /** Teléfono del huésped, usado para abrir WhatsApp. */
+  phone?: string;
+  /** Reservas activas adicionales a la que muestra la tarjeta. */
+  extraReservations?: number;
+  /** Estados de todas las reservas activas del huésped (para los filtros). */
+  statuses?: GuestCardView['status'][];
+}
+
+export interface GuestReservationDetail {
+  reservation: Reserva;
+  roomNumber: string;
+  roomType: string;
+  nights: number;
 }
 
 export interface SedeTipologia {

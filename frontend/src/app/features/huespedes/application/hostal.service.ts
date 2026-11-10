@@ -1,7 +1,7 @@
 import { effect, Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
-import { Huesped, Habitacion, Tipologia, Reserva, GuestCardView } from '../../../shared/domain/hostal.model';
+import { Huesped, Habitacion, Tipologia, Reserva, GuestCardView, GuestReservationDetail } from '../../../shared/domain/hostal.model';
 import { SedeService } from '../../locations/application/sede.service';
 import { CreateHuesped, Huesped as HuespedDomain, HuespedRepository } from '../domain/huesped.repository';
 import { CreateReserva, ReservasRepository, UpdateReserva } from '../../reservations/domain/reservas.repository';
@@ -142,18 +142,25 @@ export class HostalService {
     const huespedes = this.getGuests();
     const habitaciones = this.getManagedRooms();
     const tipologias = this.getManagedTypologies();
+    // Most relevant reservation first, so each guest's card shows it as the main one.
+    const statusPriority: Record<Reserva['estado_reserva'], number> = {
+      'HOSPEDADO': 0, 'CHECK-OUT HOY': 1, 'CHECK-IN HOY': 2, 'CONFIRMADA': 3, 'FINALIZADA': 4, 'CANCELADA': 5,
+    };
     const reservas = this.getReservations().filter((reservation) => {
       const room = habitaciones.find((item) => item.id_habitacion === reservation.id_habitacion);
       return !['FINALIZADA', 'CANCELADA'].includes(reservation.estado_reserva) &&
         huespedes.some((guest) => guest.id_huesped === reservation.id_huesped) &&
         !!room && tipologias.some((typology) => typology.id_tipologia === room.id_tipologia);
-    });
+    }).sort((a, b) =>
+      statusPriority[a.estado_reserva] - statusPriority[b.estado_reserva] ||
+      a.fecha_llegada.localeCompare(b.fecha_llegada)
+    );
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const colors: ('blue' | 'green' | 'orange' | 'purple')[] = ['purple', 'orange', 'green', 'blue'];
 
-    const joinedData: GuestCardView[] = reservas.map((res, index) => {
+    const reservationCards: GuestCardView[] = reservas.map((res) => {
       const huesped = huespedes.find(h => h.id_huesped === res.id_huesped);
       const habitacion = habitaciones.find(hab => hab.id_habitacion === res.id_habitacion);
       const tipologia = tipologias.find(t => t.id_tipologia === habitacion?.id_tipologia);
@@ -207,15 +214,32 @@ export class HostalService {
         dateRange: `${String(fLlegada.getMonth() + 1).padStart(2, '0')}/${String(fLlegada.getDate()).padStart(2, '0')} → ${String(fSalida.getMonth() + 1).padStart(2, '0')}/${String(fSalida.getDate()).padStart(2, '0')}`,
         status: statusType,
         statusBadge: res.estado_reserva,
-        cardColor: colors[index % colors.length],
+        cardColor: 'blue',
         metric1Label: m1Label,
         metric1Value: m1Value,
         metric2Label: m2Label,
         metric2Value: m2Value,
         recurrentNote: recNote,
-        isVip: huesped?.es_recurrente
+        isVip: huesped?.es_recurrente,
+        phone: huesped?.telefono
       };
     });
+
+    // One card per guest: keep the first (most relevant) reservation and count the rest.
+    const cardsByGuest = new Map<number, GuestCardView>();
+    reservationCards.forEach((card) => {
+      const existing = cardsByGuest.get(card.id_huesped);
+      if (existing) {
+        existing.extraReservations = (existing.extraReservations ?? 0) + 1;
+        existing.statuses = [...(existing.statuses ?? []), card.status];
+      } else {
+        cardsByGuest.set(card.id_huesped, { ...card, extraReservations: 0, statuses: [card.status] });
+      }
+    });
+    const joinedData = [...cardsByGuest.values()].map((card, index) => ({
+      ...card,
+      cardColor: colors[index % colors.length],
+    }));
 
     const guestsWithoutReservations: GuestCardView[] = huespedes
       .filter(huesped => !reservas.some(reserva => reserva.id_huesped === huesped.id_huesped))
@@ -238,10 +262,32 @@ export class HostalService {
         recurrentNote: huesped.dias_ultimo_registro
           ? `Recurrente · último hace ${huesped.dias_ultimo_registro} días`
           : undefined,
-        isVip: huesped.es_recurrente
+        isVip: huesped.es_recurrente,
+        phone: huesped.telefono
       }));
 
     this.guestsViewSubject.next([...joinedData, ...guestsWithoutReservations]);
+  }
+
+  /** All reservations of a guest (active and past), sorted by arrival date. */
+  getGuestReservationDetails(guestId: number): GuestReservationDetail[] {
+    const rooms = this.getManagedRooms();
+    const typologies = this.getManagedTypologies();
+    return this.getReservations()
+      .filter((reservation) => reservation.id_huesped === guestId)
+      .sort((a, b) => a.fecha_llegada.localeCompare(b.fecha_llegada))
+      .map((reservation) => {
+        const room = rooms.find((item) => item.id_habitacion === reservation.id_habitacion);
+        const typology = typologies.find((item) => item.id_tipologia === room?.id_tipologia);
+        const arrival = new Date(reservation.fecha_llegada + 'T00:00:00');
+        const departure = new Date(reservation.fecha_salida + 'T00:00:00');
+        return {
+          reservation,
+          roomNumber: room?.numero_habitacion ?? '',
+          roomType: typology?.nombre_tipologia ?? '',
+          nights: Math.max(0, Math.round((departure.getTime() - arrival.getTime()) / (1000 * 3600 * 24))),
+        };
+      });
   }
 
   // ── Guest CRUD (scoped to active sede) ─────────────────────────────────────

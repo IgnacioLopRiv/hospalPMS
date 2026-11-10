@@ -2,7 +2,7 @@ import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { HostalService } from './hostal.service';
-import { Huesped, Reserva, Sede, SedeHabitacion, SedeTipologia } from '../../../shared/domain/hostal.model';
+import { GuestCardView, Huesped, Reserva, Sede, SedeHabitacion, SedeTipologia } from '../../../shared/domain/hostal.model';
 import { SedeService } from '../../locations/application/sede.service';
 import { CreateHuesped, Huesped as HuespedDomain, HuespedRepository } from '../domain/huesped.repository';
 import { CreateReserva, ReservasRepository, UpdateReserva } from '../../reservations/domain/reservas.repository';
@@ -109,6 +109,36 @@ describe('HostalService HTTP persistence', () => {
     expect(reservasRepository.listBySede).toHaveBeenCalledWith(TEST_SEDE_ID);
     expect(service.getGuests()).toEqual([]);
     expect(service.getReservations()).toEqual([]);
+  });
+
+  it('shows one card per guest with the most relevant reservation and counts the rest', () => {
+    const guest: Huesped = {
+      id_huesped: 1, id_sede: TEST_SEDE_ID, nombre: 'Ana', apellido: 'Pérez',
+      nacionalidad: 'Chile', telefono: '+56 912345678', email: 'ana@example.com',
+    };
+    const base = { id_huesped: 1, id_habitacion: 10, hora_llegada: '14:00' };
+    (service as unknown as { guests: Huesped[] }).guests = [guest];
+    (service as unknown as { reservations: Reserva[] }).reservations = [
+      { ...base, id_reserva: 1, fecha_llegada: '2099-02-01', fecha_salida: '2099-02-03', estado_reserva: 'CONFIRMADA' },
+      { ...base, id_reserva: 2, fecha_llegada: '2000-01-01', fecha_salida: '2099-01-05', estado_reserva: 'HOSPEDADO' },
+      { ...base, id_reserva: 3, fecha_llegada: '1999-12-01', fecha_salida: '1999-12-02', estado_reserva: 'FINALIZADA' },
+    ];
+
+    service.refreshView();
+
+    let cards: GuestCardView[] = [];
+    service.guestsView$.subscribe((value) => (cards = value)).unsubscribe();
+    expect(cards.length).toBe(1);
+    expect(cards[0].id_reserva).toBe(2);
+    expect(cards[0].status).toBe('hospedado');
+    expect(cards[0].extraReservations).toBe(1);
+    expect(cards[0].statuses).toEqual(['hospedado', 'confirmada']);
+    expect(cards[0].phone).toBe('+56 912345678');
+
+    const details = service.getGuestReservationDetails(1);
+    expect(details.map((item) => item.reservation.id_reserva)).toEqual([3, 2, 1]);
+    expect(details[2].roomNumber).toBe('101');
+    expect(details[2].nights).toBe(2);
   });
 
   it('creates, updates, and deletes guests through the API', async () => {

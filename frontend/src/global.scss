@@ -1201,6 +1201,11 @@ dialog.entry-modal-backdrop.guest-edit-dialog::backdrop {
   .huespedes-page-container .list-status.status-checkout_hoy { background: #fffbeb; border-color: #fef3c7; color: #d97706; }
   .huespedes-page-container .list-status.status-hospedado { background: #faf5ff; border-color: #f3e8ff; color: #7c3aed; }
   .huespedes-page-container .list-status.status-inactivo { background: #f8fafc; border-color: #e2e8f0; color: #64748b; }
+  .huespedes-page-container .list-status.status-finalizada { background: #f8fafc; border-color: #e2e8f0; color: #475569; }
+  .huespedes-page-container .list-status.status-cancelada { background: #fef2f2; border-color: #fee2e2; color: #b91c1c; }
+  .huespedes-page-container .guest-list-row { cursor: pointer; }
+  .huespedes-page-container .guest-list-row:focus-visible { outline: 2px solid #1e50d8; outline-offset: -2px; }
+  .huespedes-page-container .guest-list .extra-reservations-badge { margin-left: 0.35rem; vertical-align: middle; }
 
   .huespedes-page-container .list-actions-cell { position: relative; width: 1%; text-align: right; }
   .huespedes-page-container .guest-list-menu {

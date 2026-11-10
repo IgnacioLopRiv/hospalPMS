@@ -11,7 +11,7 @@ import { createEmptyInventarioRepositoryStub } from '../../../../inventory/domai
 import { TarifasRepository } from '../../../../locations/domain/tarifas.repository';
 import { FotoHabitacionRepository } from '../../../../locations/domain/foto-habitacion.repository';
 import { HuespedesPage } from './huespedes.page';
-import { GuestCardView, Huesped } from '../../../../../shared/domain/hostal.model';
+import { GuestCardView, GuestReservationDetail, Huesped } from '../../../../../shared/domain/hostal.model';
 
 describe('HuespedesPage', () => {
   let component: HuespedesPage;
@@ -21,6 +21,7 @@ describe('HuespedesPage', () => {
     const hostalServiceStub = {
       guestsView$: of([]),
       getGuests: () => [],
+      getGuestReservationDetails: () => [],
       getReservations: () => [],
       getReservationCalendarData: () => [],
       getAvailableRooms: () => [],
@@ -136,6 +137,93 @@ describe('HuespedesPage', () => {
     expect(fixture.nativeElement.querySelector('.cards-grid')).toBeTruthy();
   });
 
+  it('matches status filters against any of the guest active reservations', () => {
+    const guest = { ...createGuestCard(1, true, 'hospedado'), statuses: ['hospedado', 'confirmada'] as GuestCardView['status'][], extraReservations: 1 };
+    component.guests = [guest];
+
+    component.setFilter('hospedados');
+    expect(component.filteredGuests).toEqual([guest]);
+    component.setFilter('checkin');
+    expect(component.filteredGuests).toEqual([]);
+    expect(component.getCount('hospedado')).toBe(1);
+  });
+
+  it('shows the extra reservation count and a single WhatsApp button on the card', () => {
+    component.guests = [{ ...createGuestCard(1, true), phone: '+56 9 1234 5678', extraReservations: 2 }];
+    component.applyFilters();
+    fixture.detectChanges();
+
+    const card = fixture.nativeElement.querySelector('.guest-card') as HTMLElement;
+    expect(card.querySelector('.extra-reservations-badge')?.textContent?.trim()).toBe('+2');
+    const actions = card.querySelectorAll('.card-actions > *');
+    expect(actions.length).toBe(1);
+    expect((actions[0] as HTMLAnchorElement).href).toBe('https://web.whatsapp.com/send?phone=56912345678');
+    expect((actions[0] as HTMLAnchorElement).target).toBe('_blank');
+  });
+
+  it('disables the WhatsApp button when the guest has no phone', () => {
+    component.guests = [createGuestCard(1, false)];
+    component.applyFilters();
+    fixture.detectChanges();
+
+    const button = fixture.nativeElement.querySelector('.card-actions .whatsapp-button') as HTMLButtonElement;
+    expect(button.tagName).toBe('BUTTON');
+    expect(button.disabled).toBeTrue();
+  });
+
+  it('opens the guest detail modal with active reservations and history when a card is clicked', () => {
+    const guest: Huesped = {
+      id_huesped: 1, id_sede: 1, documento: '12.345.678-5', nombre: 'Ana', apellido: 'Pérez',
+      nacionalidad: 'Chile', telefono: '+56 912345678', email: 'ana@example.com',
+    };
+    const hostalService = TestBed.inject(HostalService);
+    spyOn(hostalService, 'getGuests').and.returnValue([guest]);
+    (hostalService as unknown as { getGuestReservationDetails: () => GuestReservationDetail[] })
+      .getGuestReservationDetails = () => [
+        { reservation: { id_reserva: 5, id_huesped: 1, id_habitacion: 1, fecha_llegada: '2020-01-01', fecha_salida: '2020-01-03', estado_reserva: 'FINALIZADA' }, roomNumber: '101', roomType: 'Doble', nights: 2 },
+        { reservation: { id_reserva: 6, id_huesped: 1, id_habitacion: 1, fecha_llegada: '2099-01-01', fecha_salida: '2099-01-03', estado_reserva: 'CONFIRMADA' }, roomNumber: '102', roomType: 'Doble', nights: 2 },
+      ];
+    component.guests = [createGuestCard(1, true)];
+    component.applyFilters();
+    fixture.detectChanges();
+
+    (fixture.nativeElement.querySelector('.guest-card') as HTMLElement).click();
+    fixture.detectChanges();
+
+    const modal = fixture.nativeElement.querySelector('.guest-detail-modal') as HTMLElement;
+    expect(modal).toBeTruthy();
+    expect(modal.querySelector('#guest-detail-title')?.textContent).toContain('Ana Pérez');
+    expect(modal.querySelectorAll('.guest-reservation-item:not(.is-past)').length).toBe(1);
+    expect(modal.querySelectorAll('.guest-reservation-item.is-past').length).toBe(1);
+    expect(modal.textContent).toContain('01/01/2099');
+    expect(document.body.classList).toContain('entry-modal-open');
+
+    component.closeGuestDetail();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.guest-detail-modal')).toBeNull();
+    expect(document.body.classList).not.toContain('entry-modal-open');
+  });
+
+  it('has no options menu on cards and deletes the guest from the detail modal', () => {
+    spyOn(TestBed.inject(HostalService), 'getGuests').and.returnValue([{
+      id_huesped: 1, id_sede: 1, documento: '12.345.678-5', nombre: 'Ana', apellido: 'Pérez',
+      nacionalidad: 'Chile', telefono: '+56 912345678', email: 'ana@example.com',
+    }]);
+    component.guests = [createGuestCard(1, true)];
+    component.applyFilters();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.guest-card .menu-icon')).toBeNull();
+    (fixture.nativeElement.querySelector('.guest-card') as HTMLElement).click();
+    fixture.detectChanges();
+
+    (fixture.nativeElement.querySelector('.guest-detail-delete-button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(component.guestDetail).toBeNull();
+    expect(component.deletingGuestId).toBe(1);
+    component.cancelGuestDeletion();
+  });
+
   it('opens the new-entry modal without leaving the guest page and keeps the guest draft', () => {
     const router = TestBed.inject(Router);
     const navigation = spyOn(router, 'navigate');
@@ -192,10 +280,10 @@ describe('HuespedesPage', () => {
     spyOn(TestBed.inject(HostalService), 'getGuests').and.returnValue([guest]);
     fixture.detectChanges();
 
-    (fixture.nativeElement.querySelector('.guest-card .menu-icon') as HTMLButtonElement).click();
+    (fixture.nativeElement.querySelector('.guest-card') as HTMLElement).click();
     fixture.detectChanges();
     const assignButton = Array.from(
-      fixture.nativeElement.querySelectorAll('.guest-card-menu button') as NodeListOf<HTMLButtonElement>
+      fixture.nativeElement.querySelectorAll('.guest-detail-modal .entry-form-actions button') as NodeListOf<HTMLButtonElement>
     ).find((button) => button.textContent?.includes('Asignar reserva'));
     expect(assignButton).toBeDefined();
     assignButton!.click();

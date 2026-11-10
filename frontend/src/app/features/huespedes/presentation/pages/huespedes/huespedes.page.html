@@ -219,7 +219,11 @@
   <!-- Grilla de Tarjetas -->
   @if (viewMode === 'cards') {
   <section class="cards-grid">
-    <div class="guest-card" [ngClass]="'status-' + guest.status" *ngFor="let guest of filteredGuests; let cardIndex = index">
+    <div class="guest-card" [ngClass]="'status-' + guest.status" *ngFor="let guest of filteredGuests"
+      role="button" tabindex="0" [attr.aria-label]="'Ver detalle de ' + guest.guestName"
+      (click)="openGuestDetail(guest.id_huesped)"
+      (keydown.enter)="openGuestDetail(guest.id_huesped)"
+      (keydown.space)="$event.preventDefault(); openGuestDetail(guest.id_huesped)">
       <div class="guest-status-line" aria-hidden="true"></div>
       <div class="card-header">
         <div class="avatar-tag" [ngClass]="'color-' + guest.cardColor">{{ guest.initials }}</div>
@@ -230,33 +234,6 @@
           </div>
           <p>{{ guest.country }} · Hab. {{ guest.roomNumber }}</p>
         </div>
-
-        <button type="button" class="menu-icon" [attr.aria-label]="'Opciones para ' + guest.guestName"
-          [attr.aria-expanded]="openMenuCardIndex === cardIndex" (click)="toggleGuestMenu($event, cardIndex)">
-          <ion-icon name="ellipsis-vertical-outline"></ion-icon>
-        </button>
-        @if (openMenuCardIndex === cardIndex) {
-        <div class="guest-card-menu">
-          <button type="button" (click)="openGuestEditor(guest.id_huesped)">
-            <ion-icon name="create-outline"></ion-icon>
-            Modificar huésped
-          </button>
-          @if (guest.hasReservation) {
-          <button type="button" (click)="openReservationEditor(guest)">
-            <ion-icon name="calendar-outline"></ion-icon>
-            Modificar reserva
-          </button>
-          }
-          <button type="button" (click)="assignReservationToGuest(guest.id_huesped)">
-            <ion-icon name="calendar-outline"></ion-icon>
-            Asignar reserva
-          </button>
-          <button type="button" class="delete-action" (click)="requestGuestDeletion(guest.id_huesped)">
-            <ion-icon name="trash-outline"></ion-icon>
-            Eliminar huésped
-          </button>
-        </div>
-        }
       </div>
 
       <div class="room-info">
@@ -271,6 +248,12 @@
           <span>{{ guest.status === 'inactivo' ? 'SIN RESERVA ASIGNADA' : guest.status === 'hospedado' ? 'ESTANCIA
             ACTUAL' : guest.status === 'checkin_hoy' ? 'INGRESA HOY' : guest.status === 'checkout_hoy' ? 'SALE HOY' :
             'RESERVA CONFIRMADA' }}</span>
+          @if (guest.extraReservations) {
+          <span class="extra-reservations-badge"
+            [title]="guest.extraReservations === 1 ? '1 reserva más' : guest.extraReservations + ' reservas más'">
+            +{{ guest.extraReservations }}
+          </span>
+          }
         </div>
         <div class="box-metrics">
           <div>
@@ -288,8 +271,17 @@
       </div>
 
       <div class="card-actions">
-        <button type="button"><ion-icon name="mail-outline"></ion-icon> Email</button>
-        <button type="button"><ion-icon name="call-outline"></ion-icon> Llamar</button>
+        @if (whatsappUrl(guest.phone); as waUrl) {
+        <a class="whatsapp-button" [href]="waUrl" target="_blank" rel="noopener noreferrer"
+          (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
+          <ion-icon name="logo-whatsapp"></ion-icon> WhatsApp
+        </a>
+        } @else {
+        <button type="button" class="whatsapp-button" disabled title="El huésped no tiene teléfono registrado"
+          (click)="$event.stopPropagation()">
+          <ion-icon name="logo-whatsapp"></ion-icon> WhatsApp
+        </button>
+        }
       </div>
     </div>
   </section>
@@ -308,7 +300,8 @@
       </thead>
       <tbody>
         @for (guest of filteredGuests; track guest.id_huesped; let rowIndex = $index) {
-        <tr>
+        <tr class="guest-list-row" tabindex="0" [attr.aria-label]="'Ver detalle de ' + guest.guestName"
+          (click)="openGuestDetail(guest.id_huesped)" (keydown.enter)="openGuestDetail(guest.id_huesped)">
           <td>
             <div class="list-guest-name">
               <span class="list-avatar color-{{ guest.cardColor }}">{{ guest.initials }}</span>
@@ -321,8 +314,16 @@
           <td>{{ guest.country || '—' }}</td>
           <td>{{ guest.roomNumber ? 'Hab. ' + guest.roomNumber : guest.roomType }}</td>
           <td>{{ guest.dateRange }}</td>
-          <td><span class="list-status status-{{ guest.status }}">{{ guest.statusBadge }}</span></td>
-          <td class="list-actions-cell">
+          <td>
+            <span class="list-status status-{{ guest.status }}">{{ guest.statusBadge }}</span>
+            @if (guest.extraReservations) {
+            <span class="extra-reservations-badge"
+              [title]="guest.extraReservations === 1 ? '1 reserva más' : guest.extraReservations + ' reservas más'">
+              +{{ guest.extraReservations }}
+            </span>
+            }
+          </td>
+          <td class="list-actions-cell" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
             <button
               type="button"
               class="menu-icon"
@@ -338,7 +339,7 @@
                 Modificar huésped
               </button>
               @if (guest.hasReservation) {
-              <button type="button" (click)="openReservationEditor(guest)">
+              <button type="button" (click)="openReservationEditor(guest.id_reserva)">
                 <ion-icon name="calendar-outline"></ion-icon>
                 Modificar reserva
               </button>
@@ -361,6 +362,118 @@
       </tbody>
     </table>
   </section>
+  }
+
+  @if (guestDetail; as detail) {
+  <dialog #guestDetailDialog class="entry-modal-backdrop guest-edit-dialog"
+    (cancel)="onGuestDetailDialogCancel($event)">
+    <section class="entry-modal guest-detail-modal" role="dialog" aria-modal="true"
+      aria-labelledby="guest-detail-title">
+      <header class="entry-modal-header">
+        <div class="guest-detail-heading">
+          <div class="guest-detail-avatar" [ngClass]="'color-' + (detail.card?.cardColor ?? 'blue')">
+            {{ detail.card?.initials ?? (detail.guest.nombre[0] + detail.guest.apellido[0]).toUpperCase() }}
+          </div>
+          <div>
+            <h2 id="guest-detail-title">
+              {{ detail.guest.nombre }} {{ detail.guest.apellido }}
+              @if (detail.guest.es_recurrente) {
+              <ion-icon name="star" class="star-icon" title="Huésped recurrente"></ion-icon>
+              }
+            </h2>
+            <p>
+              {{ detail.active.length === 0 ? 'Sin reservas activas' : detail.active.length === 1 ? '1 reserva activa' :
+              detail.active.length + ' reservas activas' }}
+              @if (detail.guest.dias_ultimo_registro) {
+              · Recurrente, último registro hace {{ detail.guest.dias_ultimo_registro }} días
+              }
+            </p>
+          </div>
+        </div>
+      </header>
+
+      <div class="entry-modal-body">
+        <section class="entry-section">
+          <h3>DATOS DEL HUÉSPED</h3>
+          <dl class="guest-detail-grid">
+            <div><dt>Documento</dt><dd>{{ detail.guest.documento || '—' }}</dd></div>
+            <div><dt>País de residencia</dt><dd>{{ detail.guest.nacionalidad || '—' }}</dd></div>
+            <div><dt>Teléfono</dt><dd>{{ detail.guest.telefono || '—' }}</dd></div>
+            <div><dt>Email</dt><dd>{{ detail.guest.email || '—' }}</dd></div>
+          </dl>
+          @if (whatsappUrl(detail.guest.telefono); as waUrl) {
+          <a class="whatsapp-button guest-detail-whatsapp" [href]="waUrl" target="_blank" rel="noopener noreferrer">
+            <ion-icon name="logo-whatsapp"></ion-icon> WhatsApp
+          </a>
+          }
+        </section>
+
+        <section class="entry-section">
+          <h3>RESERVAS ACTIVAS</h3>
+          @for (item of detail.active; track item.reservation.id_reserva) {
+          <article class="guest-reservation-item" [ngClass]="'status-' + reservationStatusClass(item.reservation.estado_reserva)">
+            <div class="guest-reservation-main">
+              <span class="list-status" [ngClass]="'status-' + reservationStatusClass(item.reservation.estado_reserva)">
+                {{ item.reservation.estado_reserva }}
+              </span>
+              <strong>{{ item.roomNumber ? 'Hab. ' + item.roomNumber : 'Habitación' }}{{ item.roomType ? ' · ' + item.roomType : '' }}</strong>
+              <span class="guest-reservation-dates">
+                <ion-icon name="calendar-outline"></ion-icon>
+                {{ formatDate(item.reservation.fecha_llegada) }} → {{ formatDate(item.reservation.fecha_salida) }}
+                · {{ item.nights }} {{ item.nights === 1 ? 'noche' : 'noches' }}
+              </span>
+              <span class="guest-reservation-meta">
+                {{ item.reservation.cantidad_personas ?? 1 }} {{ (item.reservation.cantidad_personas ?? 1) === 1 ? 'persona' : 'personas' }}
+                · Llegada {{ item.reservation.hora_llegada || 'por confirmar' }}
+                · Salida {{ item.reservation.hora_salida || '12:00' }}
+                @if (item.reservation.precio_total) {
+                · Pagado {{ (item.reservation.monto_pagado ?? 0) | currency:'CLP':'symbol-narrow':'1.0-0' }}
+                de {{ item.reservation.precio_total | currency:'CLP':'symbol-narrow':'1.0-0' }}
+                }
+              </span>
+            </div>
+            <button type="button" class="guest-reservation-edit" (click)="editReservationFromDetail(item.reservation.id_reserva)">
+              <ion-icon name="create-outline"></ion-icon> Modificar
+            </button>
+          </article>
+          } @empty {
+          <p class="entry-hint">Este huésped no tiene reservas activas.</p>
+          }
+        </section>
+
+        @if (detail.history.length > 0) {
+        <section class="entry-section">
+          <h3>HISTORIAL DE RESERVAS</h3>
+          @for (item of detail.history; track item.reservation.id_reserva) {
+          <article class="guest-reservation-item is-past">
+            <div class="guest-reservation-main">
+              <span class="list-status" [ngClass]="'status-' + reservationStatusClass(item.reservation.estado_reserva)">
+                {{ item.reservation.estado_reserva }}
+              </span>
+              <strong>{{ item.roomNumber ? 'Hab. ' + item.roomNumber : 'Habitación' }}{{ item.roomType ? ' · ' + item.roomType : '' }}</strong>
+              <span class="guest-reservation-dates">
+                <ion-icon name="calendar-outline"></ion-icon>
+                {{ formatDate(item.reservation.fecha_llegada) }} → {{ formatDate(item.reservation.fecha_salida) }}
+                · {{ item.nights }} {{ item.nights === 1 ? 'noche' : 'noches' }}
+              </span>
+            </div>
+          </article>
+          }
+        </section>
+        }
+      </div>
+
+      <footer class="entry-form-actions">
+        <button type="button" class="guest-detail-delete-button" (click)="fromGuestDetail('delete')">
+          <ion-icon name="trash-outline"></ion-icon>
+          Eliminar huésped
+        </button>
+        <button type="button" class="entry-cancel-button" (click)="closeGuestDetail()">Cerrar</button>
+        <button type="button" (click)="fromGuestDetail('edit')">Modificar huésped</button>
+        <button type="button" class="entry-submit-button" (click)="fromGuestDetail('assign')">Asignar reserva</button>
+      </footer>
+    </section>
+  </dialog>
   }
 
   @if (editingGuestId !== null) {

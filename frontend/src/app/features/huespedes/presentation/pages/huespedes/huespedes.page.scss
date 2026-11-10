@@ -320,70 +320,6 @@ p {
           color: $text-muted;
         }
       }
-
-      .menu-icon {
-        display: flex;
-        width: 2rem;
-        height: 2rem;
-        flex: 0 0 auto;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-        border: 0;
-        border-radius: 8px;
-        background: transparent;
-        color: $text-muted;
-        cursor: pointer;
-
-        &:hover,
-        &[aria-expanded='true'] {
-          background: transparent;
-          color: $text-dark;
-        }
-      }
-
-      .guest-card-menu {
-        position: absolute;
-        z-index: 20;
-        top: calc(100% + 0.35rem);
-        right: 0;
-        display: flex;
-        min-width: 12rem;
-        flex-direction: column;
-        padding: 0.3rem;
-        border: 1px solid $border-color;
-        border-radius: 10px;
-        background: #ffffff;
-        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
-
-        button {
-          display: flex;
-          align-items: center;
-          gap: 0.55rem;
-          padding: 0.6rem 0.65rem;
-          border: 0;
-          border-radius: 7px;
-          background: #ffffff;
-          color: $text-dark;
-          font: inherit;
-          font-size: 0.8rem;
-          text-align: left;
-          white-space: nowrap;
-          cursor: pointer;
-
-          &:hover {
-            background: #f1f5f9;
-          }
-
-          &.delete-action {
-            color: #b91c1c;
-
-            &:hover {
-              background: #fef2f2;
-            }
-          }
-        }
-      }
     }
 
     .room-info {
@@ -451,26 +387,203 @@ p {
       display: flex;
       gap: 0.5rem;
 
-      button {
+      .whatsapp-button {
         flex: 1;
-        background: #ffffff;
-        border: 1px solid $border-color;
-        padding: 0.45rem;
-        border-radius: 6px;
-        font-size: 0.75rem;
-        color: $text-muted;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.3rem;
-
-        &:hover {
-          background: #f8fafc;
-          color: $text-dark;
-        }
       }
     }
+  }
+
+  .guest-card {
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+    }
+
+    &.status-confirmada:hover { box-shadow: 0 10px 22px rgba(37, 99, 235, 0.12); }
+    &.status-checkin_hoy:hover { box-shadow: 0 10px 22px rgba(22, 163, 74, 0.12); }
+    &.status-checkout_hoy:hover { box-shadow: 0 10px 22px rgba(217, 119, 6, 0.12); }
+    &.status-hospedado:hover { box-shadow: 0 10px 22px rgba(124, 58, 237, 0.12); }
+
+    &:focus-visible {
+      outline: 3px solid rgba(30, 80, 216, 0.35);
+      outline-offset: 3px;
+    }
+  }
+}
+
+// Same look as the old Email / Llamar buttons.
+.whatsapp-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.45rem;
+  border: 1px solid $border-color;
+  border-radius: 6px;
+  background: #ffffff;
+  color: $text-muted;
+  font: inherit;
+  font-size: 0.75rem;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: #f8fafc;
+    color: $text-dark;
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
+.extra-reservations-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: var(--guest-status-color, #2563eb);
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.guest-detail-modal {
+  width: min(680px, 100%);
+
+  .guest-detail-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+
+    h2 {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .star-icon {
+      color: #eab308;
+      font-size: 1rem;
+    }
+  }
+
+  .guest-detail-avatar {
+    display: flex;
+    width: 46px;
+    height: 46px;
+    flex: 0 0 46px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    font-weight: 700;
+
+    &.color-purple { background: #f3e8ff; color: #7c3aed; }
+    &.color-orange { background: #ffedd5; color: #ea580c; }
+    &.color-green { background: #dcfce7; color: #16a34a; }
+    &.color-blue { background: #e0f2fe; color: #0284c7; }
+  }
+
+  .guest-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem 1rem;
+    margin: 0;
+
+    dt {
+      color: $text-muted;
+      font-size: 0.72rem;
+    }
+
+    dd {
+      margin: 0.1rem 0 0;
+      color: $text-dark;
+      font-size: 0.85rem;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  .guest-detail-whatsapp {
+    width: fit-content;
+    margin-top: 0.85rem;
+    padding: 0.45rem 0.9rem;
+  }
+
+  .guest-reservation-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.8rem 0.9rem;
+    border: 1px solid $border-color;
+    border-radius: 10px;
+    background: #ffffff;
+
+    & + .guest-reservation-item {
+      margin-top: 0.6rem;
+    }
+
+    &.is-past {
+      background: #f8fafc;
+
+      strong { color: $text-muted; }
+    }
+  }
+
+  .guest-reservation-main {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+
+    strong {
+      color: $text-dark;
+      font-size: 0.88rem;
+    }
+  }
+
+  .guest-reservation-dates,
+  .guest-reservation-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem;
+    color: $text-muted;
+    font-size: 0.75rem;
+  }
+
+  .guest-reservation-edit {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.45rem 0.75rem;
+    border: 1px solid $border-color;
+    border-radius: 8px;
+    background: #ffffff;
+    color: $text-dark;
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover {
+      background: #f1f5f9;
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .guest-detail-modal {
+    .guest-detail-grid { grid-template-columns: 1fr; }
+    .guest-reservation-item { flex-direction: column; align-items: stretch; }
+    .guest-reservation-edit { justify-content: center; }
   }
 }
 
@@ -480,6 +593,21 @@ p {
 
 .guest-delete-modal {
   width: min(480px, 100%);
+}
+
+.guest-detail-delete-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-right: auto;
+  border-color: #fecaca !important;
+  background: #ffffff !important;
+  color: #b91c1c !important;
+
+  &:hover {
+    border-color: #b91c1c !important;
+    background: #fef2f2 !important;
+  }
 }
 
 .guest-delete-confirm-button {
