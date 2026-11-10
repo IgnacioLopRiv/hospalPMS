@@ -31,7 +31,10 @@ export class SedesController {
   @Get()
   async findAll() {
     const sedes = await this.prisma.sede.findMany({
-      include: { tipologias: true, habitaciones: true },
+      include: {
+        tipologias: true,
+        habitaciones: { where: { activa: true } },
+      },
       orderBy: { nombreSede: 'asc' },
     });
 

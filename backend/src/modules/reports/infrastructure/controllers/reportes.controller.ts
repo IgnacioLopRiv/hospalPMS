@@ -39,7 +39,7 @@ export class ReportesController {
 
     const [rooms, reservas, pagos, inventario] = await Promise.all([
       this.prisma.habitacion.findMany({
-        where: { sedeId },
+        where: { sedeId, activa: true },
         select: {
           id: true,
           estado: true,

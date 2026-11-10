@@ -594,20 +594,30 @@ export class HabitacionesPage implements OnInit, OnDestroy {
       return;
     }
 
+    // La habitación queda inactiva en el backend (soft delete), así que se
+    // conservan sus fotos e historial.
     try {
-      await this.fotoHabitacionService.removeRoomPhotos(room.id);
+      await this.sedeService.updateSelectedSede({
+        nombre: sedeActual.nombre,
+        habitaciones: this.habitaciones().filter((item) => item.id !== room.id),
+      });
     } catch (error) {
-      this.setPhotoNotice(
-        error instanceof Error ? error.message : 'No se pudieron eliminar las fotos de la habitación.',
-        true
-      );
+      this.confirmRoomDelete.set(false);
+      this.roomFormError.set(this.extractErrorMessage(error, 'No se pudo eliminar la habitación.'));
       return;
     }
-    await this.sedeService.updateSelectedSede({
-      nombre: sedeActual.nombre,
-      habitaciones: this.habitaciones().filter((item) => item.id !== room.id),
-    });
     this.closeRoomEditor();
+  }
+
+  private extractErrorMessage(error: unknown, fallback: string): string {
+    const apiMessage = (error as { error?: { message?: unknown } })?.error?.message;
+    if (typeof apiMessage === 'string' && apiMessage.trim()) {
+      return apiMessage;
+    }
+    if (Array.isArray(apiMessage) && apiMessage.length > 0) {
+      return String(apiMessage[0]);
+    }
+    return error instanceof Error && error.message ? error.message : fallback;
   }
 
   onRoomCardKeydown(event: KeyboardEvent, room: Habitacion): void {

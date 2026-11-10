@@ -35,6 +35,22 @@ const ACTIVE_STATES: EstadoReserva[] = [
   EstadoReserva.EN_CURSO,
 ];
 
+/**
+ * Días después de la salida de una reserva activa en los que nadie más puede
+ * reservar la habitación, para que esa misma reserva pueda extender su estadía.
+ * El margen se libera cuando la reserva finaliza o se cancela.
+ */
+export const CHECKOUT_MARGIN_DAYS = 2;
+
+interface AvailabilityCheck {
+  habitacionId: number;
+  huespedId: number;
+  arrivalDate: string;
+  departureDate: string;
+  nextState: EstadoReserva;
+  excludeReservationId?: number;
+}
+
 @Controller('reservas')
 export class ReservasController {
   constructor(
@@ -64,6 +80,8 @@ export class ReservasController {
       );
     }
     this.validateDateRange(input.fecha_llegada, input.fecha_salida);
+    this.validateNotInPast(input.fecha_llegada, 'llegada');
+    this.validateNotInPast(input.fecha_salida, 'salida');
 
     const [huesped, habitacion] = await Promise.all([
       this.prisma.huesped.findUnique({ where: { id: input.id_huesped } }),
@@ -83,6 +101,7 @@ export class ReservasController {
         'El huésped y la habitación deben pertenecer a la misma sede.',
       );
     }
+    this.validateGuestActive(huesped);
     this.validateRoomAllowed(habitacion);
     this.validateCapacity(habitacion, input.cantidad_personas);
 
@@ -92,22 +111,18 @@ export class ReservasController {
         'No se puede crear una reserva en estado CANCELADA.',
       );
     }
-    await this.assertNoOverlap(
-      input.id_habitacion,
-      input.fecha_llegada,
-      input.fecha_salida,
-      expectedState,
-    );
+    const availability: AvailabilityCheck = {
+      habitacionId: input.id_habitacion,
+      huespedId: input.id_huesped,
+      arrivalDate: input.fecha_llegada,
+      departureDate: input.fecha_salida,
+      nextState: expectedState,
+    };
+    await this.assertAvailability(this.prisma, availability);
 
     let createdPaymentId: number | null = null;
     const reservation = await this.prisma.$transaction(async (transaction) => {
-      await this.assertNoOverlapInTransaction(
-        transaction,
-        input.id_habitacion!,
-        input.fecha_llegada!,
-        input.fecha_salida!,
-        expectedState,
-      );
+      await this.assertAvailability(transaction, availability);
 
       const saved = await transaction.reserva.create({
         data: this.toDatabase(
@@ -165,6 +180,12 @@ export class ReservasController {
       const nextFechaSalida =
         input.fecha_salida ?? this.toDateKey(existing.fechaCheckOut);
       this.validateDateRange(nextFechaLlegada, nextFechaSalida);
+      if (nextFechaLlegada !== this.toDateKey(existing.fechaCheckIn)) {
+        this.validateNotInPast(nextFechaLlegada, 'llegada');
+      }
+      if (nextFechaSalida !== this.toDateKey(existing.fechaCheckOut)) {
+        this.validateNotInPast(nextFechaSalida, 'salida');
+      }
 
       const targetHuespedId = input.id_huesped ?? existing.huespedId;
       const targetHabitacionId = input.id_habitacion ?? existing.habitacionId;
@@ -189,6 +210,9 @@ export class ReservasController {
         throw new BadRequestException(
           'El huésped y la habitación deben pertenecer a la sede activa.',
         );
+      }
+      if (targetHuespedId !== existing.huespedId) {
+        this.validateGuestActive(huesped);
       }
 
       if (
@@ -215,18 +239,15 @@ export class ReservasController {
           : existing.estado;
       this.validateStateTransition(existing.estado, nextState);
 
-      if (
-        nextState !== EstadoReserva.CANCELADA &&
-        nextState !== EstadoReserva.FINALIZADA
-      ) {
-        await this.assertNoOverlap(
-          targetHabitacionId,
-          nextFechaLlegada,
-          nextFechaSalida,
-          nextState,
-          id,
-        );
-      }
+      const availability: AvailabilityCheck = {
+        habitacionId: targetHabitacionId,
+        huespedId: targetHuespedId,
+        arrivalDate: nextFechaLlegada,
+        departureDate: nextFechaSalida,
+        nextState,
+        excludeReservationId: id,
+      };
+      await this.assertAvailability(this.prisma, availability);
 
       let createdPaymentId: number | null = null;
       let didCheckout = false;
@@ -240,19 +261,7 @@ export class ReservasController {
           if (!previous)
             throw new NotFoundException(`No existe la reserva ${id}.`);
 
-          if (
-            nextState !== EstadoReserva.CANCELADA &&
-            nextState !== EstadoReserva.FINALIZADA
-          ) {
-            await this.assertNoOverlapInTransaction(
-              transaction,
-              targetHabitacionId,
-              nextFechaLlegada,
-              nextFechaSalida,
-              nextState,
-              id,
-            );
-          }
+          await this.assertAvailability(transaction, availability);
 
           const saved = await transaction.reserva.update({
             where: { id },
@@ -404,7 +413,13 @@ export class ReservasController {
   private validateRoomAllowed(habitacion: {
     estado: EstadoHabitacion;
     numero: string;
+    activa: boolean;
   }): void {
+    if (!habitacion.activa) {
+      throw new ConflictException(
+        `La habitación ${habitacion.numero} fue eliminada y no puede reservarse.`,
+      );
+    }
     if (habitacion.estado === EstadoHabitacion.MANTENIMIENTO) {
       throw new ConflictException(
         `La habitación ${habitacion.numero} está en mantenimiento y no puede reservarse.`,
@@ -437,69 +452,109 @@ export class ReservasController {
     }
   }
 
-  private async assertNoOverlap(
-    habitacionId: number,
-    arrivalDate: string,
-    departureDate: string,
-    nextState: EstadoReserva,
-    excludeReservationId?: number,
-  ): Promise<void> {
-    await this.assertNoOverlapWithClient(
-      this.prisma,
-      habitacionId,
-      arrivalDate,
-      departureDate,
-      nextState,
-      excludeReservationId,
-    );
-  }
-
-  private async assertNoOverlapInTransaction(
-    transaction: Transaction,
-    habitacionId: number,
-    arrivalDate: string,
-    departureDate: string,
-    nextState: EstadoReserva,
-    excludeReservationId?: number,
-  ): Promise<void> {
-    await this.assertNoOverlapWithClient(
-      transaction,
-      habitacionId,
-      arrivalDate,
-      departureDate,
-      nextState,
-      excludeReservationId,
-    );
-  }
-
-  private async assertNoOverlapWithClient(
-    client: PrismaService | Transaction,
-    habitacionId: number,
-    arrivalDate: string,
-    departureDate: string,
-    nextState: EstadoReserva,
-    excludeReservationId?: number,
-  ): Promise<void> {
-    if (!ACTIVE_STATES.includes(nextState)) return;
-
-    const overlapping = await client.reserva.findFirst({
-      where: {
-        habitacionId,
-        estado: { in: ACTIVE_STATES },
-        ...(excludeReservationId !== undefined
-          ? { id: { not: excludeReservationId } }
-          : {}),
-        fechaCheckIn: { lt: new Date(`${departureDate}T00:00:00`) },
-        fechaCheckOut: { gt: new Date(`${arrivalDate}T00:00:00`) },
-      },
-      select: { id: true },
-    });
-
-    if (overlapping) {
-      throw new ConflictException(
-        'La habitación ya tiene una reserva activa que se solapa con estas fechas.',
+  /** Las fechas no pueden ser anteriores al día en que se crea/edita la reserva. */
+  private validateNotInPast(date: string, label: 'llegada' | 'salida'): void {
+    const today = this.todayKey();
+    if (date < today) {
+      throw new BadRequestException(
+        `La fecha de ${label} (${date}) no puede ser anterior a hoy (${today}).`,
       );
     }
+  }
+
+  private validateGuestActive(huesped: { eliminadoEn: Date | null }): void {
+    if (huesped.eliminadoEn) {
+      throw new BadRequestException(
+        'El huésped fue eliminado y no puede recibir reservas.',
+      );
+    }
+  }
+
+  /**
+   * Valida, para una reserva activa:
+   * - que el huésped no tenga otra reserva activa en las mismas fechas;
+   * - que la habitación no tenga otra reserva activa que se solape, incluyendo
+   *   el margen de CHECKOUT_MARGIN_DAYS después de la salida de cada reserva.
+   */
+  private async assertAvailability(
+    client: PrismaService | Transaction,
+    check: AvailabilityCheck,
+  ): Promise<void> {
+    if (!ACTIVE_STATES.includes(check.nextState)) return;
+
+    const arrival = this.fromDateKey(check.arrivalDate);
+    const departure = this.fromDateKey(check.departureDate);
+    const excludeSelf =
+      check.excludeReservationId !== undefined
+        ? { id: { not: check.excludeReservationId } }
+        : {};
+
+    const guestOverlap = await client.reserva.findFirst({
+      where: {
+        huespedId: check.huespedId,
+        estado: { in: ACTIVE_STATES },
+        ...excludeSelf,
+        fechaCheckIn: { lt: departure },
+        fechaCheckOut: { gt: arrival },
+      },
+      select: { codigo: true, fechaCheckIn: true, fechaCheckOut: true },
+    });
+    if (guestOverlap) {
+      throw new ConflictException(
+        `El huésped ya tiene una reserva activa${guestOverlap.codigo ? ` (${guestOverlap.codigo})` : ''} ` +
+          `del ${this.toDateKey(guestOverlap.fechaCheckIn)} al ${this.toDateKey(guestOverlap.fechaCheckOut)} que coincide con estas fechas.`,
+      );
+    }
+
+    // Con margen: [llegada, salida + margen) de ambas reservas no debe cruzarse.
+    const roomConflict = await client.reserva.findFirst({
+      where: {
+        habitacionId: check.habitacionId,
+        estado: { in: ACTIVE_STATES },
+        ...excludeSelf,
+        fechaCheckIn: {
+          lt: this.addDays(departure, CHECKOUT_MARGIN_DAYS),
+        },
+        fechaCheckOut: {
+          gt: this.addDays(arrival, -CHECKOUT_MARGIN_DAYS),
+        },
+      },
+      orderBy: { fechaCheckIn: 'asc' },
+      select: { codigo: true, fechaCheckIn: true, fechaCheckOut: true },
+    });
+    if (!roomConflict) return;
+
+    const range = `${this.toDateKey(roomConflict.fechaCheckIn)} al ${this.toDateKey(roomConflict.fechaCheckOut)}`;
+    const code = roomConflict.codigo ? ` (${roomConflict.codigo})` : '';
+    const strictOverlap =
+      roomConflict.fechaCheckIn < departure &&
+      roomConflict.fechaCheckOut > arrival;
+    if (strictOverlap) {
+      throw new ConflictException(
+        `La habitación ya tiene una reserva activa${code} del ${range} que se solapa con estas fechas.`,
+      );
+    }
+    throw new ConflictException(
+      `La habitación tiene una reserva activa${code} del ${range}. ` +
+        `Se deben dejar ${CHECKOUT_MARGIN_DAYS} días libres después de cada salida para permitir extensiones de estadía.`,
+    );
+  }
+
+  private fromDateKey(dateKey: string): Date {
+    return new Date(`${dateKey}T00:00:00`);
+  }
+
+  private addDays(date: Date, days: number): Date {
+    const result = new Date(date);
+    result.setDate(result.getDate() + days);
+    return result;
+  }
+
+  /** Fecha de hoy (YYYY-MM-DD) en la zona horaria del servidor. */
+  private todayKey(): string {
+    const now = new Date();
+    const pad = (value: number) => String(value).padStart(2, '0');
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
   }
 
   private async releaseRoomOnCancel(

@@ -207,6 +207,7 @@ model Habitacion {
   descripcion        String?                @db.Text
   huespedActual      String?
   aseoIniciado       DateTime?
+  activa             Boolean                @default(true)
   sede               Sede                   @relation(fields: [sedeId], references: [id])
   tipologia          Tipologia              @relation(fields: [tipologiaId], references: [id])
   reservas           Reserva[]
@@ -281,7 +282,8 @@ model Huesped {
   telefono           String    @db.VarChar(20)
   esRecurrente       Boolean   @default(false)
   diasUltimoRegistro Int?
-  sede               Sede      @relation(fields: [sedeId], references: [id])
+  eliminadoEn        DateTime?
+  sede              Sede      @relation(fields: [sedeId], references: [id])
   reservas           Reserva[]
 
   @@unique([sedeId, rutPasaporte])

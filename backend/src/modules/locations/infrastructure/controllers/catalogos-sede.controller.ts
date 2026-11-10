@@ -11,6 +11,7 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { HabitacionRepository } from '../../domain/repositories/habitacion.repository';
 import { TipologiaRepository } from '../../domain/repositories/tipologia.repository';
 import { EstadoHabitacion } from '../../domain/entities/habitacion.entity';
@@ -81,18 +82,30 @@ export class CatalogosSedeController {
     if (!input.numero?.trim() || !input.tipologiaId) {
       throw new BadRequestException('numero y tipologiaId son obligatorios.');
     }
-    const room = await this.habitaciones.create({
-      sedeId,
-      numero: input.numero.trim(),
-      tipologiaId: input.tipologiaId,
-      cantidadPersonas: input.cantidadPersonas ?? 1,
-      estado: input.estado ? STATE_TO_DOMAIN[input.estado] : undefined,
-      tamanoM2: input.tamanoM2,
-      disposicionMuebles: input.disposicionMuebles,
-      descripcion: input.descripcion,
-      huespedActual: input.huespedActual,
-      aseoIniciado: input.aseoIniciado ? new Date(input.aseoIniciado) : null,
-    });
+    const room = await this.habitaciones
+      .create({
+        sedeId,
+        numero: input.numero.trim(),
+        tipologiaId: input.tipologiaId,
+        cantidadPersonas: input.cantidadPersonas ?? 1,
+        estado: input.estado ? STATE_TO_DOMAIN[input.estado] : undefined,
+        tamanoM2: input.tamanoM2,
+        disposicionMuebles: input.disposicionMuebles,
+        descripcion: input.descripcion,
+        huespedActual: input.huespedActual,
+        aseoIniciado: input.aseoIniciado ? new Date(input.aseoIniciado) : null,
+      })
+      .catch((error: unknown) => {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          throw new ConflictException(
+            `Ya existe una habitación con el número ${input.numero?.trim()} en esta sede (puede ser una habitación eliminada).`,
+          );
+        }
+        throw error;
+      });
     return {
       id: room.id,
       numero: room.numero,
@@ -156,13 +169,18 @@ export class CatalogosSedeController {
 
   @Delete('habitaciones/:id')
   async deleteRoom(@Param('id', ParseIntPipe) id: number) {
+    const activeReservations =
+      await this.habitaciones.countActiveReservations(id);
+    if (activeReservations > 0) {
+      throw new ConflictException(
+        `No se puede eliminar la habitación: tiene ${activeReservations} reserva(s) activa(s) asignada(s). Cancélalas, finalízalas o muévelas a otra habitación primero.`,
+      );
+    }
     try {
       await this.habitaciones.delete(id);
       return { deleted: true };
     } catch {
-      throw new ConflictException(
-        `No se pudo eliminar la habitación ${id}; puede tener reservas o inventario asociado.`,
-      );
+      throw new NotFoundException(`No existe la habitación ${id}.`);
     }
   }
 

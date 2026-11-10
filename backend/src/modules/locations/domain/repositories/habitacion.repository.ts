@@ -32,7 +32,10 @@ export abstract class HabitacionRepository {
       aseoIniciado: Date | null;
     }>,
   ): Promise<Habitacion>;
+  /** Soft delete: marca la habitación como inactiva. */
   abstract delete(id: number): Promise<void>;
+  /** Reservas confirmadas o en curso asignadas a la habitación. */
+  abstract countActiveReservations(id: number): Promise<number>;
   abstract updateEstado(
     id: number,
     estado: EstadoHabitacion,

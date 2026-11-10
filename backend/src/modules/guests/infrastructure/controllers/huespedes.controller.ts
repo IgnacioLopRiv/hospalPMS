@@ -12,7 +12,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { EstadoReserva, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
 import { HuespedDto, HuespedSedeQueryDto } from '../dto/huesped.dto';
 
@@ -23,7 +23,7 @@ export class HuespedesController {
   @Get()
   async findAll(@Query() query: HuespedSedeQueryDto) {
     const huespedes = await this.prisma.huesped.findMany({
-      where: { sedeId: query.sedeId },
+      where: { sedeId: query.sedeId, eliminadoEn: null },
       orderBy: [{ apellidos: 'asc' }, { nombres: 'asc' }],
     });
     return huespedes.map((guest) => this.toFrontend(guest));
@@ -55,6 +55,7 @@ export class HuespedesController {
     }
 
     const data = this.toDatabase({ ...input, sedeId: requestedSedeId });
+    await this.assertUniqueIdentity(requestedSedeId, data);
     try {
       const guest = await this.prisma.huesped.create({
         data: data as Prisma.HuespedUncheckedCreateInput,
@@ -85,10 +86,12 @@ export class HuespedesController {
         'No se puede mover un huésped a otra sede desde esta operación.',
       );
     }
+    const data = this.toDatabase(input, true);
+    await this.assertUniqueIdentity(query.sedeId, data, id);
     try {
       const guest = await this.prisma.huesped.update({
-        where: { id, sedeId: query.sedeId },
-        data: this.toDatabase(input, true),
+        where: { id, sedeId: query.sedeId, eliminadoEn: null },
+        data,
       });
       return this.toFrontend(guest);
     } catch (error) {
@@ -116,35 +119,38 @@ export class HuespedesController {
     @Query() query: HuespedSedeQueryDto,
   ) {
     const guest = await this.prisma.huesped.findFirst({
-      where: { id, sedeId: query.sedeId },
+      where: { id, sedeId: query.sedeId, eliminadoEn: null },
       select: { id: true },
     });
     if (!guest) {
       throw new NotFoundException(`No existe el huésped ${id} en esta sede.`);
     }
-    const reservations = await this.prisma.reserva.findMany({
-      where: { huespedId: id, habitacion: { sedeId: query.sedeId } },
-      select: { id: true },
+    const activeReservations = await this.prisma.reserva.count({
+      where: {
+        huespedId: id,
+        estado: { in: [EstadoReserva.CONFIRMADA, EstadoReserva.EN_CURSO] },
+      },
     });
+    if (activeReservations > 0) {
+      throw new ConflictException(
+        `No se puede eliminar el huésped: tiene ${activeReservations} reserva(s) activa(s). Cancélalas o finalízalas primero.`,
+      );
+    }
     try {
-      await this.prisma.$transaction(async (transaction) => {
-        const reservationIds = reservations.map(
-          (reservation) => reservation.id,
-        );
-        if (reservationIds.length > 0) {
-          await transaction.pago.deleteMany({
-            where: { reservaId: { in: reservationIds } },
-          });
-          await transaction.documentoFacturacion.deleteMany({
-            where: { reservaId: { in: reservationIds } },
-          });
-          await transaction.reserva.deleteMany({
-            where: { id: { in: reservationIds } },
-          });
-        }
-        await transaction.huesped.delete({
-          where: { id, sedeId: query.sedeId },
-        });
+      // Se borran los datos personales pero se conservan sus reservas,
+      // pagos y documentos para los reportes.
+      await this.prisma.huesped.update({
+        where: { id, sedeId: query.sedeId },
+        data: {
+          rutPasaporte: `ELIMINADO-${id}`,
+          nombres: 'Huésped',
+          apellidos: 'eliminado',
+          email: '',
+          telefono: '',
+          esRecurrente: false,
+          diasUltimoRegistro: null,
+          eliminadoEn: new Date(),
+        },
       });
       return { deleted: true };
     } catch (error) {
@@ -156,6 +162,38 @@ export class HuespedesController {
       }
       throw error;
     }
+  }
+
+  /** RUT/pasaporte y email no pueden repetirse entre huéspedes de una misma sede. */
+  private async assertUniqueIdentity(
+    sedeId: number,
+    data: { rutPasaporte?: string; email?: string },
+    excludeId?: number,
+  ): Promise<void> {
+    const conditions: Prisma.HuespedWhereInput[] = [];
+    if (data.rutPasaporte) conditions.push({ rutPasaporte: data.rutPasaporte });
+    if (data.email) conditions.push({ email: data.email });
+    if (conditions.length === 0) return;
+
+    const duplicate = await this.prisma.huesped.findFirst({
+      where: {
+        sedeId,
+        eliminadoEn: null,
+        OR: conditions,
+        ...(excludeId !== undefined ? { id: { not: excludeId } } : {}),
+      },
+      select: { rutPasaporte: true, email: true },
+    });
+    if (!duplicate) return;
+
+    if (data.rutPasaporte && duplicate.rutPasaporte === data.rutPasaporte) {
+      throw new ConflictException(
+        'Ya existe un huésped registrado con ese RUT/pasaporte en esta sede.',
+      );
+    }
+    throw new ConflictException(
+      'Ya existe un huésped registrado con ese email en esta sede.',
+    );
   }
 
   private toDatabase(input: HuespedDto, partial = false) {
@@ -185,7 +223,9 @@ export class HuespedesController {
       ...(input.telefono !== undefined
         ? { telefono: input.telefono.trim() }
         : {}),
-      ...(input.email !== undefined ? { email: input.email.trim() } : {}),
+      ...(input.email !== undefined
+        ? { email: input.email.trim().toLowerCase() }
+        : {}),
       ...(input.es_recurrente !== undefined
         ? { esRecurrente: input.es_recurrente }
         : {}),

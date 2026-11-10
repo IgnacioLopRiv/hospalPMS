@@ -58,7 +58,7 @@ export class PrismaHabitacionRepository implements HabitacionRepository {
 
   async findBySedeId(sedeId: number): Promise<Habitacion[]> {
     const rows = await this.prisma.habitacion.findMany({
-      where: { sedeId },
+      where: { sedeId, activa: true },
       orderBy: { numero: 'asc' },
     });
     return rows.map((r) => this.toEntity(r));
@@ -117,8 +117,21 @@ export class PrismaHabitacionRepository implements HabitacionRepository {
     return this.toEntity(raw);
   }
 
+  /** Soft delete: la habitación queda inactiva y conserva su historial. */
   async delete(id: number): Promise<void> {
-    await this.prisma.habitacion.delete({ where: { id } });
+    await this.prisma.habitacion.update({
+      where: { id, activa: true },
+      data: { activa: false, huespedActual: null },
+    });
+  }
+
+  async countActiveReservations(id: number): Promise<number> {
+    return this.prisma.reserva.count({
+      where: {
+        habitacionId: id,
+        estado: { in: ['CONFIRMADA', 'EN_CURSO'] },
+      },
+    });
   }
 
   async updateEstado(
