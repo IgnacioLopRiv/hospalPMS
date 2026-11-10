@@ -696,10 +696,10 @@ export class CheckPagePage implements OnInit, OnDestroy {
       return;
     }
 
-    const formattedDigits = digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-    this.entryForm.documento = digits.length === 9
-      ? `${digits.slice(0, 8).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}-${digits.slice(-1)}`
-      : formattedDigits;
+    // The last digit is always the check digit, whatever the RUT length.
+    this.entryForm.documento = digits.length === 1
+      ? digits
+      : `${digits.slice(0, -1).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}-${digits.slice(-1)}`;
   }
 
   sanitizeDigits(value: string, maxLength = 20): string {

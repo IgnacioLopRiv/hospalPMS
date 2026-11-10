@@ -503,10 +503,23 @@ describe('CheckPagePage', () => {
 
   it('formats the RUT as it is typed', () => {
     component.formatRut('12345678');
-    expect(component.entryForm.documento).toBe('12.345.678');
+    expect(component.entryForm.documento).toBe('1.234.567-8');
 
     component.formatRut('123456785');
     expect(component.entryForm.documento).toBe('12.345.678-5');
+
+    component.formatRut('11111114');
+    expect(component.entryForm.documento).toBe('1.111.111-4');
+    expect(component.isValidRut(component.entryForm.documento)).toBeTrue();
+
+    component.formatRut('1.111.111-4');
+    expect(component.entryForm.documento).toBe('1.111.111-4');
+
+    component.formatRut('1234567k');
+    expect(component.entryForm.documento).toBe('1.234.567-K');
+
+    component.formatRut('1');
+    expect(component.entryForm.documento).toBe('1');
   });
 
   it('keeps only numbers in passport and phone values', () => {
