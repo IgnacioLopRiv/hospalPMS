@@ -168,7 +168,7 @@ describe('CheckPagePage', () => {
       documento: '12.345.678-5',
       nombre: 'Ana',
       apellido: 'Pérez',
-      telefono: '912345678',
+      telefono: '961234567',
       phoneCountry: 'cl',
       email: 'ana@example.com',
       nacionalidad: 'Chile',

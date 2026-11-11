@@ -203,10 +203,33 @@
                   [countries]="countries"
                   mode="callingCode"
                   ariaLabel="Código telefónico del país"
-                  [(value)]="entryForm.phoneCountry">
+                  [value]="entryForm.phoneCountry"
+                  (valueChange)="onPhoneCountryChange($event)">
                 </app-country-picker>
-                <input name="telefono" type="text" required autocomplete="tel-national" inputmode="numeric" placeholder="Número" maxlength="9" pattern="[0-9]{4,9}" [ngModel]="entryForm.telefono" (input)="handlePhoneInput($event)">
+                <input
+                  #phoneModel="ngModel"
+                  name="telefono"
+                  type="text"
+                  required
+                  autocomplete="tel-national"
+                  inputmode="numeric"
+                  placeholder="Número"
+                  [attr.maxlength]="phoneMaxLength"
+                  pattern="[0-9]{4,15}"
+                  [class.phone-input-invalid]="phoneModel.touched && !phoneFieldFocused && entryForm.telefono && !isPhoneFormatValid"
+                  [ngModel]="entryForm.telefono"
+                  (focus)="phoneFieldFocused = true"
+                  (blur)="phoneFieldFocused = false"
+                  (input)="handlePhoneInput($event)">
+                @if (entryForm.telefono && !phoneFieldFocused && isPhoneFormatValid) {
+                <span class="phone-check-status phone-check-valid" role="status" aria-label="Formato válido">
+                  <ion-icon name="checkmark-circle-outline" aria-hidden="true"></ion-icon>
+                </span>
+                }
               </div>
+              @if (phoneModel.touched && !phoneFieldFocused && entryForm.telefono && !isPhoneFormatValid) {
+              <small class="entry-field-error" role="alert">{{ phoneFormatError }}</small>
+              }
             </label>
             <label class="entry-field">
               <span>Email</span>

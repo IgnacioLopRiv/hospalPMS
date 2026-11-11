@@ -26,6 +26,12 @@ import { SedeService } from '../../../../locations/application/sede.service';
 import { CheckPagePage } from '../../../../reservations/presentation/pages/check-page/check-page.page';
 import { GuestCardView, GuestReservationDetail, Habitacion, Huesped, Reserva } from '../../../../../shared/domain/hostal.model';
 import { COUNTRY_OPTIONS } from '../../../../../shared/domain/country-options';
+import {
+  isValidPhoneFormat,
+  limitPhoneDigits,
+  maxPhoneDigits,
+  PHONE_FORMAT_ERROR,
+} from '../../../../../shared/domain/phone-format';
 import { CountryPickerComponent } from '../../../../../shared/presentation/country-picker/country-picker.component';
 
 @Component({
@@ -63,6 +69,8 @@ export class HuespedesPage implements OnInit, OnDestroy {
   guestSuccessMessage = '';
   documentFieldFocused = false;
   emailFieldFocused = false;
+  phoneFieldFocused = false;
+  readonly phoneFormatError = PHONE_FORMAT_ERROR;
   guestForm = this.createEmptyGuestForm();
   readonly countries = COUNTRY_OPTIONS;
   openMenuCardIndex: number | null = null;
@@ -408,6 +416,7 @@ export class HuespedesPage implements OnInit, OnDestroy {
     this.guestSuccessMessage = '';
     this.documentFieldFocused = false;
     this.emailFieldFocused = false;
+    this.phoneFieldFocused = false;
     this.showNewGuestForm = true;
     this.setPageScrollLocked(true);
   }
@@ -450,6 +459,10 @@ export class HuespedesPage implements OnInit, OnDestroy {
     }
     if (this.guestForm.documentType === 'rut' && !this.isValidRut(this.guestForm.documento)) {
       this.guestError = 'Ingresa un RUT chileno válido.';
+      return;
+    }
+    if (!this.isPhoneFormatValid) {
+      this.guestError = PHONE_FORMAT_ERROR;
       return;
     }
 
@@ -550,8 +563,22 @@ export class HuespedesPage implements OnInit, OnDestroy {
     const input = event.target;
     if (!(input instanceof HTMLInputElement)) return;
 
-    this.guestForm.telefono = input.value.replace(/\D/g, '').slice(0, 9);
+    this.guestForm.telefono = limitPhoneDigits(this.guestForm.phoneCountry, input.value);
     input.value = this.guestForm.telefono;
+  }
+
+  /** Al cambiar de país se recorta el número si excede el nuevo máximo. */
+  onPhoneCountryChange(code: string): void {
+    this.guestForm.phoneCountry = code;
+    this.guestForm.telefono = limitPhoneDigits(code, this.guestForm.telefono);
+  }
+
+  get phoneMaxLength(): number {
+    return maxPhoneDigits(this.guestForm.phoneCountry) + 1;
+  }
+
+  get isPhoneFormatValid(): boolean {
+    return isValidPhoneFormat(this.guestForm.phoneCountry, this.guestForm.telefono);
   }
 
   get phoneCountry(): (typeof COUNTRY_OPTIONS)[number] {

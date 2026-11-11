@@ -40,6 +40,12 @@ import { FotoHabitacion } from '../../../../locations/domain/foto-habitacion.mod
 import { InventarioService } from '../../../../inventory/application/inventario.service';
 import { Tarifa, TarifasRepository } from '../../../../locations/domain/tarifas.repository';
 import { ModalPortalDirective } from '../../../../../shared/presentation/modal-portal/modal-portal.directive';
+import {
+  isValidPhoneFormat,
+  limitPhoneDigits,
+  maxPhoneDigits,
+  PHONE_FORMAT_ERROR,
+} from '../../../../../shared/domain/phone-format';
 
 export interface GuestDraft {
   documentType: 'rut' | 'passport';
@@ -121,6 +127,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
   private readonly inventarioService = inject(InventarioService);
   private readonly tarifasRepository = inject(TarifasRepository);
   private tarifasConfig: { sedeId: number; porcentajeAbono: number; tarifas: Tarifa[] } | null = null;
+  readonly phoneFormatError = PHONE_FORMAT_ERROR;
   @Input() modalOnly = false;
   @Input() guestDraft?: GuestDraft;
   @Input() existingGuestId: number | null = null;
@@ -146,6 +153,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
   checkInPaymentError = '';
   documentFieldFocused = false;
   emailFieldFocused = false;
+  phoneFieldFocused = false;
   guestMode: 'new' | 'existing' = 'new';
   selectedGuestId = '';
   guestPickerOpen = false;
@@ -242,6 +250,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
   openNewEntryForm(guestDraft?: GuestDraft): void {
     this.availableGuests.splice(0, this.availableGuests.length, ...this.hostalService.getGuests());
     this.entryForm = this.createEmptyEntryForm();
+    this.phoneFieldFocused = false;
     this.guestMode = 'new';
     this.selectedGuestId = '';
     this.guestPickerOpen = false;
@@ -386,6 +395,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
       !!this.entryForm.nombre.trim() &&
       !!this.entryForm.apellido.trim() &&
       !!this.entryForm.telefono.trim() &&
+      this.isPhoneFormatValid &&
       !!this.entryForm.nacionalidad.trim() &&
       this.isValidEmail(this.entryForm.email) &&
       (this.entryForm.documentType !== 'rut' || this.isValidRut(this.entryForm.documento)) &&
@@ -750,8 +760,23 @@ export class CheckPagePage implements OnInit, OnDestroy {
       return;
     }
 
-    this.entryForm.telefono = this.sanitizeDigits(input.value, 9);
+    this.entryForm.telefono = limitPhoneDigits(this.entryForm.phoneCountry, input.value);
     input.value = this.entryForm.telefono;
+  }
+
+  /** Al cambiar de país se recorta el número si excede el nuevo máximo. */
+  onPhoneCountryChange(code: string): void {
+    this.entryForm.phoneCountry = code;
+    this.entryForm.telefono = limitPhoneDigits(code, this.entryForm.telefono);
+  }
+
+  get phoneMaxLength(): number {
+    return maxPhoneDigits(this.entryForm.phoneCountry) + 1;
+  }
+
+  /** Formato válido para el país elegido (libphonenumber, local y gratis). */
+  get isPhoneFormatValid(): boolean {
+    return isValidPhoneFormat(this.entryForm.phoneCountry, this.entryForm.telefono);
   }
 
   get phoneCountry(): (typeof COUNTRY_OPTIONS)[number] {

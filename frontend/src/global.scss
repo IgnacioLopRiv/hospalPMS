@@ -808,9 +808,35 @@ dialog.entry-modal-backdrop.guest-edit-dialog::backdrop {
 }
 
 .entry-phone-input {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(115px, 0.8fr) minmax(0, 1.2fr);
   gap: 0.4rem;
+
+  input[name='telefono'] {
+    padding-right: 2.1rem;
+  }
+
+  input.phone-input-invalid {
+    border-color: #b91c1c;
+  }
+}
+
+// Check verde dentro del input de teléfono cuando el formato es válido.
+// Anidado en .entry-phone-input para ganarle a `.entry-field span`.
+.entry-phone-input .phone-check-status {
+  position: absolute;
+  top: 50%;
+  right: 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.entry-phone-input .phone-check-valid {
+  color: #15803d;
+  font-size: 1.15rem;
 }
 
 .entry-field-error {
