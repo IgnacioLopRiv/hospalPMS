@@ -22,12 +22,19 @@
             <ion-icon name="calendar-outline"></ion-icon>
             <span>{{ periodoLabel() }}</span>
           </div>
-          <button type="button" class="btn-action-primary" (click)="exportarReporte()" [disabled]="transaccionesFiltradas().length === 0">
+          <button type="button" class="btn-action-primary" (click)="exportarReporte()" [disabled]="!puedeExportar()" [attr.aria-busy]="exportando()">
             <ion-icon name="download-outline"></ion-icon>
-            <span>Exportar reporte</span>
+            <span>{{ exportando() ? 'Generando PDF…' : 'Exportar reporte' }}</span>
           </button>
         </div>
       </header>
+
+      @if (exportError()) {
+        <div class="reports-error" role="alert">
+          <p>{{ exportError() }}</p>
+          <button type="button" (click)="exportarReporte()">Reintentar</button>
+        </div>
+      }
 
       @if (operacionesError()) {
         <div class="reports-error" role="alert">

@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { ReportesPage } from './reportes.page';
 import { LocationsRepository } from '../../../../locations/domain/locations.repository';
 import { createLocationsRepositoryStub } from '../../../../locations/domain/testing/locations.repository.stub';
@@ -8,11 +8,13 @@ import { ReservasRepository } from '../../../../reservations/domain/reservas.rep
 import { HuespedRepository } from '../../../../huespedes/domain/huesped.repository';
 import { TarifasRepository } from '../../../../locations/domain/tarifas.repository';
 import { Reserva } from '../../../../../shared/domain/hostal.model';
+import { ReportesRepository } from '../../../domain/reportes.repository';
 
 describe('ReportesPage', () => {
   let component: ReportesPage;
   let fixture: ComponentFixture<ReportesPage>;
   let reservasRepository: { listBySede: jasmine.Spy };
+  let reportesRepository: { getResumen: jasmine.Spy; descargarPdf: jasmine.Spy };
 
   const today = new Date();
   const dateKey = (offset: number) => {
@@ -52,10 +54,15 @@ describe('ReportesPage', () => {
     reservasRepository = {
       listBySede: jasmine.createSpy().and.callFake((sedeId: number) => of(sedeId === 2 ? reservasCosta : reservas)),
     };
+    reportesRepository = {
+      getResumen: jasmine.createSpy(),
+      descargarPdf: jasmine.createSpy().and.returnValue(of(new Blob(['%PDF'], { type: 'application/pdf' }))),
+    };
     TestBed.configureTestingModule({
       providers: [
         { provide: LocationsRepository, useValue: createLocationsRepositoryStub([initialSede, otraSede]) },
         { provide: ReservasRepository, useValue: reservasRepository },
+        { provide: ReportesRepository, useValue: reportesRepository },
         {
           provide: HuespedRepository,
           useValue: {
@@ -155,5 +162,32 @@ describe('ReportesPage', () => {
     component.onEscape();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.detail-modal')).toBeNull();
+  });
+
+  it('downloads the PDF report for the selected period and scope', async () => {
+    const click = spyOn(HTMLAnchorElement.prototype, 'click');
+
+    await component.exportarReporte();
+    expect(reportesRepository.descargarPdf).toHaveBeenCalledWith({
+      sedeId: 1,
+      desde: component.fechaInicio(),
+      hasta: component.fechaFin(),
+    });
+    expect(click).toHaveBeenCalledTimes(1);
+    const link = click.calls.mostRecent().object as HTMLAnchorElement;
+    expect(link.download).toBe(`reporte-sede-de-prueba-${component.fechaInicio()}_${component.fechaFin()}.pdf`);
+
+    component.setAlcance('global');
+    await component.exportarReporte();
+    expect(reportesRepository.descargarPdf).toHaveBeenCalledWith(jasmine.objectContaining({ sedeId: null }));
+    expect(component.exportando()).toBeFalse();
+  });
+
+  it('shows an error when the PDF cannot be generated', async () => {
+    reportesRepository.descargarPdf.and.returnValue(throwError(() => new Error('boom')));
+    await component.exportarReporte();
+    fixture.detectChanges();
+    expect(component.exportError()).toContain('No se pudo generar');
+    expect(component.exportando()).toBeFalse();
   });
 });

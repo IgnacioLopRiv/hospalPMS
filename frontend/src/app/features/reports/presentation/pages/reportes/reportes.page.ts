@@ -54,8 +54,8 @@ import {
   TipoTarifaAplicada,
   TipoTarifaFiltro,
   TransaccionTarifa,
-  transaccionesToCsv,
 } from '../../../domain/reporte-transacciones';
+import { ReportesRepository } from '../../../domain/reportes.repository';
 
 const PAGE_SIZE = 15;
 const DEFAULT_ABONO_PORCENTAJE = 20;
@@ -85,10 +85,16 @@ export class ReportesPage {
   private readonly reservasRepository = inject(ReservasRepository);
   private readonly huespedRepository = inject(HuespedRepository);
   private readonly tarifasRepository = inject(TarifasRepository);
+  private readonly reportesRepository = inject(ReportesRepository);
   private cargaActual = '';
 
   readonly sede = this.sedeService.selectedSede;
   readonly sedes = this.sedeService.sedes;
+
+  // ----- Exportación PDF -----
+  readonly exportando = signal(false);
+  readonly exportError = signal('');
+  readonly puedeExportar = computed(() => this.rangoValido() && this.sedesReporte().length > 0 && !this.exportando());
 
   // ----- Alcance: sede actual o todas las sedes -----
   readonly alcance = signal<AlcanceReporte>('sede');
@@ -292,17 +298,28 @@ export class ReportesPage {
     if (this.transaccionSeleccionada()) this.closeDetalle();
   }
 
-  exportarReporte(): void {
-    const csv = transaccionesToCsv(this.transaccionesFiltradas());
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    const nombre = this.esGlobal() ? 'todas las sedes' : this.sede()?.nombre ?? 'sede';
-    const sedeName = nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    link.href = url;
-    link.download = `reporte-${sedeName}-${this.fechaInicio()}_${this.fechaFin()}.csv`;
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 0);
+  async exportarReporte(): Promise<void> {
+    if (!this.puedeExportar()) return;
+    const sedeId = this.esGlobal() ? null : this.sede()?.id ?? null;
+    const desde = this.fechaInicio();
+    const hasta = this.fechaFin();
+    this.exportando.set(true);
+    this.exportError.set('');
+    try {
+      const pdf = await firstValueFrom(this.reportesRepository.descargarPdf({ sedeId, desde, hasta }));
+      const nombre = this.esGlobal() ? 'todas las sedes' : this.sede()?.nombre ?? 'sede';
+      const sedeName = nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const url = URL.createObjectURL(pdf);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `reporte-${sedeName}-${desde}_${hasta}.pdf`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+    } catch {
+      this.exportError.set('No se pudo generar el reporte PDF. Intenta nuevamente.');
+    } finally {
+      this.exportando.set(false);
+    }
   }
 
   // ----- Presentación -----

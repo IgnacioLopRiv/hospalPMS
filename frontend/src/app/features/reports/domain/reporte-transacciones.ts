@@ -409,7 +409,7 @@ function conParticipacion(items: RankingItem[], total: number): RankingItem[] {
     .sort((a, b) => b.reservas - a.reservas || b.ingresos - a.ingresos || a.nombre.localeCompare(b.nombre));
 }
 
-// ----- Filtros y exportación ------------------------------------------------------
+// ----- Filtros ------------------------------------------------------------------
 
 export function filtrarTransacciones(
   transacciones: TransaccionTarifa[],
@@ -422,20 +422,4 @@ export function filtrarTransacciones(
       || (filtros.metodo === 'sin-registro' ? trx.metodoPago === null : trx.metodoPago === filtros.metodo))
     .filter((trx) => !query || trx.busquedaIndex.includes(query))
     .sort((a, b) => b.llegada.localeCompare(a.llegada) || b.reservaId - a.reservaId);
-}
-
-export function transaccionesToCsv(transacciones: TransaccionTarifa[]): string {
-  const header = [
-    'ID Transacción', 'Sede', 'Reserva', 'Huésped', 'Documento', 'Habitación', 'Tipología', 'Llegada', 'Salida', 'Noches',
-    'Tarifa', 'Tipo tarifa', 'Tarifa promedio noche', 'Subtotal tarifa', 'Ajuste', 'Total', 'IVA incluido',
-    'Abono inicial', 'Pagado', 'Saldo', 'Método de pago', 'Estado pago', 'Estado reserva',
-  ];
-  const rows = transacciones.map((trx) => [
-    trx.id, trx.sede ?? '', trx.reservaCodigo, trx.huesped, trx.huespedDocumento, trx.habitacion, trx.tipologia, trx.llegada, trx.salida,
-    trx.noches, trx.tarifaNombre, TIPO_TARIFA_LABELS[trx.tipoTarifa], Math.round(trx.tarifaNocheBase), trx.subtotalTarifa,
-    trx.ajuste, trx.total, trx.ivaIncluido, trx.abonoInicial, trx.pagado, trx.saldo,
-    METODO_PAGO_LABELS[trx.metodoPago ?? 'sin-registro'], ESTADO_PAGO_LABELS[trx.estadoPago], trx.estadoReserva,
-  ]);
-  const escape = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
-  return [header, ...rows].map((row) => row.map(escape).join(';')).join('\r\n');
 }

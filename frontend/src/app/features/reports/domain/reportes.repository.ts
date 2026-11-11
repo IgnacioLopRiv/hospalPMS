@@ -34,4 +34,12 @@ export interface ResumenReportes {
 
 export abstract class ReportesRepository {
   abstract getResumen(sedeId: number): Observable<ResumenReportes>;
+  /** Descarga el reporte de gestión en PDF. `sedeId: null` = todas las sedes. Fechas en YYYY-MM-DD (inclusivas). */
+  abstract descargarPdf(filtros: FiltrosReportePdf): Observable<Blob>;
+}
+
+export interface FiltrosReportePdf {
+  sedeId: number | null;
+  desde: string;
+  hasta: string;
 }

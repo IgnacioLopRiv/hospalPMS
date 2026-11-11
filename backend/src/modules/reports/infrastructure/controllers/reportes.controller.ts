@@ -2,11 +2,14 @@ import {
   BadRequestException,
   Controller,
   Get,
+  Header,
   NotFoundException,
   Query,
+  StreamableFile,
 } from '@nestjs/common';
 import { EstadoHabitacion, EstadoReserva } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
+import { ReportePdfService } from '../../application/reporte-pdf.service';
 
 const ACTIVE_STATES: EstadoReserva[] = [
   EstadoReserva.CONFIRMADA,
@@ -15,7 +18,56 @@ const ACTIVE_STATES: EstadoReserva[] = [
 
 @Controller('reportes')
 export class ReportesController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly reportePdf: ReportePdfService,
+  ) {}
+
+  /**
+   * Reporte de gestión en PDF.
+   * `alcance=global` incluye todas las sedes; si no, se requiere `sedeId`.
+   * `desde` y `hasta` (YYYY-MM-DD) son inclusivos.
+   */
+  @Get('pdf')
+  @Header('Cache-Control', 'no-store')
+  async pdf(
+    @Query('sedeId') sedeIdRaw?: string,
+    @Query('alcance') alcance?: string,
+    @Query('desde') desdeRaw?: string,
+    @Query('hasta') hastaRaw?: string,
+  ): Promise<StreamableFile> {
+    const global = alcance === 'global';
+    if (!global && (!sedeIdRaw || !/^\d+$/.test(sedeIdRaw))) {
+      throw new BadRequestException(
+        'Se requiere un sedeId válido o alcance=global.',
+      );
+    }
+    const desde = parseFecha(desdeRaw, 'desde');
+    const ultimoDia = parseFecha(hastaRaw, 'hasta');
+    if (ultimoDia < desde) {
+      throw new BadRequestException(
+        'La fecha "desde" debe ser anterior o igual a "hasta".',
+      );
+    }
+    const hasta = new Date(
+      ultimoDia.getFullYear(),
+      ultimoDia.getMonth(),
+      ultimoDia.getDate() + 1,
+    );
+    if (hasta.getTime() - desde.getTime() > 732 * 86_400_000) {
+      throw new BadRequestException('El periodo no puede superar los 2 años.');
+    }
+
+    const buffer = await this.reportePdf.generar({
+      sedeId: global ? null : Number(sedeIdRaw),
+      periodo: { desde, hasta },
+    });
+    return new StreamableFile(buffer, {
+      type: 'application/pdf',
+      disposition: `attachment; filename="reporte-${desdeRaw}_${hastaRaw}.pdf"`,
+      length: buffer.length,
+    });
+  }
 
   @Get('resumen')
   async resumen(@Query('sedeId') sedeIdRaw?: string) {
@@ -181,4 +233,21 @@ export class ReportesController {
       },
     };
   }
+}
+
+function parseFecha(valor: string | undefined, campo: string): Date {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(valor ?? '');
+  if (!match) {
+    throw new BadRequestException(`"${campo}" debe tener formato YYYY-MM-DD.`);
+  }
+  const [y, m, d] = match.slice(1).map(Number);
+  const fecha = new Date(y, m - 1, d);
+  if (
+    fecha.getFullYear() !== y ||
+    fecha.getMonth() !== m - 1 ||
+    fecha.getDate() !== d
+  ) {
+    throw new BadRequestException(`"${campo}" no es una fecha válida.`);
+  }
+  return fecha;
 }

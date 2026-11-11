@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-import { ReportesRepository, ResumenReportes } from '../domain/reportes.repository';
+import { FiltrosReportePdf, ReportesRepository, ResumenReportes } from '../domain/reportes.repository';
 
 @Injectable()
 export class ReportesHttpRepository extends ReportesRepository {
@@ -12,6 +12,14 @@ export class ReportesHttpRepository extends ReportesRepository {
   getResumen(sedeId: number): Observable<ResumenReportes> {
     return this.http.get<ResumenReportes>(`${this.apiUrl}/reportes/resumen`, {
       params: { sedeId },
+    });
+  }
+
+  descargarPdf({ sedeId, desde, hasta }: FiltrosReportePdf): Observable<Blob> {
+    const alcance = sedeId === null ? { alcance: 'global' } : { sedeId };
+    return this.http.get(`${this.apiUrl}/reportes/pdf`, {
+      params: { ...alcance, desde, hasta },
+      responseType: 'blob',
     });
   }
 }
