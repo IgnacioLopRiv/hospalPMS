@@ -272,7 +272,11 @@ export class AuthService {
       return { ok: false, message: 'No se encontró la cuenta asociada al enlace.' };
     }
 
-    this.updateUser(user.id, { password: newPassword.trim() });
+    try {
+      await this.updateUser(user.id, { password: newPassword.trim() });
+    } catch {
+      return { ok: false, message: 'No se pudo actualizar la contraseña. Inténtalo de nuevo.' };
+    }
     this.recoveryTokens.delete(foundEmail);
 
     return { ok: true, message: 'La contraseña se actualizó. Ya puedes ingresar.' };

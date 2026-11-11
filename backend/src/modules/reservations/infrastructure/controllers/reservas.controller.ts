@@ -42,6 +42,9 @@ const ACTIVE_STATES: EstadoReserva[] = [
  */
 export const CHECKOUT_MARGIN_DAYS = 2;
 
+/** Zona horaria del hostal para decidir qué día es "hoy" (el contenedor puede estar en UTC). */
+const HOTEL_TIME_ZONE = process.env.HOTEL_TIMEZONE || 'America/Santiago';
+
 interface AvailabilityCheck {
   habitacionId: number;
   huespedId: number;
@@ -391,6 +394,10 @@ export class ReservasController {
     }
   }
 
+  /**
+   * La capacidad la define la tipología (es lo que se configura en el front);
+   * habitacion.cantidadPersonas solo se usa si la habitación no tiene tipología.
+   */
   private validateCapacity(
     habitacion: {
       cantidadPersonas: number;
@@ -399,10 +406,9 @@ export class ReservasController {
     cantidadPersonas?: number | null,
   ): void {
     const requested = cantidadPersonas ?? 1;
-    const capacity = Math.min(
-      habitacion.cantidadPersonas || Number.POSITIVE_INFINITY,
-      habitacion.tipologia?.capacidadMax ?? Number.POSITIVE_INFINITY,
-    );
+    const capacity =
+      habitacion.tipologia?.capacidadMax ??
+      (habitacion.cantidadPersonas || Number.POSITIVE_INFINITY);
     if (requested > capacity) {
       throw new BadRequestException(
         `La cantidad de personas (${requested}) supera la capacidad de la habitación (${capacity}).`,
@@ -540,21 +546,28 @@ export class ReservasController {
     );
   }
 
+  /**
+   * Las fechas de estadía se guardan a medianoche UTC para que no dependan de la
+   * zona horaria del servidor (toDateKey las lee con toISOString).
+   */
   private fromDateKey(dateKey: string): Date {
-    return new Date(`${dateKey}T00:00:00`);
+    return new Date(`${dateKey}T00:00:00Z`);
   }
 
   private addDays(date: Date, days: number): Date {
     const result = new Date(date);
-    result.setDate(result.getDate() + days);
+    result.setUTCDate(result.getUTCDate() + days);
     return result;
   }
 
-  /** Fecha de hoy (YYYY-MM-DD) en la zona horaria del servidor. */
+  /** Fecha de hoy (YYYY-MM-DD) en la hora del hostal, aunque el servidor esté en UTC. */
   private todayKey(): string {
-    const now = new Date();
-    const pad = (value: number) => String(value).padStart(2, '0');
-    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: HOTEL_TIME_ZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
   }
 
   private async releaseRoomOnCancel(
@@ -678,10 +691,10 @@ export class ReservasController {
         ? { habitacionId: input.id_habitacion }
         : {}),
       ...(input.fecha_llegada !== undefined
-        ? { fechaCheckIn: new Date(`${input.fecha_llegada}T00:00:00`) }
+        ? { fechaCheckIn: this.fromDateKey(input.fecha_llegada) }
         : {}),
       ...(input.fecha_salida !== undefined
-        ? { fechaCheckOut: new Date(`${input.fecha_salida}T00:00:00`) }
+        ? { fechaCheckOut: this.fromDateKey(input.fecha_salida) }
         : {}),
       ...(input.hora_llegada !== undefined
         ? { horaLlegada: input.hora_llegada }

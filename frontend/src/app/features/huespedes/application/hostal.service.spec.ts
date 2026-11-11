@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
-import { HostalService } from './hostal.service';
+import { of, throwError } from 'rxjs';
+import { EntryReservationError, HostalService } from './hostal.service';
 import { GuestCardView, Huesped, Reserva, Sede, SedeHabitacion, SedeTipologia } from '../../../shared/domain/hostal.model';
 import { SedeService } from '../../locations/application/sede.service';
 import { CreateHuesped, Huesped as HuespedDomain, HuespedRepository } from '../domain/huesped.repository';
@@ -209,6 +209,39 @@ describe('HostalService HTTP persistence', () => {
     expect(huespedRepository.create).toHaveBeenCalledTimes(1);
     expect(reservasRepository.create).toHaveBeenCalledTimes(1);
     expect(service.getReservations()).toContain(jasmine.objectContaining({ id_reserva: 1 }));
+  });
+
+  it('keeps the new guest and returns it when the reservation is rejected by the backend', async () => {
+    reservasRepository.create.and.returnValue(throwError(() => ({
+      status: 400,
+      error: { message: 'La cantidad de personas (2) supera la capacidad de la habitación (1).' },
+    })));
+    const entry = {
+      newGuest: {
+        documento: '44.444.444-4', nombre: 'Mauri', apellido: 'Torres', nacionalidad: 'Chile',
+        telefono: '+569444444', email: 'mauri@example.com',
+      },
+      roomId: 10,
+      personCount: 2,
+      arrivalDate: '2026-12-10',
+      departureDate: '2026-12-11',
+      arrivalTime: '23:30',
+    };
+
+    const error = await service.registerEntry(entry).then(() => null, (reason: unknown) => reason);
+
+    expect(error).toEqual(jasmine.any(EntryReservationError));
+    const entryError = error as EntryReservationError;
+    expect(entryError.message).toContain('supera la capacidad de la habitación (1)');
+    expect(entryError.message).toContain('ya quedó registrado');
+    expect(entryError.guest.id_huesped).toBe(1);
+    expect(service.getGuests()).toContain(jasmine.objectContaining({ id_huesped: 1, documento: '44.444.444-4' }));
+
+    // Reintento con el huésped ya creado: no se vuelve a crear (evita el 409).
+    reservasRepository.create.and.callFake((data: CreateReserva) => of({ ...data, id_reserva: 1 } as Reserva));
+    const { newGuest: _newGuest, ...retry } = entry;
+    await service.registerEntry({ ...retry, guestId: entryError.guest.id_huesped });
+    expect(huespedRepository.create).toHaveBeenCalledTimes(1);
   });
 
   it('persists check-in and check-out state changes', async () => {

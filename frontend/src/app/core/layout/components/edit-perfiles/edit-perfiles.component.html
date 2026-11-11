@@ -117,12 +117,9 @@
                 <span class="field-label">Rol del usuario</span>
                 <div class="field-input-box">
                   <ion-icon name="shield-checkmark-outline" class="field-icon"></ion-icon>
-                  <select
-                    [value]="form().role"
-                    (change)="patchForm('role', $any($event.target).value)"
-                  >
+                  <select (change)="patchForm('role', $any($event.target).value)">
                     @for (rol of roles; track rol) {
-                      <option [value]="rol">
+                      <option [value]="rol" [selected]="rol === form().role">
                         {{ rol === 'admin' ? 'Administrador' : 'Personal (Staff)' }}
                       </option>
                     }
@@ -135,13 +132,10 @@
                   <span class="field-label">Sede asignada (Personal / Staff)</span>
                   <div class="field-input-box">
                     <ion-icon name="business-outline" class="field-icon"></ion-icon>
-                    <select
-                      [value]="form().sedeId ?? ''"
-                      (change)="patchForm('sedeId', $any($event.target).value)"
-                    >
-                      <option value="" disabled>Selecciona una sede para este usuario</option>
+                    <select (change)="patchForm('sedeId', $any($event.target).value)">
+                      <option value="" disabled [selected]="!form().sedeId">Selecciona una sede para este usuario</option>
                       @for (sede of sedes(); track sede.id) {
-                        <option [value]="sede.id">
+                        <option [value]="sede.id" [selected]="sede.id === form().sedeId">
                           {{ sede.nombre }} — {{ sede.ciudad }}
                         </option>
                       }
@@ -160,7 +154,7 @@
 
             <div class="form-actions">
               <button type="button" class="btn-cancel" (click)="cancelForm()">Cancelar</button>
-              <button type="button" class="btn-submit" (click)="saveForm()">
+              <button type="button" class="btn-submit" [disabled]="saving()" (click)="saveForm()">
                 <ion-icon [name]="formMode() === 'add' ? 'add-outline' : 'checkmark-outline'"></ion-icon>
                 <span>{{ formMode() === 'add' ? 'Agregar usuario' : 'Guardar cambios' }}</span>
               </button>

@@ -7,13 +7,19 @@ import { ReservasController } from './reservas.controller';
 // El paquete se publica como ESM y Jest (CommonJS) no puede cargarlo.
 jest.mock('@nestjs/event-emitter', () => ({ EventEmitter2: class {} }));
 
-const pad = (value: number) => String(value).padStart(2, '0');
+/** Fecha relativa a "hoy" en la hora del hostal (igual que el controller). */
 const dateKey = (offsetDays: number) => {
-  const date = new Date();
-  date.setDate(date.getDate() + offsetDays);
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  const today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Santiago',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+  const date = new Date(`${today}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + offsetDays);
+  return date.toISOString().slice(0, 10);
 };
-const toDate = (key: string) => new Date(`${key}T00:00:00`);
+const toDate = (key: string) => new Date(`${key}T00:00:00Z`);
 
 interface StoredReservation {
   id: number;
@@ -236,5 +242,66 @@ describe('ReservasController – reglas de reserva', () => {
         fecha_salida: dateKey(2),
       }),
     ).rejects.toThrow('fue eliminada');
+  });
+
+  it('usa la capacidad de la tipología aunque la habitación tenga cantidadPersonas = 1', async () => {
+    const { controller, prisma } = buildController([]);
+    const room = {
+      id: 10,
+      sedeId: 1,
+      numero: '10',
+      estado: EstadoHabitacion.DISPONIBLE,
+      activa: true,
+      cantidadPersonas: 1,
+      tipologia: { capacidadMax: 4 },
+      sede: { horaCheckOut: '12:00' },
+    };
+    prisma.habitacion.findUnique.mockResolvedValueOnce(room);
+    await expect(
+      controller.create({
+        id_huesped: 1,
+        id_habitacion: 10,
+        fecha_llegada: dateKey(1),
+        fecha_salida: dateKey(2),
+        cantidad_personas: 3,
+      }),
+    ).resolves.toBeDefined();
+
+    prisma.habitacion.findUnique.mockResolvedValueOnce(room);
+    await expect(
+      controller.create({
+        id_huesped: 1,
+        id_habitacion: 10,
+        fecha_llegada: dateKey(20),
+        fecha_salida: dateKey(21),
+        cantidad_personas: 5,
+      }),
+    ).rejects.toThrow('supera la capacidad de la habitación (4)');
+  });
+
+  it('acepta llegar hoy de noche en Chile aunque en UTC ya sea el día siguiente', async () => {
+    // 2026-11-11 02:39 UTC = 2026-11-10 23:39 en Chile (UTC-3).
+    jest.useFakeTimers({ now: new Date('2026-11-11T02:39:00Z'), doNotFake: ['nextTick', 'setImmediate'] });
+    try {
+      const { controller } = buildController([]);
+      await expect(
+        controller.create({
+          id_huesped: 1,
+          id_habitacion: 10,
+          fecha_llegada: '2026-11-10',
+          fecha_salida: '2026-11-11',
+        }),
+      ).resolves.toBeDefined();
+      await expect(
+        controller.create({
+          id_huesped: 2,
+          id_habitacion: 20,
+          fecha_llegada: '2026-11-09',
+          fecha_salida: '2026-11-10',
+        }),
+      ).rejects.toThrow('no puede ser anterior a hoy (2026-11-10)');
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });
