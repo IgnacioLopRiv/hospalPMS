@@ -5,6 +5,12 @@ import { IonicRouteStrategy, provideIonicAngular } from '@ionic/angular/standalo
 
 import { routes } from './app/core/routing/app.routes';
 import { AppComponent } from './app/app.component';
+import {
+  alertEnterAnimation,
+  alertLeaveAnimation,
+  modalEnterAnimation,
+  modalLeaveAnimation,
+} from './app/shared/presentation/animations/overlay-animations';
 import { HuespedRepository } from './app/features/huespedes/domain/huesped.repository';
 import { HuespedHttpRepository } from './app/features/huespedes/infraestructure/huesped-http.repository';
 import { InventarioRepository } from './app/features/inventory/domain/inventario.repository';
@@ -25,7 +31,12 @@ import { ReportesHttpRepository } from './app/features/reports/infraestructure/r
 bootstrapApplication(AppComponent, {
   providers: [
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
-    provideIonicAngular(),
+    provideIonicAngular({
+      modalEnter: modalEnterAnimation,
+      modalLeave: modalLeaveAnimation,
+      alertEnter: alertEnterAnimation,
+      alertLeave: alertLeaveAnimation,
+    }),
     provideHttpClient(),
     { provide: HuespedRepository, useClass: HuespedHttpRepository },
     { provide: InventarioRepository, useClass: InventarioHttpRepository },

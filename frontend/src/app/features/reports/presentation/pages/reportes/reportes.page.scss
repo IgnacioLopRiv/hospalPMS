@@ -641,8 +641,6 @@ ion-content {
   justify-content: center;
   padding: 1rem;
   background: rgba(15, 23, 42, 0.55);
-  backdrop-filter: blur(3px);
-  animation: fade-in 0.15s ease;
 }
 
 .detail-modal {
@@ -657,11 +655,8 @@ ion-content {
   border-radius: 16px;
   background: #ffffff;
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
-  animation: slide-up 0.2s ease;
 }
 
-@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slide-up { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 
 .detail-header {
   display: flex;
