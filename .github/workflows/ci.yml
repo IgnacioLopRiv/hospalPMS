@@ -7,6 +7,10 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    env:
+      # prisma.config.ts exige DATABASE_URL, pero generate/build/tests no se conectan a la BD
+      # (en CI no existe backend/.env). Basta una URL con formato válido, igual que en el Dockerfile.
+      DATABASE_URL: mysql://ci:ci@localhost:3306/ci
     defaults:
       run:
         working-directory: backend

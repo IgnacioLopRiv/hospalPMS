@@ -82,12 +82,14 @@ export class CatalogosSedeController {
     if (!input.numero?.trim() || !input.tipologiaId) {
       throw new BadRequestException('numero y tipologiaId son obligatorios.');
     }
+    const tipologia = await this.tipologias.findById(input.tipologiaId);
     const room = await this.habitaciones
       .create({
         sedeId,
         numero: input.numero.trim(),
         tipologiaId: input.tipologiaId,
-        cantidadPersonas: input.cantidadPersonas ?? 1,
+        // El formulario no pide capacidad: se hereda de la tipología.
+        cantidadPersonas: input.cantidadPersonas ?? tipologia?.capacidadMax ?? 1,
         estado: input.estado ? STATE_TO_DOMAIN[input.estado] : undefined,
         tamanoM2: input.tamanoM2,
         disposicionMuebles: input.disposicionMuebles,
@@ -123,15 +125,18 @@ export class CatalogosSedeController {
     @Param('id', ParseIntPipe) id: number,
     @Body() input: HabitacionInput,
   ) {
+    const cantidadPersonas =
+      input.cantidadPersonas ??
+      (input.tipologiaId !== undefined
+        ? (await this.tipologias.findById(input.tipologiaId))?.capacidadMax
+        : undefined);
     try {
       const room = await this.habitaciones.update(id, {
         ...(input.numero !== undefined ? { numero: input.numero.trim() } : {}),
         ...(input.tipologiaId !== undefined
           ? { tipologiaId: input.tipologiaId }
           : {}),
-        ...(input.cantidadPersonas !== undefined
-          ? { cantidadPersonas: input.cantidadPersonas }
-          : {}),
+        ...(cantidadPersonas !== undefined ? { cantidadPersonas } : {}),
         ...(input.estado !== undefined
           ? { estado: STATE_TO_DOMAIN[input.estado] }
           : {}),

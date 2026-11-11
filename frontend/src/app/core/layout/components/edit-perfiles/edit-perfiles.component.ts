@@ -60,6 +60,7 @@ export class EditPerfilesComponent {
   readonly errorMessage = signal('');
   readonly deleteConfirmId = signal<number | null>(null);
   readonly successMessage = signal('');
+  readonly saving = signal(false);
 
   readonly form = signal<UserForm>({
     name: '',
@@ -119,7 +120,8 @@ export class EditPerfilesComponent {
     this.form.set({
       name: user.name,
       email: user.email,
-      password: user.password,
+      // El backend nunca devuelve la contraseña; vacía = mantener la actual.
+      password: '',
       role: user.role,
       sedeId: user.sedeId ?? null,
     });
@@ -135,11 +137,12 @@ export class EditPerfilesComponent {
     this.errorMessage.set('');
   }
 
-  saveForm(): void {
+  async saveForm(): Promise<void> {
+    if (this.saving()) return;
     const f = this.form();
     const name = f.name.trim();
     const email = f.email.trim().toLowerCase();
-    const password = f.password.trim();
+    const password = (f.password ?? '').trim();
 
     if (!name) {
       this.errorMessage.set('El nombre es obligatorio.');
@@ -168,17 +171,26 @@ export class EditPerfilesComponent {
 
     const sedeId = f.role === 'staff' ? f.sedeId ?? undefined : undefined;
 
-    if (this.formMode() === 'add') {
-      this.auth.addUser({ name, email, password, role: f.role, sedeId });
-      this.showSuccess('Usuario agregado correctamente.');
-    } else {
-      const patch: Partial<StoredUser> = { name, email, role: f.role, sedeId };
-      if (password) patch['password'] = password;
-      this.auth.updateUser(this.editingId()!, patch);
-      this.showSuccess('Usuario actualizado correctamente.');
+    this.errorMessage.set('');
+    this.saving.set(true);
+    try {
+      if (this.formMode() === 'add') {
+        await this.auth.addUser({ name, email, password, role: f.role, sedeId });
+        this.showSuccess('Usuario agregado correctamente.');
+      } else {
+        const patch: Partial<StoredUser> = { name, email, role: f.role, sedeId };
+        if (password) patch['password'] = password;
+        await this.auth.updateUser(this.editingId()!, patch);
+        this.showSuccess('Usuario actualizado correctamente.');
+      }
+      this.cancelForm();
+    } catch (error: any) {
+      this.errorMessage.set(
+        error?.error?.message || 'No se pudieron guardar los cambios. Inténtalo de nuevo.',
+      );
+    } finally {
+      this.saving.set(false);
     }
-
-    this.cancelForm();
   }
 
   patchForm(field: keyof UserForm, value: string | number | null): void {

@@ -24,6 +24,24 @@ export interface RegisterEntryInput {
   };
 }
 
+/** Mensaje legible de un error: el que envía el backend (HttpErrorResponse) o el de un Error. */
+export function getApiErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error) return error.message;
+  const apiMessage = (error as { error?: { message?: unknown } } | null)?.error?.message;
+  if (Array.isArray(apiMessage)) return apiMessage.join(' ');
+  return typeof apiMessage === 'string' && apiMessage ? apiMessage : fallback;
+}
+
+/**
+ * La reserva falló después de crear al huésped nuevo. El huésped ya existe en el
+ * backend, así que se devuelve para reintentar con él en vez de volver a crearlo.
+ */
+export class EntryReservationError extends Error {
+  constructor(message: string, readonly guest: Huesped) {
+    super(message);
+  }
+}
+
 export interface ReservationCalendarEntry {
   id: number;
   guestName: string;
@@ -682,7 +700,19 @@ export class HostalService {
         pago_completo: input.payment.paidInFull,
       } : {}),
     };
-    const savedReservation = await firstValueFrom(this.reservasRepository.create(reservationInput));
+    let savedReservation: Reserva;
+    try {
+      savedReservation = await firstValueFrom(this.reservasRepository.create(reservationInput));
+    } catch (error) {
+      if (!input.newGuest) throw error;
+      this.guests = updatedGuests;
+      this.refreshView();
+      throw new EntryReservationError(
+        `${getApiErrorMessage(error, 'No se pudo registrar la reserva.')} ` +
+        `El huésped ${guest.nombre} ${guest.apellido} ya quedó registrado: corrige los datos y vuelve a confirmar.`,
+        guest,
+      );
+    }
     const reservation = this.normalizeReservation(savedReservation);
     this.guests = updatedGuests;
     this.reservations = [...reservations, reservation];

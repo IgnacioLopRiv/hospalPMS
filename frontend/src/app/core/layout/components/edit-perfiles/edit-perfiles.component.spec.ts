@@ -4,6 +4,8 @@ import { IonicModule } from '@ionic/angular';
 import { LocationsRepository } from '../../../../features/locations/domain/locations.repository';
 import { createLocationsRepositoryStub } from '../../../../features/locations/domain/testing/locations.repository.stub';
 
+import { AuthService } from '../../../auth/application/auth.service';
+import { StoredUser } from '../../../auth/domain/auth.roles';
 import { EditPerfilesComponent } from './edit-perfiles.component';
 
 describe('EditPerfilesComponent', () => {
@@ -96,5 +98,65 @@ describe('EditPerfilesComponent', () => {
     component.openAdd();
     component.saveForm();
     expect(component.errorMessage()).toBe('El nombre es obligatorio.');
+  });
+
+  it('creates an admin user sending the admin role', async () => {
+    const auth = TestBed.inject(AuthService);
+    const addUser = spyOn(auth, 'addUser').and.resolveTo();
+    component.openAdd();
+    component.patchForm('name', 'Jorge Admin');
+    component.patchForm('email', 'jorge@hotel.cl');
+    component.patchForm('password', 'secreto123');
+    component.patchForm('role', 'admin');
+
+    await component.saveForm();
+
+    expect(addUser).toHaveBeenCalledWith(jasmine.objectContaining({ role: 'admin', email: 'jorge@hotel.cl' }));
+    expect(component.successMessage()).toBe('Usuario agregado correctamente.');
+    expect(component.formMode()).toBeNull();
+  });
+
+  it('saves edits of a user loaded from the backend (without password) including the new role', async () => {
+    const auth = TestBed.inject(AuthService);
+    const updateUser = spyOn(auth, 'updateUser').and.resolveTo();
+    component.openEdit({ id: 5, name: 'Carlos Recepción', email: 'carlos@hotel.cl', role: 'staff', sedeId: 2 } as StoredUser);
+    expect(component.form().password).toBe('');
+
+    component.patchForm('role', 'admin');
+    await component.saveForm();
+
+    expect(updateUser).toHaveBeenCalledWith(5, { name: 'Carlos Recepción', email: 'carlos@hotel.cl', role: 'admin', sedeId: undefined });
+    expect(component.successMessage()).toBe('Usuario actualizado correctamente.');
+    expect(component.formMode()).toBeNull();
+  });
+
+  it('keeps the form open and shows the backend error when the update fails', async () => {
+    const auth = TestBed.inject(AuthService);
+    spyOn(auth, 'updateUser').and.rejectWith({ error: { message: 'Ya existe un funcionario con ese email.' } });
+    component.openEdit({ id: 5, name: 'Carlos Recepción', email: 'carlos@hotel.cl', role: 'staff', sedeId: 2 } as StoredUser);
+
+    await component.saveForm();
+
+    expect(component.errorMessage()).toBe('Ya existe un funcionario con ese email.');
+    expect(component.successMessage()).toBe('');
+    expect(component.formMode()).toBe('edit');
+    expect(component.saving()).toBeFalse();
+  });
+
+  it('shows the selected role in the role selector', async () => {
+    fixture.componentRef.setInput('isOpen', true);
+    fixture.detectChanges();
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    component.openAdd();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const select = document.querySelector('.edit-perfiles-modal select') as HTMLSelectElement | null;
+    expect(select).not.toBeNull();
+    expect(select!.value).toBe('staff');
+
+    component.patchForm('role', 'admin');
+    fixture.detectChanges();
+    expect(select!.value).toBe('admin');
   });
 });

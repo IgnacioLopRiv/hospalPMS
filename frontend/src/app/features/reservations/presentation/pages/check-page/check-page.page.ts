@@ -26,7 +26,12 @@ import {
   searchOutline,
 } from 'ionicons/icons';
 import { SedeService } from '../../../../locations/application/sede.service';
-import { HostalService, ReservationCalendarEntry } from '../../../../huespedes/application/hostal.service';
+import {
+  EntryReservationError,
+  getApiErrorMessage,
+  HostalService,
+  ReservationCalendarEntry,
+} from '../../../../huespedes/application/hostal.service';
 import { GuestCardView, Huesped, Habitacion, SedeHabitacion, SedeTipologia } from '../../../../../shared/domain/hostal.model';
 import { COUNTRY_OPTIONS } from '../../../../../shared/domain/country-options';
 import { CountryPickerComponent } from '../../../../../shared/presentation/country-picker/country-picker.component';
@@ -399,6 +404,9 @@ export class CheckPagePage implements OnInit, OnDestroy {
   async goToRoomSelectionStep(form: NgForm): Promise<void> {
     if (!this.isReservationDetailsValid(form)) {
       form.form.markAllAsTouched();
+      if (this.entryForm.arrivalDate && this.entryForm.arrivalDate < this.minArrivalDate) {
+        this.entryError = 'La fecha de llegada no puede ser anterior a hoy.';
+      }
       return;
     }
     this.entryError = '';
@@ -515,9 +523,15 @@ export class CheckPagePage implements OnInit, OnDestroy {
       });
   }
 
+  /** Fecha mínima de llegada (hoy, en hora local); el backend rechaza fechas pasadas. */
+  get minArrivalDate(): string {
+    return this.localDateString(new Date());
+  }
+
   isReservationDetailsValid(form: NgForm): boolean {
     return form.valid === true &&
       this.isValidReservationDate(this.entryForm.arrivalDate) &&
+      this.entryForm.arrivalDate >= this.minArrivalDate &&
       this.isValidReservationDate(this.entryForm.departureDate) &&
       this.entryForm.arrivalDate < this.entryForm.departureDate &&
       Number.isInteger(this.entryForm.personCount) &&
@@ -613,7 +627,12 @@ export class CheckPagePage implements OnInit, OnDestroy {
         this.entryRegistered.emit(this.entrySuccessMessage);
       }
     } catch (error) {
-      this.entryError = error instanceof Error ? error.message : 'No se pudo registrar el ingreso. Inténtalo nuevamente.';
+      if (error instanceof EntryReservationError) {
+        this.availableGuests.splice(0, this.availableGuests.length, ...this.hostalService.getGuests());
+        this.guestMode = 'existing';
+        this.selectedGuestId = String(error.guest.id_huesped);
+      }
+      this.entryError = getApiErrorMessage(error, 'No se pudo registrar el ingreso. Inténtalo nuevamente.');
     }
   }
 

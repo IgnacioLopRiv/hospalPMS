@@ -236,7 +236,7 @@
           <div class="entry-fields-grid">
             <label class="entry-field">
               <span>Fecha de llegada</span>
-              <input name="arrivalDate" type="date" required [(ngModel)]="entryForm.arrivalDate" (ngModelChange)="clearRoomSelection()">
+              <input name="arrivalDate" type="date" required [min]="minArrivalDate" [(ngModel)]="entryForm.arrivalDate" (ngModelChange)="clearRoomSelection()">
             </label>
             <label class="entry-field">
               <span>Fecha de salida</span>
