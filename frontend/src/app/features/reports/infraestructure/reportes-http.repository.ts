@@ -16,10 +16,9 @@ export class ReportesHttpRepository extends ReportesRepository {
   }
 
   descargarPdf({ sedeId, desde, hasta }: FiltrosReportePdf): Observable<Blob> {
-    const alcance = sedeId === null ? { alcance: 'global' } : { sedeId };
-    return this.http.get(`${this.apiUrl}/reportes/pdf`, {
-      params: { ...alcance, desde, hasta },
-      responseType: 'blob',
-    });
+    const params: Record<string, string> = { desde, hasta };
+    if (sedeId === null) params['alcance'] = 'global';
+    else params['sedeId'] = String(sedeId);
+    return this.http.get(`${this.apiUrl}/reportes/pdf`, { params, responseType: 'blob' });
   }
 }
