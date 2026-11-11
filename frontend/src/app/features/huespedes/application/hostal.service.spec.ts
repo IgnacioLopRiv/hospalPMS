@@ -244,6 +244,56 @@ describe('HostalService HTTP persistence', () => {
     expect(huespedRepository.create).toHaveBeenCalledTimes(1);
   });
 
+  it('creates a card reservation without payment so the POS registers it', async () => {
+    const guest = await service.registerGuest({
+      documento: '44.444.444-4', nombre: 'Sol', apellido: 'Vera', nacionalidad: 'Chile',
+      telefono: '+569444444', email: 'sol@example.com',
+    });
+    const { reservation } = await service.registerEntry({
+      guestId: guest.id_huesped,
+      roomId: 10,
+      personCount: 1,
+      arrivalDate: '2026-12-10',
+      departureDate: '2026-12-12',
+      arrivalTime: '15:00',
+      payment: { totalAmount: 100000, paidAmount: 20000, depositPercentage: 20, method: 'debito', paidInFull: false },
+    });
+
+    const sent = reservasRepository.create.calls.mostRecent().args[0];
+    expect(sent).toEqual(jasmine.objectContaining({ precio_total: 100000, porcentaje_abono: 20, pago_completo: false }));
+    expect(sent.monto_pagado).toBeUndefined();
+    expect(sent.metodo_pago).toBeUndefined();
+
+    // El terminal aprobó el abono: solo se refleja localmente, sin otra llamada.
+    const updates = reservasRepository.update.calls.count();
+    service.applyPosPayment(reservation.id_reserva, 20000, 'debito');
+    expect(reservasRepository.update.calls.count()).toBe(updates);
+    expect(service.getReservations().find((item) => item.id_reserva === reservation.id_reserva))
+      .toEqual(jasmine.objectContaining({ monto_pagado: 20000, metodo_pago: 'debito', pago_completo: false }));
+  });
+
+  it('records a cash payment on a reservation created for a failed card charge', async () => {
+    const guest = await service.registerGuest({
+      documento: '55.555.555-5', nombre: 'Max', apellido: 'Soto', nacionalidad: 'Chile',
+      telefono: '+569555555', email: 'max@example.com',
+    });
+    const { reservation } = await service.registerEntry({
+      guestId: guest.id_huesped,
+      roomId: 10,
+      personCount: 1,
+      arrivalDate: '2026-12-10',
+      departureDate: '2026-12-12',
+      arrivalTime: '15:00',
+      payment: { totalAmount: 100000, paidAmount: 100000, depositPercentage: 20, method: 'credito', paidInFull: true },
+    });
+
+    await service.recordReservationPayment(reservation.id_reserva, { amount: 100000, method: 'efectivo', paidInFull: true });
+
+    expect(reservasRepository.update.calls.mostRecent().args[1]).toEqual(jasmine.objectContaining({
+      monto_pagado: 100000, metodo_pago: 'efectivo', pago_completo: true,
+    }));
+  });
+
   it('persists check-in and check-out state changes', async () => {
     const guest = await service.registerGuest({
       documento: '33.333.333-3', nombre: 'Leo', apellido: 'Paz', nacionalidad: 'Chile',

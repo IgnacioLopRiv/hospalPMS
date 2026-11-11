@@ -15,6 +15,7 @@ import { SedeService } from '../../../../features/locations/application/sede.ser
 import { ConfigOptionsComponent } from '../../../../features/locations/presentation/config-options/config-options.component';
 import { EditPerfilesComponent } from '../edit-perfiles/edit-perfiles.component';
 import { ClockComponent } from '../../../../shared/presentation/clock/clock.component';
+import { PosConfigModalComponent } from '../../../../features/payments-pos/presentation/pos-config-modal/pos-config-modal.component';
 
 @Component({
   selector: 'app-header',
@@ -27,6 +28,7 @@ import { ClockComponent } from '../../../../shared/presentation/clock/clock.comp
     ConfigOptionsComponent,
     EditPerfilesComponent,
     ClockComponent,
+    PosConfigModalComponent,
   ],
 })
 export class HeaderComponent {
@@ -36,6 +38,7 @@ export class HeaderComponent {
   readonly configOptionsOpen = signal(false);
   readonly sedeOptionsOpen = signal(false);
   readonly editPerfilesOpen = signal(false);
+  readonly posConfigOpen = signal(false);
 
   // Genera el texto fijo: Estás en "Nombre Sede"
   readonly sedeInfoLabel = computed(() => {
@@ -85,6 +88,17 @@ export class HeaderComponent {
 
   closeEditPerfiles(): void {
     this.editPerfilesOpen.set(false);
+  }
+
+  // ── Terminal de pago (POS) ────────────────────────────────────────────────
+
+  openPosConfig(): void {
+    this.closeConfigOptions();
+    this.posConfigOpen.set(true);
+  }
+
+  closePosConfig(): void {
+    this.posConfigOpen.set(false);
   }
 
 }

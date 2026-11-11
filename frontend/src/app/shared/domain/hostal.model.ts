@@ -1,3 +1,7 @@
+/** Débito y crédito se cobran en el terminal POS de la sede. */
+export type MetodoPagoReserva = 'transferencia' | 'efectivo' | 'debito' | 'credito';
+export type MetodoPagoTarjeta = 'debito' | 'credito';
+
 export interface Huesped {
   id_huesped: number;
   id_sede: number;
@@ -39,7 +43,7 @@ export interface Reserva {
   precio_total?: number;
   porcentaje_abono?: number;
   monto_pagado?: number;
-  metodo_pago?: 'transferencia' | 'efectivo';
+  metodo_pago?: MetodoPagoReserva;
   pago_completo?: boolean;
 }
 

@@ -31,6 +31,7 @@
     "jszip": "^3.10.2",
     "libphonenumber-js": "^1.13.16",
     "rxjs": "~7.8.0",
+    "transbank-pos-sdk-web": "5.1.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"
   },

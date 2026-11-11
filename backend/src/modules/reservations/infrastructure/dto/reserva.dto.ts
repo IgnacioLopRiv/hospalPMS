@@ -91,8 +91,8 @@ export class ReservaDto {
   monto_pagado?: number;
 
   @IsOptional()
-  @IsIn(['transferencia', 'efectivo'])
-  metodo_pago?: 'transferencia' | 'efectivo';
+  @IsIn(['transferencia', 'efectivo', 'debito', 'credito'])
+  metodo_pago?: 'transferencia' | 'efectivo' | 'debito' | 'credito';
 
   @IsOptional()
   @IsBoolean()

@@ -14,6 +14,7 @@ import { ReservationsModule } from './modules/reservations/reservations.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { PaymentsPosModule } from './modules/payments-pos/payments-pos.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     BillingModule,
     ReportsModule,
     NotificationsModule,
+    PaymentsPosModule,
   ],
   controllers: [AppController],
   providers: [AppService],

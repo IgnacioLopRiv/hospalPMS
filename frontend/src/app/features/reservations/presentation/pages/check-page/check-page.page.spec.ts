@@ -1,3 +1,5 @@
+import { PosRepository } from '../../../../payments-pos/domain/pos.repository';
+import { createPosRepositoryStub } from '../../../../payments-pos/domain/testing/pos.repository.stub';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { NgForm } from '@angular/forms';
@@ -40,6 +42,7 @@ describe('CheckPagePage', () => {
         { provide: HuespedRepository, useValue: repositories.huespedRepository },
         { provide: ReservasRepository, useValue: repositories.reservasRepository },
         { provide: InventarioRepository, useValue: createEmptyInventarioRepositoryStub() },
+        { provide: PosRepository, useValue: createPosRepositoryStub() },
         {
           provide: FotoHabitacionRepository,
           useValue: {
@@ -138,7 +141,19 @@ describe('CheckPagePage', () => {
     const confirmButton = fixture.nativeElement.querySelector('.checkin-payment-actions .entry-submit-button') as HTMLButtonElement;
     expect(confirmButton.disabled).toBeTrue();
 
-    const cashButton = fixture.nativeElement.querySelector('.checkin-payment-methods button:last-child') as HTMLButtonElement;
+    const methodButtons = Array.from(
+      fixture.nativeElement.querySelectorAll('.checkin-payment-methods button') as NodeListOf<HTMLButtonElement>,
+    );
+    const byLabel = (label: string) => methodButtons.find((button) => button.textContent?.includes(label))!;
+    // Sin terminal POS activo, débito y crédito no se pueden elegir.
+    // Deja resolver la consulta del POS (el reloj de la página impide usar whenStable).
+    await new Promise((resolve) => setTimeout(resolve));
+    fixture.detectChanges();
+    expect(byLabel('Débito').disabled).toBeTrue();
+    expect(byLabel('Crédito').disabled).toBeTrue();
+    expect(fixture.nativeElement.querySelector('.checkin-payment-methods .pos-payment-hint')).toBeTruthy();
+
+    const cashButton = byLabel('Efectivo');
     cashButton.click();
     fixture.detectChanges();
     expect(confirmButton.disabled).toBeFalse();

@@ -16,7 +16,8 @@ const MAX_NOCHES = 366;
 
 export type TipoTarifaAplicada = 'ALTA' | 'BAJA' | 'BASE';
 export type TipoTarifaFiltro = 'TODAS' | 'ALTA' | 'BAJA' | 'PROMOCIONAL' | 'BASE';
-export type MetodoPagoFiltro = 'TODOS' | 'transferencia' | 'efectivo' | 'sin-registro';
+type MetodoPagoReporte = 'transferencia' | 'efectivo' | 'debito' | 'credito';
+export type MetodoPagoFiltro = 'TODOS' | MetodoPagoReporte | 'sin-registro';
 export type EstadoPagoTransaccion = 'PAGADO' | 'ABONADO' | 'PENDIENTE' | 'ANULADO';
 export type DatePreset = 'mes-actual' | 'mes-anterior' | 'trimestre' | 'ultimos-30' | 'anio' | 'personalizado';
 
@@ -58,7 +59,7 @@ export interface TransaccionTarifa {
   abonoInicial: number;
   pagado: number;
   saldo: number;
-  metodoPago: 'transferencia' | 'efectivo' | null;
+  metodoPago: MetodoPagoReporte | null;
   estadoPago: EstadoPagoTransaccion;
   estadoReserva: Reserva['estado_reserva'];
   nochesDetalle: NocheTarifada[];
@@ -117,16 +118,20 @@ export const ESTADO_PAGO_LABELS: Record<EstadoPagoTransaccion, string> = {
   ANULADO: 'Anulado',
 };
 
-export const METODO_PAGO_LABELS: Record<'transferencia' | 'efectivo' | 'sin-registro', string> = {
+export const METODO_PAGO_LABELS: Record<MetodoPagoReporte | 'sin-registro', string> = {
   transferencia: 'Transferencia',
   efectivo: 'Efectivo',
+  debito: 'Débito',
+  credito: 'Crédito',
   'sin-registro': 'Sin registrar',
 };
 
 const SEASON_COLORS: Record<TipoTarifaAplicada, string> = { ALTA: '#ea580c', BAJA: '#0891b2', BASE: '#64748b' };
-const METODO_PAGO_COLORS: Record<'transferencia' | 'efectivo' | 'sin-registro', string> = {
+const METODO_PAGO_COLORS: Record<MetodoPagoReporte | 'sin-registro', string> = {
   transferencia: '#2563eb',
   efectivo: '#16a34a',
+  debito: '#7c3aed',
+  credito: '#ea580c',
   'sin-registro': '#94a3b8',
 };
 

@@ -109,6 +109,7 @@ model Sede {
   tarifaAbono         TarifaAbono?
   tarifas             Tarifa[]
   huespedes           Huesped[]
+  configuracionPos    ConfiguracionPos?
 
   @@map("sede")
 }
@@ -311,6 +312,7 @@ model Reserva {
   huesped          Huesped                @relation(fields: [huespedId], references: [id])
   habitacion       Habitacion             @relation(fields: [habitacionId], references: [id])
   pagos            Pago[]
+  transaccionesPos TransaccionPos[]
   documentos       DocumentoFacturacion[]
   notificaciones   NotificacionEmail[]
 
@@ -328,6 +330,7 @@ model Pago {
   fechaPago      DateTime            @default(now())
   reserva        Reserva             @relation(fields: [reservaId], references: [id])
   notificaciones NotificacionEmail[]
+  transaccionPos TransaccionPos?
 
   @@map("pago")
 }
@@ -367,4 +370,67 @@ model NotificacionEmail {
 
   @@index([reservaId, tipo])
   @@map("notificacion_email")
+}
+
+/// Configuración del terminal de pago (POS) de una sede.
+/// `proveedor` es el código de un adaptador registrado en el backend
+/// (p. ej. MERCADO_PAGO_POINT, MANUAL); es texto libre para poder agregar
+/// proveedores sin migrar la base de datos.
+model ConfiguracionPos {
+  id            Int      @id @default(autoincrement())
+  sedeId        Int      @unique
+  proveedor     String   @db.VarChar(50)
+  activo        Boolean  @default(false)
+  /// Credenciales del proveedor cifradas con AES-256-GCM (POS_ENCRYPTION_KEY).
+  credenciales  String?  @db.Text
+  /// Parámetros no sensibles (dispositivo, modo de prueba, etc.).
+  parametros    Json?
+  creadoAt      DateTime @default(now())
+  actualizadoAt DateTime @updatedAt
+  sede          Sede     @relation(fields: [sedeId], references: [id], onDelete: Cascade)
+
+  @@map("configuracion_pos")
+}
+
+enum EstadoTransaccionPos {
+  /// Creada en HosPal; aún no confirmada por el proveedor.
+  PENDIENTE
+  /// El terminal tomó el cobro y espera la tarjeta.
+  EN_TERMINAL
+  APROBADA
+  RECHAZADA
+  CANCELADA
+  EXPIRADA
+  REEMBOLSADA
+  /// Falló la comunicación con el proveedor al crear el cobro.
+  ERROR
+}
+
+/// Cobro enviado a un terminal POS. Cuando el proveedor lo aprueba se crea
+/// el Pago correspondiente (pagoId).
+model TransaccionPos {
+  id                Int                  @id @default(autoincrement())
+  reservaId         Int
+  sedeId            Int
+  pagoId            Int?                 @unique
+  proveedor         String               @db.VarChar(50)
+  /// ID del cobro en el proveedor (p. ej. ORD... en Mercado Pago).
+  externalId        String?              @db.VarChar(100)
+  externalReference String?              @unique @db.VarChar(64)
+  deviceId          String?              @db.VarChar(100)
+  monto             Int
+  tipoOperacion     TipoOperacion
+  estado            EstadoTransaccionPos @default(PENDIENTE)
+  estadoDetalle     String?              @db.VarChar(100)
+  metodoPago        MetodoPago?
+  mensaje           String?              @db.VarChar(500)
+  respuestaRaw      Json?
+  creadoAt          DateTime             @default(now())
+  actualizadoAt     DateTime             @updatedAt
+  reserva           Reserva              @relation(fields: [reservaId], references: [id])
+  pago              Pago?                @relation(fields: [pagoId], references: [id], onDelete: SetNull)
+
+  @@unique([proveedor, externalId])
+  @@index([sedeId, estado])
+  @@map("transaccion_pos")
 }

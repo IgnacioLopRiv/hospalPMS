@@ -36,6 +36,7 @@ services:
       MAIL_SECURE: ${MAIL_SECURE:-false}
       MAIL_USER: ${MAIL_USER:-}
       MAIL_PASS: ${MAIL_PASS:-}
+      POS_ENCRYPTION_KEY: ${POS_ENCRYPTION_KEY:-}
     ports:
       - "3000:3000"
 

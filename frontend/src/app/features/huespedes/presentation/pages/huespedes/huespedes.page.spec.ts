@@ -1,3 +1,5 @@
+import { PosRepository } from '../../../../payments-pos/domain/pos.repository';
+import { createPosRepositoryStub } from '../../../../payments-pos/domain/testing/pos.repository.stub';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { provideRouter, Router } from '@angular/router';
@@ -43,6 +45,7 @@ describe('HuespedesPage', () => {
         { provide: HostalService, useValue: hostalServiceStub },
         { provide: SedeService, useValue: sedeServiceStub },
         { provide: InventarioRepository, useValue: createEmptyInventarioRepositoryStub() },
+        { provide: PosRepository, useValue: createPosRepositoryStub() },
         {
           provide: FotoHabitacionRepository,
           useValue: {

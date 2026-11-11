@@ -1,7 +1,7 @@
 import { effect, Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
-import { Huesped, Habitacion, Tipologia, Reserva, GuestCardView, GuestReservationDetail } from '../../../shared/domain/hostal.model';
+import { Huesped, Habitacion, Tipologia, Reserva, GuestCardView, GuestReservationDetail, MetodoPagoReserva, MetodoPagoTarjeta } from '../../../shared/domain/hostal.model';
 import { SedeService } from '../../locations/application/sede.service';
 import { CreateHuesped, Huesped as HuespedDomain, HuespedRepository } from '../domain/huesped.repository';
 import { CreateReserva, ReservasRepository, UpdateReserva } from '../../reservations/domain/reservas.repository';
@@ -19,10 +19,14 @@ export interface RegisterEntryInput {
     totalAmount: number;
     paidAmount: number;
     depositPercentage: number;
-    method: 'transferencia' | 'efectivo';
+    /** Con tarjeta, la reserva se crea sin pago y el cobro lo hace el terminal POS. */
+    method: MetodoPagoReserva;
     paidInFull: boolean;
   };
 }
+
+const isCardMethod = (method?: string): method is MetodoPagoTarjeta =>
+  method === 'debito' || method === 'credito';
 
 /** Mensaje legible de un error: el que envía el backend (HttpErrorResponse) o el de un Error. */
 export function getApiErrorMessage(error: unknown, fallback: string): string {
@@ -520,7 +524,7 @@ export class HostalService {
 
   async processCheckIn(
     reservationId: number,
-    paymentMethod?: 'transferencia' | 'efectivo'
+    paymentMethod?: MetodoPagoReserva
   ): Promise<Reserva> {
     const reservations = this.getReservations();
     const reservation = reservations.find((item) => item.id_reserva === reservationId);
@@ -532,9 +536,11 @@ export class HostalService {
     }
 
     const balance = Math.max(0, (reservation.precio_total ?? 0) - (reservation.monto_pagado ?? 0));
-    if (balance > 0 && paymentMethod !== 'transferencia' && paymentMethod !== 'efectivo') {
-      throw new Error('Selecciona transferencia o efectivo para cobrar el saldo pendiente.');
+    if (balance > 0 && !paymentMethod) {
+      throw new Error('Selecciona el medio de pago para cobrar el saldo pendiente.');
     }
+    // Con tarjeta, el terminal POS ya cobró y registró el pago: aquí solo se
+    // refleja el saldo pagado (el backend no crea un segundo pago).
 
     return this.persistReservationUpdate(reservations, {
       ...reservation,
@@ -558,6 +564,42 @@ export class HostalService {
     }
 
     return this.persistReservationUpdate(reservations, { ...reservation, estado_reserva: 'FINALIZADA' });
+  }
+
+  /**
+   * Refleja en la lista local un pago con tarjeta que el terminal POS ya
+   * registró en el backend (no lo vuelve a enviar).
+   */
+  applyPosPayment(reservationId: number, amount: number, method: MetodoPagoTarjeta): void {
+    this.reservations = this.getReservations().map((reservation) => {
+      if (reservation.id_reserva !== reservationId) return reservation;
+      const paid = (reservation.monto_pagado ?? 0) + amount;
+      return {
+        ...reservation,
+        monto_pagado: paid,
+        metodo_pago: method,
+        pago_completo: reservation.precio_total !== undefined && paid >= reservation.precio_total,
+      };
+    });
+    this.refreshView();
+  }
+
+  /** Registra un pago en efectivo o transferencia sobre una reserva ya creada. */
+  async recordReservationPayment(
+    reservationId: number,
+    payment: { amount: number; method: 'transferencia' | 'efectivo'; paidInFull: boolean },
+  ): Promise<Reserva> {
+    const reservations = this.getReservations();
+    const reservation = reservations.find((item) => item.id_reserva === reservationId);
+    if (!reservation) {
+      throw new Error('La reserva ya no existe. Actualiza la lista e inténtalo otra vez.');
+    }
+    return this.persistReservationUpdate(reservations, {
+      ...reservation,
+      monto_pagado: (reservation.monto_pagado ?? 0) + payment.amount,
+      metodo_pago: payment.method,
+      pago_completo: payment.paidInFull,
+    });
   }
 
   private async persistReservationUpdate(reservations: Reserva[], updatedReservation: Reserva): Promise<Reserva> {
@@ -613,7 +655,7 @@ export class HostalService {
       !Number.isFinite(input.payment.depositPercentage) ||
       input.payment.depositPercentage < 1 ||
       input.payment.depositPercentage > 100 ||
-      !['transferencia', 'efectivo'].includes(input.payment.method) ||
+      !['transferencia', 'efectivo', 'debito', 'credito'].includes(input.payment.method) ||
       (input.payment.paidInFull && input.payment.paidAmount !== input.payment.totalAmount) ||
       (!input.payment.paidInFull &&
         input.payment.paidAmount !== Math.round(input.payment.totalAmount * input.payment.depositPercentage / 100))
@@ -695,9 +737,14 @@ export class HostalService {
       ...(input.payment ? {
         precio_total: input.payment.totalAmount,
         porcentaje_abono: input.payment.depositPercentage,
-        monto_pagado: input.payment.paidAmount,
-        metodo_pago: input.payment.method,
-        pago_completo: input.payment.paidInFull,
+        // Con tarjeta, el pago lo registra el cobro POS cuando el terminal lo aprueba.
+        ...(isCardMethod(input.payment.method)
+          ? { pago_completo: false }
+          : {
+            monto_pagado: input.payment.paidAmount,
+            metodo_pago: input.payment.method,
+            pago_completo: input.payment.paidInFull,
+          }),
       } : {}),
     };
     let savedReservation: Reserva;

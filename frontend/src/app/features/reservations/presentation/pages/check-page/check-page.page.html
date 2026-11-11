@@ -412,6 +412,31 @@
               <ion-icon name="cash-outline"></ion-icon>
               Efectivo
             </button>
+            <button
+              type="button"
+              class="payment-method-choice"
+              [class.selected]="paymentMethod === 'debito'"
+              [attr.aria-pressed]="paymentMethod === 'debito'"
+              [disabled]="!posDisponible || posCobro.enCurso()"
+              (click)="paymentMethod = 'debito'">
+              <ion-icon name="card-outline"></ion-icon>
+              Débito
+            </button>
+            <button
+              type="button"
+              class="payment-method-choice"
+              [class.selected]="paymentMethod === 'credito'"
+              [attr.aria-pressed]="paymentMethod === 'credito'"
+              [disabled]="!posDisponible || posCobro.enCurso()"
+              (click)="paymentMethod = 'credito'">
+              <ion-icon name="card-outline"></ion-icon>
+              Crédito
+            </button>
+            @if (!posDisponible && !posLoading) {
+            <p class="pos-payment-hint">Para cobrar con débito o crédito, activa un terminal de pago en Configuración → Terminal de pago (POS).</p>
+            } @else if (posDisponible && isCardMethod(paymentMethod)) {
+            <p class="pos-payment-hint">Se enviará el cobro al terminal {{ posDisponible.proveedor.nombre }}.</p>
+            }
           </fieldset>
 
           <div class="payment-due-summary">
@@ -421,6 +446,11 @@
             <small>Saldo pendiente después del abono: {{ (quote.total - paymentAmount) | currency:'CLP':'symbol-narrow':'1.0-0' }}</small>
             }
           </div>
+
+          @if (pendingPaymentReservation) {
+          <p class="pos-payment-hint pending">La reserva ya quedó creada. Falta registrar el pago.</p>
+          }
+          <app-pos-cobro-estado></app-pos-cobro-estado>
         </section>
         }
 
@@ -458,8 +488,12 @@
           </button>
           }
           @if (entryStep === 4) {
-          <button type="button" class="entry-cancel-button" (click)="returnToRoomSelectionStep()">Atrás</button>
-          <button type="submit" class="entry-submit-button" [disabled]="!isPaymentStepValid()">Confirmar pago y guardar reserva</button>
+          @if (pendingPaymentReservation) {
+          <button type="button" class="entry-cancel-button" [disabled]="posCobro.enCurso()" (click)="closeNewEntryForm()">Cobrar después</button>
+          } @else {
+          <button type="button" class="entry-cancel-button" [disabled]="posCobro.enCurso()" (click)="returnToRoomSelectionStep()">Atrás</button>
+          }
+          <button type="submit" class="entry-submit-button" [disabled]="!isPaymentStepValid()">{{ entrySubmitLabel }}</button>
           }
         </footer>
       </form>
@@ -815,7 +849,29 @@
           <ion-icon name="cash-outline"></ion-icon>
           Efectivo
         </button>
+        <button
+          type="button"
+          [class.selected]="checkInPaymentMethod === 'debito'"
+          [attr.aria-pressed]="checkInPaymentMethod === 'debito'"
+          [disabled]="!posDisponible || posCobro.enCurso()"
+          (click)="checkInPaymentMethod = 'debito'">
+          <ion-icon name="card-outline"></ion-icon>
+          Débito
+        </button>
+        <button
+          type="button"
+          [class.selected]="checkInPaymentMethod === 'credito'"
+          [attr.aria-pressed]="checkInPaymentMethod === 'credito'"
+          [disabled]="!posDisponible || posCobro.enCurso()"
+          (click)="checkInPaymentMethod = 'credito'">
+          <ion-icon name="card-outline"></ion-icon>
+          Crédito
+        </button>
+        @if (!posDisponible && !posLoading) {
+        <p class="pos-payment-hint">Para cobrar con débito o crédito, activa un terminal de pago en Configuración → Terminal de pago (POS).</p>
+        }
       </fieldset>
+      <app-pos-cobro-estado></app-pos-cobro-estado>
       } @else {
       <div class="checkin-payment-settled">
         <ion-icon name="checkmark-circle-outline"></ion-icon>
@@ -826,13 +882,13 @@
       <p class="entry-error" role="alert">{{ checkInPaymentError }}</p>
       }
       <footer class="checkin-payment-actions">
-        <button type="button" class="entry-cancel-button" (click)="closeCheckInPayment()">Cancelar</button>
+        <button type="button" class="entry-cancel-button" [disabled]="posCobro.enCurso()" (click)="closeCheckInPayment()">Cancelar</button>
         <button
           type="button"
           class="entry-submit-button"
-          [disabled]="item.outstandingBalance > 0 && !checkInPaymentMethod"
+          [disabled]="(item.outstandingBalance > 0 && !checkInPaymentMethod) || posCobro.enCurso()"
           (click)="confirmCheckInPayment()">
-          {{ item.outstandingBalance > 0 ? 'Cobrar saldo y procesar check-in' : 'Procesar check-in' }}
+          {{ posCobro.enCurso() ? 'Cobrando en el terminal…' : item.outstandingBalance > 0 ? (isCardMethod(checkInPaymentMethod) ? 'Cobrar en el terminal y procesar check-in' : 'Cobrar saldo y procesar check-in') : 'Procesar check-in' }}
         </button>
       </footer>
     </section>

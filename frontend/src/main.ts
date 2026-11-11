@@ -27,6 +27,10 @@ import { FotoHabitacionRepository } from './app/features/locations/domain/foto-h
 import { FotoHabitacionHttpRepository } from './app/features/locations/infraestructure/foto-habitacion-http.repository';
 import { ReportesRepository } from './app/features/reports/domain/reportes.repository';
 import { ReportesHttpRepository } from './app/features/reports/infraestructure/reportes-http.repository';
+import { PosRepository } from './app/features/payments-pos/domain/pos.repository';
+import { PosHttpRepository } from './app/features/payments-pos/infraestructure/pos-http.repository';
+import { POS_LOCAL_DRIVERS } from './app/features/payments-pos/domain/pos-local-driver';
+import { TransbankLocalDriver } from './app/features/payments-pos/infraestructure/local/transbank-local.driver';
 
 bootstrapApplication(AppComponent, {
   providers: [
@@ -46,6 +50,10 @@ bootstrapApplication(AppComponent, {
     { provide: FotoHabitacionRepository, useClass: FotoHabitacionHttpRepository },
     { provide: ReportesRepository, useClass: ReportesHttpRepository },
     { provide: HostalRepository, useClass: HostalHttpRepository },
+    { provide: PosRepository, useClass: PosHttpRepository },
+    TransbankLocalDriver,
+    // Conectores de navegador para proveedores en modo 'local'.
+    { provide: POS_LOCAL_DRIVERS, useFactory: (tbk: TransbankLocalDriver) => [tbk], deps: [TransbankLocalDriver] },
     provideRouter(routes, withPreloading(PreloadAllModules)),
   ],
 });

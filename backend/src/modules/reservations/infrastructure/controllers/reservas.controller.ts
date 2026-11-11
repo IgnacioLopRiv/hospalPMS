@@ -611,14 +611,18 @@ export class ReservasController {
     previousAmount: number,
   ): Promise<number | null> {
     const newAmount = input.monto_pagado;
-    const metodoPago =
-      input.metodo_pago === 'transferencia'
-        ? MetodoPago.TRANSFERENCIA
-        : input.metodo_pago === 'efectivo'
-          ? MetodoPago.EFECTIVO
-          : undefined;
+    const metodoPago = this.toMetodoPago(input.metodo_pago);
     const amount = (newAmount ?? previousAmount) - previousAmount;
     if (!metodoPago || amount <= 0) return null;
+    if (
+      metodoPago === MetodoPago.TARJETA_DEBITO ||
+      metodoPago === MetodoPago.TARJETA_CREDITO
+    ) {
+      // El pago con tarjeta lo registra el cobro POS cuando el terminal lo aprueba.
+      throw new BadRequestException(
+        'Los pagos con tarjeta se cobran y registran desde el terminal POS.',
+      );
+    }
 
     const pago = await transaction.pago.create({
       data: {
@@ -638,6 +642,40 @@ export class ReservasController {
     });
 
     return pago.id;
+  }
+
+  private toMetodoPago(
+    value: ReservaDto['metodo_pago'],
+  ): MetodoPago | undefined {
+    switch (value) {
+      case 'transferencia':
+        return MetodoPago.TRANSFERENCIA;
+      case 'efectivo':
+        return MetodoPago.EFECTIVO;
+      case 'debito':
+        return MetodoPago.TARJETA_DEBITO;
+      case 'credito':
+        return MetodoPago.TARJETA_CREDITO;
+      default:
+        return undefined;
+    }
+  }
+
+  private fromMetodoPago(
+    value?: MetodoPago | null,
+  ): ReservaDto['metodo_pago'] | undefined {
+    switch (value) {
+      case MetodoPago.TRANSFERENCIA:
+        return 'transferencia';
+      case MetodoPago.EFECTIVO:
+        return 'efectivo';
+      case MetodoPago.TARJETA_DEBITO:
+        return 'debito';
+      case MetodoPago.TARJETA_CREDITO:
+        return 'credito';
+      default:
+        return undefined;
+    }
   }
 
   private async issueCheckInReceipt(
@@ -673,12 +711,7 @@ export class ReservasController {
         : partial
           ? undefined
           : EstadoReserva.CONFIRMADA;
-    const paymentMethod =
-      input.metodo_pago === 'transferencia'
-        ? MetodoPago.TRANSFERENCIA
-        : input.metodo_pago === 'efectivo'
-          ? MetodoPago.EFECTIVO
-          : undefined;
+    const paymentMethod = this.toMetodoPago(input.metodo_pago);
     const defaultHoraSalida =
       defaultCheckoutTime && TIME_PATTERN.test(defaultCheckoutTime)
         ? defaultCheckoutTime
@@ -763,12 +796,7 @@ export class ReservasController {
       precio_total: reservation.precioTotal ?? undefined,
       porcentaje_abono: reservation.porcentajeAbono ?? undefined,
       monto_pagado: reservation.montoPagado ?? undefined,
-      metodo_pago:
-        reservation.metodoPago === MetodoPago.TRANSFERENCIA
-          ? 'transferencia'
-          : reservation.metodoPago === MetodoPago.EFECTIVO
-            ? 'efectivo'
-            : undefined,
+      metodo_pago: this.fromMetodoPago(reservation.metodoPago),
       pago_completo: reservation.pagoCompleto ?? false,
     };
   }

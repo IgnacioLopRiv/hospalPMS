@@ -1,0 +1,42 @@
+<button type="button" class="picker-trigger" [class.open]="open()" [disabled]="disabled()"
+  aria-haspopup="listbox" [attr.aria-expanded]="open()" [attr.aria-controls]="listboxId"
+  (click)="toggle()">
+  @if (current(); as provider) {
+    <span class="trigger-text">
+      <span class="trigger-name">{{ provider.nombre }}</span>
+    </span>
+  } @else {
+    <span class="trigger-placeholder">Selecciona un proveedor…</span>
+  }
+  <ion-icon name="chevron-down-outline" class="trigger-chevron" aria-hidden="true"></ion-icon>
+</button>
+
+@if (open()) {
+  <div class="picker-panel">
+    <div class="search-box">
+      <ion-icon name="search-outline" aria-hidden="true"></ion-icon>
+      <input #search type="text" role="combobox" autocomplete="off" placeholder="Buscar proveedor…"
+        aria-label="Buscar proveedor de POS" aria-autocomplete="list" [attr.aria-controls]="listboxId"
+        aria-expanded="true" [attr.aria-activedescendant]="filtered().length ? optionId(activeIndex()) : null"
+        [value]="query()" (input)="onQuery($any($event.target).value)" (keydown)="onKeydown($event)" />
+    </div>
+
+    <ul class="options" role="listbox" [id]="listboxId" aria-label="Proveedores de POS">
+      @for (provider of filtered(); track provider.code; let i = $index) {
+        <li role="option" class="option" [id]="optionId(i)"
+          [class.active]="i === activeIndex()" [class.selected]="provider.code === value()"
+          [class.unavailable]="!provider.disponible"
+          [attr.aria-selected]="provider.code === value()" [attr.aria-disabled]="!provider.disponible"
+          (mouseenter)="activeIndex.set(i)" (click)="choose(provider)">
+          <span class="option-name">{{ provider.nombre }}</span>
+          <span class="option-desc">{{ provider.descripcion }}</span>
+          @if (!provider.disponible && provider.nota) {
+            <span class="option-note">{{ provider.nota }}</span>
+          }
+        </li>
+      } @empty {
+        <li class="empty">No hay proveedores que coincidan con “{{ query() }}”.</li>
+      }
+    </ul>
+  </div>
+}

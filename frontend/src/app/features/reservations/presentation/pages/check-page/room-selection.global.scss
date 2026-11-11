@@ -4,7 +4,10 @@ $border-color: #e5e9f2;
 $text-dark: #1f2937;
 $text-muted: #64748b;
 
-.check-page-container {
+// El modal de nueva reserva se mueve a <body> (appModalPortal), fuera de
+// .check-page-container, así que también se aplica a su fondo.
+.check-page-container,
+.entry-modal-backdrop {
 .room-search-summary {
   margin: 0 0 1rem;
   color: $text-muted;
@@ -570,6 +573,31 @@ $text-muted: #64748b;
 .payment-method-choice {
   min-width: 150px;
   justify-content: center;
+}
+
+// Débito y crédito sin terminal POS activo.
+.payment-method-choice:disabled,
+.checkin-payment-methods button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+
+  &:hover {
+    border-color: $border-color;
+    background: #ffffff;
+  }
+}
+
+.pos-payment-hint {
+  width: 100%;
+  margin: 0.15rem 0 0;
+  color: $text-muted;
+  font-size: 0.76rem;
+  line-height: 1.4;
+
+  &.pending {
+    color: #b45309;
+    font-weight: 600;
+  }
 }
 
 .payment-due-summary {

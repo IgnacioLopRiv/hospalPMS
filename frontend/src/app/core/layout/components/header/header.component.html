@@ -51,8 +51,12 @@
   <app-config-options
     (closed)="closeConfigOptions()"
     (manageProfiles)="openEditPerfiles()"
+    (posConfig)="openPosConfig()"
   ></app-config-options>
 }
 
 <app-edit-perfiles [isOpen]="editPerfilesOpen()" (closed)="closeEditPerfiles()">
 </app-edit-perfiles>
+
+<app-pos-config-modal [isOpen]="posConfigOpen()" (closed)="closePosConfig()">
+</app-pos-config-modal>

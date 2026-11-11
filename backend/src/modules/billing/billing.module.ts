@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { PagoService } from './application/pago.service';
 import { PagosController } from './infrastructure/controllers/pagos.controller';
 import { DocumentosController } from './infrastructure/controllers/documentos.controller';
 
@@ -7,5 +8,7 @@ import { DocumentosController } from './infrastructure/controllers/documentos.co
  */
 @Module({
   controllers: [PagosController, DocumentosController],
+  providers: [PagoService],
+  exports: [PagoService],
 })
 export class BillingModule {}
