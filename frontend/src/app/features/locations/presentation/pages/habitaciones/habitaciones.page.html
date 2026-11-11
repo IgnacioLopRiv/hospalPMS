@@ -155,7 +155,7 @@
   </app-edit-tipologias>
 
   @if (isAdmin() && newRoomFormOpen()) {
-    <div class="new-room-modal-backdrop">
+    <div class="new-room-modal-backdrop" appModalPortal>
       <section
         class="new-room-modal"
         role="dialog"
@@ -222,7 +222,7 @@
   }
 
   @if (isAdmin() && editingRoom(); as room) {
-    <div class="room-detail-modal-backdrop">
+    <div class="room-detail-modal-backdrop" appModalPortal>
       <section
         class="room-detail-modal"
         role="dialog"

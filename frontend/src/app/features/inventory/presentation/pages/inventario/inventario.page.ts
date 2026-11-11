@@ -16,6 +16,7 @@ import {
 } from 'ionicons/icons';
 import { SedeService } from '../../../../locations/application/sede.service';
 import { AsignacionInventarioHabitacion, InsumoInventario, InventarioService } from '../../../application/inventario.service';
+import { ModalPortalDirective } from '../../../../../shared/presentation/modal-portal/modal-portal.directive';
 
 interface InsumoForm {
   nombre_insumo: string;
@@ -36,7 +37,7 @@ interface InsumoConStock extends InsumoInventario {
   templateUrl: './inventario.page.html',
   styleUrls: ['./inventario.page.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, IonIcon, IonPopover],
+  imports: [CommonModule, FormsModule, IonIcon, IonPopover, ModalPortalDirective],
 })
 export class InventarioPage {
   private readonly sedeService = inject(SedeService);

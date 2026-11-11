@@ -16,6 +16,7 @@ import {
 } from 'ionicons/icons';
 import { SedeService } from '../../../application/sede.service';
 import { PeriodType, Tarifa, TarifaInput, TarifaPeriodo, TarifasRepository } from '../../../domain/tarifas.repository';
+import { ModalPortalDirective } from '../../../../../shared/presentation/modal-portal/modal-portal.directive';
 
 export type { PeriodType, Tarifa, TarifaPeriodo } from '../../../domain/tarifas.repository';
 
@@ -66,7 +67,7 @@ function isValidPeriod(period: TarifaPeriodo): boolean {
   templateUrl: './tarifas.page.html',
   styleUrls: ['./tarifas.page.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, IonIcon],
+  imports: [CommonModule, FormsModule, IonIcon, ModalPortalDirective],
 })
 export class TarifasPage {
   private readonly sedeService = inject(SedeService);

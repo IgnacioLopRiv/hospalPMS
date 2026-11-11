@@ -633,7 +633,7 @@ $blue-dark: #172554;
   }
 }
 
-.habitaciones-page-container .room-detail-modal .room-photos-panel {
+.room-detail-modal .room-photos-panel {
   display: grid;
   align-content: start;
   gap: 1rem;
@@ -1058,7 +1058,7 @@ $blue-dark: #172554;
 }
 
 @media (max-width: 600px) {
-  .habitaciones-page-container .room-detail-modal .room-photos-panel {
+  .room-detail-modal .room-photos-panel {
     .room-photos-heading { align-items: stretch; flex-direction: column; }
     .room-photo-preview { grid-template-columns: 1fr; }
     .room-photo-preview > img { height: 190px; }

@@ -179,7 +179,7 @@
 </div>
 
 @if (configOpen()) {
-  <div class="config-modal-backdrop" (click)="closeConfig()">
+  <div class="config-modal-backdrop" appModalPortal (click)="closeConfig()">
     <section
       class="config-modal"
       role="dialog"

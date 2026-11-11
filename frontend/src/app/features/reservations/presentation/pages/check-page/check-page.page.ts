@@ -34,6 +34,7 @@ import { FotoHabitacionService } from '../../../../locations/application/foto-ha
 import { FotoHabitacion } from '../../../../locations/domain/foto-habitacion.model';
 import { InventarioService } from '../../../../inventory/application/inventario.service';
 import { Tarifa, TarifasRepository } from '../../../../locations/domain/tarifas.repository';
+import { ModalPortalDirective } from '../../../../../shared/presentation/modal-portal/modal-portal.directive';
 
 export interface GuestDraft {
   documentType: 'rut' | 'passport';
@@ -104,7 +105,7 @@ export interface CheckItemPlaceholder {
   templateUrl: './check-page.page.html',
   styleUrls: ['./check-page.page.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, IonIcon, CountryPickerComponent],
+  imports: [CommonModule, FormsModule, IonIcon, CountryPickerComponent, ModalPortalDirective],
 })
 export class CheckPagePage implements OnInit, OnDestroy {
   private readonly sedeService = inject(SedeService);

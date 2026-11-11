@@ -35,6 +35,7 @@ import {
   InventarioService,
 } from '../../../../inventory/application/inventario.service';
 import { EditTipologiasComponent } from '../../edit-tipologias/edit-tipologias.component';
+import { ModalPortalDirective } from '../../../../../shared/presentation/modal-portal/modal-portal.directive';
 
 interface ArticuloInventarioHabitacion {
   asignacion: AsignacionInventarioHabitacion;
@@ -46,7 +47,7 @@ interface ArticuloInventarioHabitacion {
   templateUrl: './habitaciones.page.html',
   styleUrls: ['./habitaciones.page.scss', './habitaciones-modal.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, IonIcon, EditTipologiasComponent],
+  imports: [CommonModule, FormsModule, IonIcon, EditTipologiasComponent, ModalPortalDirective],
 })
 export class HabitacionesPage implements OnInit, OnDestroy {
   private photoNoticeTimeout: ReturnType<typeof setTimeout> | null = null;
