@@ -22,8 +22,11 @@ import {
   downloadOutline,
   returnUpBackOutline,
   pricetagsOutline,
+  constructOutline,
+  documentTextOutline,
 } from 'ionicons/icons';
 import JSZip from 'jszip';
+import { firstValueFrom } from 'rxjs';
 import { Habitacion, SedeService, EstadoHabitacion, SedeTipologia } from '../../../application/sede.service';
 import { FotoHabitacionService } from '../../../application/foto-habitacion.service';
 import { FotoHabitacion } from '../../../domain/foto-habitacion.model';
@@ -36,6 +39,11 @@ import {
   InventarioService,
 } from '../../../../inventory/application/inventario.service';
 import { EditTipologiasComponent } from '../../edit-tipologias/edit-tipologias.component';
+import { MantenimientoHabitacionHttpRepository } from '../../../infraestructure/mantenimiento-habitacion-http.repository';
+import {
+  MantenimientoHabitacion,
+  MOTIVOS_MANTENIMIENTO,
+} from '../../../domain/mantenimiento-habitacion.model';
 import { ModalPortalDirective } from '../../../../../shared/presentation/modal-portal/modal-portal.directive';
 
 interface ArticuloInventarioHabitacion {
@@ -56,6 +64,7 @@ export class HabitacionesPage implements OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly fotoHabitacionService = inject(FotoHabitacionService);
   private readonly inventarioService = inject(InventarioService);
+  private readonly mantenimientoRepository = inject(MantenimientoHabitacionHttpRepository);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly sede = this.sedeService.selectedSede;
@@ -127,6 +136,40 @@ export class HabitacionesPage implements OnDestroy {
   readonly totalEnAseo = computed(() =>
     this.habitaciones().filter((h) => h.estado === 'en aseo').length
   );
+  readonly totalMantenimiento = computed(() =>
+    this.habitaciones().filter((h) => h.estado === 'mantenimiento').length
+  );
+  readonly updatingMaintenance = signal(false);
+
+  // Formulario "Pasar a mantenimiento"
+  readonly motivosMantenimiento = MOTIVOS_MANTENIMIENTO;
+  readonly maintenanceFormOpen = signal(false);
+  readonly maintenanceMotivo = signal('');
+  readonly maintenanceMotivoOtro = signal('');
+  readonly maintenanceDescripcion = signal('');
+  readonly maintenanceFormError = signal('');
+
+  // Historial de mantenimientos
+  readonly maintenanceHistoryOpen = signal(false);
+  readonly maintenanceHistory = signal<MantenimientoHabitacion[]>([]);
+  readonly maintenanceHistoryLoading = signal(false);
+  readonly maintenanceHistoryError = signal('');
+  readonly maintenanceHistoryFilter = signal<'todos' | 'en-curso' | 'finalizados'>('todos');
+  readonly maintenanceHistoryRoom = signal<string>('');
+  readonly filteredMaintenanceHistory = computed(() => {
+    const filter = this.maintenanceHistoryFilter();
+    const room = this.maintenanceHistoryRoom();
+    return this.maintenanceHistory().filter((item) =>
+      (filter === 'todos'
+        || (filter === 'en-curso' && !item.fechaTermino)
+        || (filter === 'finalizados' && !!item.fechaTermino))
+      && (!room || item.habitacionNumero === room)
+    );
+  });
+  readonly maintenanceHistoryRooms = computed(() =>
+    Array.from(new Set(this.maintenanceHistory().map((item) => item.habitacionNumero)))
+      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+  );
 
   constructor() {
     addIcons({
@@ -148,6 +191,8 @@ export class HabitacionesPage implements OnDestroy {
       downloadOutline,
       returnUpBackOutline,
       pricetagsOutline,
+      constructOutline,
+      documentTextOutline,
     });
 
     // Tick en vivo para el tiempo transcurrido de aseo. El aseo solo termina manualmente
@@ -580,6 +625,111 @@ export class HabitacionesPage implements OnDestroy {
     }
   }
 
+  /**
+   * Botón del editor: si la habitación está en mantenimiento lo finaliza; si no,
+   * abre el formulario para indicar el motivo.
+   */
+  async toggleMaintenance(): Promise<void> {
+    const room = this.editingRoom();
+    if (!this.isAdmin() || !room || this.updatingMaintenance()) {
+      return;
+    }
+    this.roomFormError.set('');
+    if (room.estado === 'mantenimiento') {
+      await this.finishMaintenance(room.id);
+      return;
+    }
+    if (room.estado === 'ocupada') {
+      this.roomFormError.set('No se puede pasar a mantenimiento una habitación ocupada.');
+      return;
+    }
+    this.maintenanceMotivo.set('');
+    this.maintenanceMotivoOtro.set('');
+    this.maintenanceDescripcion.set('');
+    this.maintenanceFormError.set('');
+    this.maintenanceFormOpen.set(true);
+  }
+
+  closeMaintenanceForm(): void {
+    if (!this.updatingMaintenance()) {
+      this.maintenanceFormOpen.set(false);
+    }
+  }
+
+  async submitMaintenance(): Promise<void> {
+    const room = this.editingRoom();
+    if (!room || this.updatingMaintenance()) return;
+    const motivo = (this.maintenanceMotivo() === 'Otro'
+      ? this.maintenanceMotivoOtro()
+      : this.maintenanceMotivo()).trim();
+    if (!motivo) {
+      this.maintenanceFormError.set('Selecciona o escribe el motivo del mantenimiento.');
+      return;
+    }
+    this.maintenanceFormError.set('');
+    this.updatingMaintenance.set(true);
+    try {
+      const registro = await firstValueFrom(this.mantenimientoRepository.iniciar(room.id, {
+        motivo,
+        descripcion: this.maintenanceDescripcion().trim() || undefined,
+      }));
+      this.sedeService.applyHabitacionEstadoLocal(room.id, 'mantenimiento');
+      this.maintenanceHistory.update((items) => [registro, ...items]);
+      this.maintenanceFormOpen.set(false);
+    } catch (error) {
+      this.maintenanceFormError.set(getApiErrorMessage(error, 'No se pudo iniciar el mantenimiento.'));
+    } finally {
+      this.updatingMaintenance.set(false);
+    }
+  }
+
+  private async finishMaintenance(habitacionId: number): Promise<void> {
+    this.updatingMaintenance.set(true);
+    try {
+      const registro = await firstValueFrom(this.mantenimientoRepository.finalizar(habitacionId));
+      this.sedeService.applyHabitacionEstadoLocal(habitacionId, 'libre');
+      if (registro) {
+        this.maintenanceHistory.update((items) =>
+          items.map((item) => item.id === registro.id ? registro : item));
+      }
+    } catch (error) {
+      this.roomFormError.set(getApiErrorMessage(error, 'No se pudo finalizar el mantenimiento.'));
+    } finally {
+      this.updatingMaintenance.set(false);
+    }
+  }
+
+  async openMaintenanceHistory(): Promise<void> {
+    const sede = this.sede();
+    if (!sede) return;
+    this.maintenanceHistoryFilter.set('todos');
+    this.maintenanceHistoryRoom.set('');
+    this.maintenanceHistoryError.set('');
+    this.maintenanceHistoryOpen.set(true);
+    this.maintenanceHistoryLoading.set(true);
+    try {
+      this.maintenanceHistory.set(await firstValueFrom(this.mantenimientoRepository.listBySede(sede.id)));
+    } catch (error) {
+      this.maintenanceHistoryError.set(getApiErrorMessage(error, 'No se pudo cargar el historial de mantenimientos.'));
+    } finally {
+      this.maintenanceHistoryLoading.set(false);
+    }
+  }
+
+  closeMaintenanceHistory(): void {
+    this.maintenanceHistoryOpen.set(false);
+  }
+
+  getMaintenanceDuration(item: MantenimientoHabitacion): string {
+    const end = item.fechaTermino ? new Date(item.fechaTermino).getTime() : Date.now();
+    const minutes = Math.max(0, Math.floor((end - new Date(item.fechaInicio).getTime()) / 60000));
+    const days = Math.floor(minutes / 1440);
+    const hours = Math.floor((minutes % 1440) / 60);
+    if (days > 0) return `${days} d ${hours} h`;
+    if (hours > 0) return `${hours} h ${minutes % 60} min`;
+    return `${minutes} min`;
+  }
+
   requestRoomDelete(): void {
     if (this.isAdmin() && this.editingRoom()) {
       this.confirmRoomDelete.set(true);
@@ -725,6 +875,8 @@ export class HabitacionesPage implements OnDestroy {
         return 'Ocupada';
       case 'en aseo':
         return 'En Aseo';
+      case 'mantenimiento':
+        return 'Mantenimiento';
       case 'libre':
       default:
         return 'Libre';

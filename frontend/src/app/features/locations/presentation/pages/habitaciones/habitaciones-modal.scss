@@ -262,13 +262,103 @@
   }
 
   .room-detail-save-actions { display: flex; gap: 0.65rem; margin-left: auto; }
+  .btn-maintenance-room { display: inline-flex; align-items: center; gap: 0.35rem; border: 1px solid #fecaca; background: #fef2f2; color: #b91c1c; &:hover:not(:disabled) { background: #fee2e2; } &.active { border-color: #a7f3d0; background: #ecfdf5; color: #047857; } &:disabled { opacity: 0.6; cursor: wait; } }
   .btn-delete-room, .btn-confirm-delete { display: inline-flex; align-items: center; gap: 0.35rem; border: 1px solid #fecdd3; background: #ffffff; color: #be123c; &:hover { background: #fff1f2; } }
   .room-detail-modal-actions .btn-cancel-new-room, .btn-cancel-delete { border: 1px solid #cbd5e1; background: #ffffff; color: #0f172a; &:hover { background: #f1f5f9; } }
   .room-detail-modal-actions .btn-save-new-room { border: 1px solid #1e50d8; background: #1e50d8; color: #ffffff; &:hover { background: #1d4ed8; box-shadow: 0 3px 8px rgba(30, 80, 216, 0.2); } }
   .room-delete-confirmation { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 0.55rem; width: 100%; color: #0f172a; font-size: 0.85rem; }
 }
 
+/* ── Mantenimiento: formulario e historial ───────────────────── */
+.maintenance-modal-backdrop { z-index: 10002; }
+
+.room-detail-modal.maintenance-form-modal {
+  width: min(100%, 520px);
+  border-top-color: #dc2626;
+  .maintenance-eyebrow { color: #dc2626; }
+  .btn-confirm-maintenance {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border: 1px solid #dc2626;
+    background: #dc2626;
+    color: #ffffff;
+    &:hover:not(:disabled) { background: #b91c1c; box-shadow: 0 3px 8px rgba(220, 38, 38, 0.25); }
+    &:disabled { opacity: 0.6; cursor: wait; }
+  }
+}
+
+.room-detail-modal.maintenance-history-modal {
+  width: min(100%, 820px);
+  .room-detail-tabs { flex-wrap: wrap; align-items: center; }
+  .maintenance-room-filter {
+    min-height: 38px;
+    margin-left: auto;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #0f172a;
+    font: inherit;
+    font-size: 0.85rem;
+  }
+  .maintenance-history-body { align-content: start; }
+  .maintenance-list { display: grid; gap: 0.75rem; }
+  .maintenance-item {
+    display: grid;
+    gap: 0.65rem;
+    padding: 0.95rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #94a3b8;
+    border-radius: 10px;
+    background: #ffffff;
+    &.in-progress { border-left-color: #dc2626; background: #fffafa; }
+  }
+  .maintenance-item-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    h3 { margin: 0.1rem 0 0; color: #0f172a; font-size: 0.95rem; font-weight: 700; }
+  }
+  .maintenance-room { color: #64748b; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+  .maintenance-status {
+    flex-shrink: 0;
+    padding: 0.2rem 0.55rem;
+    border: 1px solid #a7f3d0;
+    border-radius: 999px;
+    background: #ecfdf5;
+    color: #047857;
+    font-size: 0.72rem;
+    font-weight: 700;
+    &.in-progress { border-color: #fecaca; background: #fef2f2; color: #b91c1c; }
+  }
+  .maintenance-description {
+    display: flex;
+    gap: 0.4rem;
+    margin: 0;
+    color: #475569;
+    font-size: 0.84rem;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+    white-space: pre-line;
+    ion-icon { flex-shrink: 0; margin-top: 0.15rem; color: #94a3b8; }
+  }
+  .maintenance-dates {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    margin: 0;
+    padding-top: 0.6rem;
+    border-top: 1px dashed #e2e8f0;
+    dt { color: #64748b; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+    dd { margin: 0.15rem 0 0; color: #0f172a; font-size: 0.83rem; font-weight: 600; }
+  }
+}
+
 @media (max-width: 600px) {
+  .room-detail-modal.maintenance-history-modal .maintenance-room-filter { width: 100%; margin-left: 0; }
+  .room-detail-modal.maintenance-history-modal .maintenance-dates { grid-template-columns: 1fr 1fr; }
   .room-detail-modal-backdrop { align-items: flex-end; padding: 0; }
   .room-detail-modal { width: 100%; max-height: 94vh; max-height: 94dvh; border-radius: 16px 16px 0 0; }
   .room-detail-modal .room-details-fields { grid-template-columns: 1fr; }

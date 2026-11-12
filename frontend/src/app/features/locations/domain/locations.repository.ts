@@ -5,6 +5,8 @@ export interface CreateSedeInput {
   nombre: string;
   ciudad: string;
   email?: string | null;
+  direccion?: string | null;
+  telefono?: string | null;
 }
 
 export type CreateTipologiaInput = Omit<SedeTipologia, 'id'>;

@@ -68,7 +68,7 @@ export function staysConflictWithMargin(a: StayInterval, b: StayInterval): boole
 }
 
 /** Estados de habitación que impiden recibir un huésped hoy hasta liberarla. */
-export const ROOM_STATES_NOT_READY = ['en aseo', 'ocupada'] as const;
+export const ROOM_STATES_NOT_READY = ['en aseo', 'ocupada', 'mantenimiento'] as const;
 
 export function isRoomReadyForGuest(estado: string | undefined): boolean {
   return !(ROOM_STATES_NOT_READY as readonly string[]).includes(estado ?? 'libre');

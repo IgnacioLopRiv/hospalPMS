@@ -408,50 +408,85 @@ input[type="number"] {
   }
 }
 
-/* Menú Contextual Action Sheet (...) */
+/* Menú Contextual Action Sheet (...) — mismo lenguaje visual que .entry-modal */
 .hospal-custom-action-sheet {
+  --backdrop-opacity: 0.7;
+
+  ion-backdrop {
+    background: rgb(15, 23, 42);
+  }
+
+  .action-sheet-wrapper {
+    max-width: 480px;
+  }
+
   .action-sheet-container {
-    .action-sheet-group {
-      background: #1e3a8a !important;
-      border-radius: 16px;
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      margin-bottom: 0.5rem;
+    padding: 0 0.75rem 0.75rem;
+  }
 
-      .action-sheet-title {
-        color: rgba(255, 255, 255, 0.8) !important;
-        font-size: 0.8rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
+  .action-sheet-group {
+    overflow: hidden;
+    margin-bottom: 0.6rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px !important;
+    background: #ffffff !important;
+    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+  }
 
-      .action-sheet-button {
-        color: #ffffff !important;
-        font-size: 0.92rem;
-        font-weight: 500;
+  .action-sheet-title {
+    padding: 1.1rem 1.4rem 0.9rem;
+    border-bottom: 1px solid #e2e8f0;
+    background: #ffffff;
+    color: #0f172a !important;
+    font-size: 1.05rem;
+    font-weight: 700;
+    text-align: left;
+  }
 
-        ion-icon {
-          color: #93c5fd !important;
-        }
+  .action-sheet-button {
+    min-height: 52px;
+    padding: 0 1.4rem;
+    background: #ffffff;
+    color: #0f172a !important;
+    font-size: 0.92rem;
+    font-weight: 600;
 
-        &.action-sheet-destructive {
-          color: #fca5a5 !important;
+    .action-sheet-button-inner {
+      justify-content: flex-start;
+    }
 
-          ion-icon {
-            color: #f87171 !important;
-          }
-        }
-      }
+    ion-icon {
+      margin-inline-end: 0.75rem;
+      color: #1e50d8 !important;
+      font-size: 1.2rem;
+    }
 
-      &.action-sheet-cancel {
-        background: rgba(255, 255, 255, 0.1) !important;
-        color: #ffffff !important;
-        font-weight: 600;
+    &:hover {
+      background: #f8fafc;
+    }
+
+    &.action-sheet-destructive {
+      color: #b91c1c !important;
+
+      ion-icon {
+        color: #dc2626 !important;
       }
 
       &:hover {
-        background: rgba(255, 255, 255, 0.15) !important;
+        background: #fef2f2;
       }
+    }
+  }
+
+  .action-sheet-group-cancel .action-sheet-button {
+    color: #475569 !important;
+
+    .action-sheet-button-inner {
+      justify-content: center;
+    }
+
+    &:hover {
+      background: #f1f5f9;
     }
   }
 }

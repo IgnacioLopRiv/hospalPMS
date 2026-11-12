@@ -33,11 +33,23 @@
               <span class="dot"></span>
               <strong>{{ totalEnAseo() }}</strong> En Aseo
             </span>
+            <span class="status-summary-pill pill-mantenimiento" title="Habitaciones fuera de servicio por mantenimiento">
+              <span class="dot"></span>
+              <strong>{{ totalMantenimiento() }}</strong> Mantenimiento
+            </span>
           </div>
         </div>
 
-        @if (isAdmin()) {
-          <div class="room-header-actions">
+        <div class="room-header-actions">
+          <button
+            type="button"
+            class="btn-icon-history"
+            title="Historial de mantenimientos"
+            aria-label="Ver historial de mantenimientos"
+            (click)="openMaintenanceHistory()">
+            <ion-icon name="construct-outline"></ion-icon>
+          </button>
+          @if (isAdmin()) {
             <button type="button" class="btn-manage-typologies" (click)="openEditTipologias()">
               <ion-icon name="pricetags-outline"></ion-icon>
               <span>Gestionar tipologías</span>
@@ -46,8 +58,8 @@
               <ion-icon name="add-outline"></ion-icon>
               <span>Nueva habitación</span>
             </button>
-          </div>
-        }
+          }
+        </div>
       </div>
     </header>
 
@@ -576,6 +588,15 @@
                 <ion-icon name="trash-outline"></ion-icon>
                 Eliminar habitación
               </button>
+              <button
+                type="button"
+                class="btn-maintenance-room"
+                [class.active]="room.estado === 'mantenimiento'"
+                [disabled]="updatingMaintenance()"
+                (click)="toggleMaintenance()">
+                <ion-icon name="construct-outline"></ion-icon>
+                {{ updatingMaintenance() ? 'Actualizando…' : room.estado === 'mantenimiento' ? 'Finalizar mantenimiento' : 'Pasar a mantenimiento' }}
+              </button>
               <div class="room-detail-save-actions">
                 <button type="button" class="btn-cancel-new-room" (click)="closeRoomEditor()">Cancelar</button>
                 <button type="submit" class="btn-save-new-room">Guardar cambios</button>
@@ -586,6 +607,178 @@
       </section>
     </div>
   }
+  @if (isAdmin() && maintenanceFormOpen() && editingRoom(); as room) {
+    <div class="room-detail-modal-backdrop maintenance-modal-backdrop" appModalPortal>
+      <section
+        class="room-detail-modal maintenance-form-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="maintenance-form-title"
+        (click)="$event.stopPropagation()">
+        <header class="room-detail-modal-header">
+          <div>
+            <span class="room-detail-eyebrow maintenance-eyebrow">Pasar a mantenimiento</span>
+            <h2 id="maintenance-form-title">Habitación {{ room.numero }}</h2>
+          </div>
+          <button type="button" class="btn-close-form" aria-label="Cerrar" (click)="closeMaintenanceForm()">
+            <ion-icon name="close-outline"></ion-icon>
+          </button>
+        </header>
+
+        <form (ngSubmit)="submitMaintenance()">
+          <div class="room-detail-modal-body">
+            <p class="inventory-intro">
+              La habitación quedará fuera de servicio y no podrá recibir huéspedes hasta que finalices el mantenimiento.
+            </p>
+            <label class="room-detail-field">
+              <span>Motivo</span>
+              <select
+                name="maintenanceMotivo"
+                required
+                [ngModel]="maintenanceMotivo()"
+                (ngModelChange)="maintenanceMotivo.set($event); maintenanceFormError.set('')">
+                <option value="" disabled>Selecciona un motivo</option>
+                @for (motivo of motivosMantenimiento; track motivo) {
+                  <option [value]="motivo">{{ motivo }}</option>
+                }
+              </select>
+            </label>
+            @if (maintenanceMotivo() === 'Otro') {
+              <label class="room-detail-field">
+                <span>Especifica el motivo</span>
+                <input
+                  type="text"
+                  name="maintenanceMotivoOtro"
+                  maxlength="100"
+                  placeholder="Ej. Filtración en el techo"
+                  [ngModel]="maintenanceMotivoOtro()"
+                  (ngModelChange)="maintenanceMotivoOtro.set($event); maintenanceFormError.set('')">
+              </label>
+            }
+            <label class="room-detail-field">
+              <span>Descripción</span>
+              <textarea
+                name="maintenanceDescripcion"
+                rows="4"
+                maxlength="1000"
+                placeholder="Describe el problema o el trabajo a realizar"
+                [ngModel]="maintenanceDescripcion()"
+                (ngModelChange)="maintenanceDescripcion.set($event)"></textarea>
+            </label>
+            @if (maintenanceFormError()) {
+              <p class="room-detail-error" role="alert">{{ maintenanceFormError() }}</p>
+            }
+          </div>
+
+          <footer class="room-detail-modal-actions">
+            <div class="room-detail-save-actions">
+              <button type="button" class="btn-cancel-new-room" [disabled]="updatingMaintenance()" (click)="closeMaintenanceForm()">Cancelar</button>
+              <button type="submit" class="btn-confirm-maintenance" [disabled]="updatingMaintenance()">
+                <ion-icon name="construct-outline"></ion-icon>
+                {{ updatingMaintenance() ? 'Guardando…' : 'Iniciar mantenimiento' }}
+              </button>
+            </div>
+          </footer>
+        </form>
+      </section>
+    </div>
+  }
+
+  @if (maintenanceHistoryOpen()) {
+    <div class="room-detail-modal-backdrop" appModalPortal (click)="closeMaintenanceHistory()">
+      <section
+        class="room-detail-modal maintenance-history-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="maintenance-history-title"
+        (click)="$event.stopPropagation()">
+        <header class="room-detail-modal-header">
+          <div>
+            <span class="room-detail-eyebrow">Registro de mantenimientos</span>
+            <h2 id="maintenance-history-title">Historial de mantenimientos</h2>
+          </div>
+          <button type="button" class="btn-close-form" aria-label="Cerrar" (click)="closeMaintenanceHistory()">
+            <ion-icon name="close-outline"></ion-icon>
+          </button>
+        </header>
+
+        <nav class="room-detail-tabs" aria-label="Filtrar mantenimientos">
+          <button type="button" role="tab" [class.active]="maintenanceHistoryFilter() === 'todos'" (click)="maintenanceHistoryFilter.set('todos')">
+            Todos
+          </button>
+          <button type="button" role="tab" [class.active]="maintenanceHistoryFilter() === 'en-curso'" (click)="maintenanceHistoryFilter.set('en-curso')">
+            En curso
+          </button>
+          <button type="button" role="tab" [class.active]="maintenanceHistoryFilter() === 'finalizados'" (click)="maintenanceHistoryFilter.set('finalizados')">
+            Finalizados
+          </button>
+          @if (maintenanceHistoryRooms().length > 1) {
+            <select
+              class="maintenance-room-filter"
+              aria-label="Filtrar por habitación"
+              [value]="maintenanceHistoryRoom()"
+              (change)="maintenanceHistoryRoom.set($any($event.target).value)">
+              <option value="">Todas las habitaciones</option>
+              @for (numero of maintenanceHistoryRooms(); track numero) {
+                <option [value]="numero">Habitación {{ numero }}</option>
+              }
+            </select>
+          }
+        </nav>
+
+        <div class="room-detail-modal-body maintenance-history-body">
+          @if (maintenanceHistoryLoading()) {
+            <p class="inventory-empty">Cargando historial…</p>
+          } @else if (maintenanceHistoryError()) {
+            <p class="room-detail-error" role="alert">{{ maintenanceHistoryError() }}</p>
+          } @else if (filteredMaintenanceHistory().length === 0) {
+            <div class="room-photos-empty">
+              <span class="room-photos-empty-icon"><ion-icon name="construct-outline"></ion-icon></span>
+              <strong>Sin mantenimientos</strong>
+              <span>No hay mantenimientos registrados con estos filtros.</span>
+            </div>
+          } @else {
+            <div class="maintenance-list">
+              @for (item of filteredMaintenanceHistory(); track item.id) {
+                <article class="maintenance-item" [class.in-progress]="!item.fechaTermino">
+                  <header class="maintenance-item-header">
+                    <div>
+                      <span class="maintenance-room">Habitación {{ item.habitacionNumero }}</span>
+                      <h3>{{ item.motivo }}</h3>
+                    </div>
+                    <span class="maintenance-status" [class.in-progress]="!item.fechaTermino">
+                      {{ item.fechaTermino ? 'Finalizado' : 'En curso' }}
+                    </span>
+                  </header>
+                  @if (item.descripcion) {
+                    <p class="maintenance-description">
+                      <ion-icon name="document-text-outline"></ion-icon>
+                      {{ item.descripcion }}
+                    </p>
+                  }
+                  <dl class="maintenance-dates">
+                    <div>
+                      <dt>Inicio</dt>
+                      <dd>{{ item.fechaInicio | date:'dd/MM/yyyy HH:mm' }}</dd>
+                    </div>
+                    <div>
+                      <dt>Término</dt>
+                      <dd>{{ item.fechaTermino ? (item.fechaTermino | date:'dd/MM/yyyy HH:mm') : '—' }}</dd>
+                    </div>
+                    <div>
+                      <dt>Duración</dt>
+                      <dd>{{ getMaintenanceDuration(item) }}</dd>
+                    </div>
+                  </dl>
+                </article>
+              }
+            </div>
+          }
+        </div>
+      </section>
+    </div>
+  }
+
   @if (photoNotice()) {
     <div class="room-photo-notice" [class.error]="photoNoticeIsError()" role="status" aria-live="polite">
       @if (!photoNoticeIsError()) {

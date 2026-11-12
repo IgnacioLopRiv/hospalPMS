@@ -53,6 +53,7 @@ const HOTEL_TIME_ZONE = process.env.HOTEL_TIMEZONE || 'America/Santiago';
 const ROOM_STATES_NOT_READY: EstadoHabitacion[] = [
   EstadoHabitacion.EN_LIMPIEZA,
   EstadoHabitacion.OCUPADA,
+  EstadoHabitacion.MANTENIMIENTO,
 ];
 
 interface AvailabilityCheck {
@@ -453,7 +454,9 @@ export class ReservasController {
     const motivo =
       habitacion.estado === EstadoHabitacion.EN_LIMPIEZA
         ? 'está en aseo'
-        : 'está ocupada';
+        : habitacion.estado === EstadoHabitacion.MANTENIMIENTO
+          ? 'está en mantenimiento'
+          : 'está ocupada';
     throw new ConflictException(
       `La habitación ${habitacion.numero} ${motivo}. Debe quedar libre antes de recibir un nuevo huésped.`,
     );

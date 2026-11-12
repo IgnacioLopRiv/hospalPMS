@@ -101,7 +101,7 @@ export interface Caracteristica {
   predeterminada: boolean;
 }
 
-export type EstadoHabitacion = 'libre' | 'ocupada' | 'en aseo';
+export type EstadoHabitacion = 'libre' | 'ocupada' | 'en aseo' | 'mantenimiento';
 
 export interface SedeInventarioItem {
   id: number;
@@ -129,6 +129,8 @@ export interface Sede {
   nombre: string;
   ciudad: string;
   email?: string | null;
+  direccion?: string | null;
+  telefono?: string | null;
   horaCheckIn?: string;
   horaCheckOut?: string;
   tipologias?: SedeTipologia[];

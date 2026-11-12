@@ -76,7 +76,9 @@ export class SedesController {
             ? 'ocupada'
             : room.estado === 'EN_LIMPIEZA'
               ? 'en aseo'
-              : 'libre',
+              : room.estado === 'MANTENIMIENTO'
+                ? 'mantenimiento'
+                : 'libre',
         huespedActual: room.huespedActual ?? undefined,
         aseoIniciado: room.aseoIniciado?.getTime(),
       })),
@@ -126,6 +128,8 @@ export class SedesController {
       nombre: sede.nombreSede,
       ciudad: sede.ciudad,
       email: sede.email,
+      direccion: sede.direccion,
+      telefono: sede.telefono,
       tipologias: [],
       habitaciones: [],
     };
@@ -156,7 +160,7 @@ export class SedesController {
         ? { nombreSede: (input.nombreSede ?? input.nombre)?.trim() }
         : {}),
       ...(input.ciudad !== undefined ? { ciudad: input.ciudad.trim() } : {}),
-      ...(input.direccion !== undefined
+      ...(input.direccion?.trim()
         ? { direccion: input.direccion.trim() }
         : {}),
       ...(input.telefono !== undefined
@@ -173,6 +177,8 @@ export class SedesController {
         nombre: sede.nombreSede,
         ciudad: sede.ciudad,
         email: sede.email,
+        direccion: sede.direccion,
+        telefono: sede.telefono,
       };
     } catch (error) {
       if (

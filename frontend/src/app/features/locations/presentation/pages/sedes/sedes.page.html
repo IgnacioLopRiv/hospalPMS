@@ -25,7 +25,7 @@
         </div>
         @if (canEditSede()) {
           <!-- Botón para crear sede -->
-          <button type="button" class="btn-create-sede" (click)="openCreateSedeAlert()">
+          <button type="button" class="btn-create-sede" (click)="openCreateSedeForm()">
             <ion-icon name="add-outline"></ion-icon>
             <span>Nueva Sede</span>
           </button>
@@ -67,7 +67,7 @@
           <div class="empty-state">
             <p>No tienes sedes registradas en este momento.</p>
             @if (canEditSede()) {
-              <button type="button" class="btn-create-empty" (click)="openCreateSedeAlert()">
+              <button type="button" class="btn-create-empty" (click)="openCreateSedeForm()">
                 Crear primera sede
               </button>
             }
@@ -76,4 +76,85 @@
       </div>
     </section>
   </div>
+
+  @if (editingSede() !== null) {
+  <div class="entry-modal-backdrop" (click)="closeForm()">
+    <section class="entry-modal sede-form-modal" role="dialog" aria-modal="true" aria-labelledby="sede-modal-title"
+      (click)="$event.stopPropagation()">
+      <header class="entry-modal-header">
+        <div>
+          <h2 id="sede-modal-title">{{ editingSede() === 'new' ? 'Nueva sede' : 'Editar sede' }}</h2>
+          <p>{{ editingSede() === 'new' ? 'Ingresa los datos del establecimiento.' : 'Modifica los datos del establecimiento.' }}</p>
+        </div>
+        <button type="button" class="entry-modal-close-button" aria-label="Cerrar" (click)="closeForm()">
+          <ion-icon name="close-outline"></ion-icon>
+        </button>
+      </header>
+
+      <form class="entry-form" #sedeFormRef="ngForm" (ngSubmit)="saveSede()">
+        <div class="entry-modal-body">
+          <section class="entry-section">
+            <h3>INFORMACIÓN DE LA SEDE</h3>
+            <div class="entry-fields-grid">
+              <label class="entry-field">
+                <span>Nombre de la sede</span>
+                <input name="nombre" type="text" required placeholder="Ej. Hotel Playa" [(ngModel)]="form.nombre">
+              </label>
+              <label class="entry-field">
+                <span>Ciudad</span>
+                <input name="ciudad" type="text" required placeholder="Ej. Viña del Mar" [(ngModel)]="form.ciudad">
+              </label>
+              <label class="entry-field sede-field-full">
+                <span>Dirección</span>
+                <input name="direccion" type="text" required autocomplete="street-address"
+                  placeholder="Ej. Av. San Martín 123" [(ngModel)]="form.direccion">
+              </label>
+              <label class="entry-field">
+                <span>Teléfono (opcional)</span>
+                <div class="entry-phone-input">
+                  <app-country-picker [countries]="countries" mode="callingCode" ariaLabel="Código telefónico del país"
+                    [value]="form.phoneCountry" (valueChange)="onPhoneCountryChange($event)">
+                  </app-country-picker>
+                  <input #phoneModel="ngModel" name="telefono" type="text" autocomplete="tel-national"
+                    inputmode="numeric" placeholder="Número" [attr.maxlength]="phoneMaxLength"
+                    [class.phone-input-invalid]="phoneModel.touched && !phoneFieldFocused && form.telefono && !isPhoneValid"
+                    [ngModel]="form.telefono" (focus)="phoneFieldFocused = true" (blur)="phoneFieldFocused = false"
+                    (input)="handlePhoneInput($event)">
+                  @if (form.telefono && !phoneFieldFocused && isPhoneValid) {
+                  <span class="phone-check-status phone-check-valid" role="status" aria-label="Formato válido">
+                    <ion-icon name="checkmark-circle-outline" aria-hidden="true"></ion-icon>
+                  </span>
+                  }
+                </div>
+                @if (phoneModel.touched && !phoneFieldFocused && form.telefono && !isPhoneValid) {
+                <small class="entry-field-error" role="alert">{{ phoneFormatError }}</small>
+                }
+              </label>
+              <label class="entry-field">
+                <span>Correo (opcional)</span>
+                <input #emailModel="ngModel" name="email" type="email" autocomplete="email"
+                  placeholder="contacto@sede.cl" [(ngModel)]="form.email"
+                  (focus)="emailFieldFocused = true" (blur)="emailFieldFocused = false">
+                @if (emailModel.touched && !emailFieldFocused && form.email && !isEmailValid) {
+                <small class="entry-field-error" role="alert">Ingresa un email válido, por ejemplo nombre@dominio.com.</small>
+                }
+              </label>
+            </div>
+          </section>
+
+          @if (formError()) {
+          <p class="entry-error" role="alert">{{ formError() }}</p>
+          }
+        </div>
+        <footer class="entry-form-actions">
+          <button type="button" class="entry-cancel-button" (click)="closeForm()">Cancelar</button>
+          <button type="submit" class="entry-submit-button"
+            [disabled]="saving() || sedeFormRef.invalid || !isEmailValid || !isPhoneValid">
+            {{ saving() ? 'Guardando...' : (editingSede() === 'new' ? 'Crear sede' : 'Guardar cambios') }}
+          </button>
+        </footer>
+      </form>
+    </section>
+  </div>
+  }
 </ion-content>

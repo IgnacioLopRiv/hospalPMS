@@ -1,4 +1,5 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import {
   ActionSheetController,
@@ -10,7 +11,9 @@ import { addIcons } from 'ionicons';
 import {
   addOutline,
   businessOutline,
+  checkmarkCircleOutline,
   chevronForwardOutline,
+  closeOutline,
   createOutline,
   ellipsisVerticalOutline,
   locationOutline,
@@ -18,12 +21,32 @@ import {
 } from 'ionicons/icons';
 import { Sede, SedeService } from '../../../application/sede.service';
 import { AuthService } from '../../../../../core/auth/application/auth.service';
+import { COUNTRY_OPTIONS } from '../../../../../shared/domain/country-options';
+import {
+  isValidPhoneFormat,
+  limitPhoneDigits,
+  maxPhoneDigits,
+  PHONE_FORMAT_ERROR,
+} from '../../../../../shared/domain/phone-format';
+import { CountryPickerComponent } from '../../../../../shared/presentation/country-picker/country-picker.component';
+
+interface SedeForm {
+  nombre: string;
+  ciudad: string;
+  email: string;
+  direccion: string;
+  phoneCountry: string;
+  telefono: string;
+}
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const DEFAULT_PHONE_COUNTRY = 'cl';
 
 @Component({
   selector: 'app-sedes',
   templateUrl: './sedes.page.html',
   styleUrls: ['./sedes.page.scss'],
-  imports: [IonContent, IonIcon],
+  imports: [IonContent, IonIcon, FormsModule, CountryPickerComponent],
 })
 export class SedesPage {
   private readonly router = inject(Router);
@@ -34,6 +57,16 @@ export class SedesPage {
 
   readonly sedes = this.sedeService.sedes;
   readonly canEditSede = this.auth.canEditSede;
+  readonly countries = COUNTRY_OPTIONS;
+  readonly phoneFormatError = PHONE_FORMAT_ERROR;
+
+  /** null = modal cerrado; 'new' = creando; número = id de la sede en edición. */
+  readonly editingSede = signal<'new' | number | null>(null);
+  readonly saving = signal(false);
+  readonly formError = signal('');
+  form: SedeForm = this.emptyForm();
+  phoneFieldFocused = false;
+  emailFieldFocused = false;
 
   constructor() {
     addIcons({
@@ -43,7 +76,9 @@ export class SedesPage {
       addOutline,
       ellipsisVerticalOutline,
       createOutline,
-      trashOutline
+      trashOutline,
+      closeOutline,
+      checkmarkCircleOutline
     });
   }
 
@@ -62,18 +97,18 @@ export class SedesPage {
     }
 
     const actionSheet = await this.actionSheetCtrl.create({
-      header: `Opciones de ${sede.nombre}`,
+      header: sede.nombre,
       cssClass: 'hospal-custom-action-sheet',
       buttons: [
         {
-          text: 'Editar Sede',
+          text: 'Editar sede',
           icon: 'create-outline',
           handler: () => {
-            this.openEditSedeAlert(sede);
+            this.openEditSedeForm(sede);
           },
         },
         {
-          text: 'Eliminar Sede',
+          text: 'Eliminar sede',
           role: 'destructive',
           icon: 'trash-outline',
           handler: () => {
@@ -90,141 +125,108 @@ export class SedesPage {
     await actionSheet.present();
   }
 
-  /**
-   * Modal para Crear nueva Sede
-   */
-  async openCreateSedeAlert(): Promise<void> {
+  openCreateSedeForm(): void {
     if (!this.canEditSede()) {
       return;
     }
-
-    const alert = await this.alertCtrl.create({
-      header: 'Nueva Sede',
-      subHeader: 'Ingresa los datos del establecimiento',
-      message: '',
-      cssClass: 'hospal-custom-alert',
-      inputs: [
-        {
-          name: 'nombre',
-          type: 'text',
-          placeholder: 'Nombre de la sede (ej. Hotel Playa)',
-        },
-        {
-          name: 'ciudad',
-          type: 'text',
-          placeholder: 'Ciudad (ej. Viña del Mar)',
-        },
-        {
-          name: 'email',
-          type: 'email',
-          placeholder: 'Correo de la sede (opcional, ej. contacto@sede.cl)',
-        },
-      ],
-      buttons: [
-        {
-          text: 'Cancelar',
-          role: 'cancel',
-        },
-        {
-          text: 'Guardar',
-          cssClass: 'btn-confirm',
-          handler: async (data) => {
-            if (!data.nombre?.trim() || !data.ciudad?.trim()) {
-              alert.message = 'El nombre y la ciudad son obligatorios.';
-              return false;
-            }
-            const emailTrimmed = data.email?.trim();
-            if (emailTrimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
-              alert.message = 'Ingresa un correo electrónico válido o deja el campo vacío.';
-              return false;
-            }
-            try {
-              await this.sedeService.createSede({
-                nombre: data.nombre,
-                ciudad: data.ciudad,
-                email: emailTrimmed || null,
-              });
-              return true;
-            } catch {
-              alert.message = 'No se pudo guardar la sede. Verifica la conexión y que exista un hostal registrado en la base de datos.';
-              return false;
-            }
-          },
-        },
-      ],
-    });
-
-    await alert.present();
+    this.form = this.emptyForm();
+    this.openForm('new');
   }
 
-  /**
-   * Modal para Editar Sede existente
-   */
-  async openEditSedeAlert(sede: Sede): Promise<void> {
+  openEditSedeForm(sede: Sede): void {
     if (!this.canEditSede()) {
       return;
     }
+    const phone = this.splitPhone(sede.telefono);
+    this.form = {
+      nombre: sede.nombre,
+      ciudad: sede.ciudad,
+      email: sede.email ?? '',
+      direccion: sede.direccion ?? '',
+      phoneCountry: phone.country,
+      telefono: phone.number,
+    };
+    this.openForm(sede.id);
+  }
 
-    const alert = await this.alertCtrl.create({
-      header: 'Editar Sede',
-      subHeader: 'Modifica los datos del establecimiento',
-      message: '',
-      cssClass: 'hospal-custom-alert',
-      inputs: [
-        {
-          name: 'nombre',
-          type: 'text',
-          value: sede.nombre,
-          placeholder: 'Nombre de la sede',
-        },
-        {
-          name: 'ciudad',
-          type: 'text',
-          value: sede.ciudad,
-          placeholder: 'Ciudad',
-        },
-        {
-          name: 'email',
-          type: 'email',
-          value: sede.email || '',
-          placeholder: 'Correo de la sede (opcional)',
-        },
-      ],
-      buttons: [
-        {
-          text: 'Cancelar',
-          role: 'cancel',
-        },
-        {
-          text: 'Actualizar',
-          cssClass: 'btn-confirm',
-          handler: async (data) => {
-            if (!data.nombre?.trim() || !data.ciudad?.trim()) {
-              alert.message = 'El nombre y la ciudad son obligatorios.';
-              return false;
-            }
-            const emailTrimmed = data.email?.trim();
-            if (emailTrimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
-              alert.message = 'Ingresa un correo electrónico válido o deja el campo vacío.';
-              return false;
-            }
-            try {
-              await this.sedeService.updateSedeInfo(sede.id, {
-                nombre: data.nombre,
-                ciudad: data.ciudad,
-                email: emailTrimmed || null,
-              });
-              return true;
-            } catch {
-              alert.message = 'No se pudieron actualizar los datos de la sede. Verifica la conexión con el servidor.';
-              return false;
-            }
-          },
-        },
-      ],
-    });
+  closeForm(): void {
+    if (this.saving()) {
+      return;
+    }
+    this.editingSede.set(null);
+  }
 
-    await alert.present();
+  async saveSede(): Promise<void> {
+    const target = this.editingSede();
+    if (target === null || this.saving()) {
+      return;
+    }
+    if (!this.form.nombre.trim() || !this.form.ciudad.trim() || !this.form.direccion.trim()) {
+      this.formError.set('El nombre, la ciudad y la dirección son obligatorios.');
+      return;
+    }
+    if (!this.isEmailValid) {
+      this.formError.set('Ingresa un correo electrónico válido o deja el campo vacío.');
+      return;
+    }
+    if (!this.isPhoneValid) {
+      this.formError.set(PHONE_FORMAT_ERROR);
+      return;
+    }
+
+    const data = {
+      nombre: this.form.nombre,
+      ciudad: this.form.ciudad,
+      email: this.form.email,
+      direccion: this.form.direccion,
+      telefono: this.form.telefono.trim() ? `${this.phoneCountry.callingCode} ${this.form.telefono.trim()}` : null,
+    };
+
+    this.saving.set(true);
+    this.formError.set('');
+    try {
+      if (target === 'new') {
+        await this.sedeService.createSede(data);
+      } else {
+        await this.sedeService.updateSedeInfo(target, data);
+      }
+      this.saving.set(false);
+      this.closeForm();
+    } catch {
+      this.saving.set(false);
+      this.formError.set(target === 'new'
+        ? 'No se pudo guardar la sede. Verifica la conexión y que exista un hostal registrado en la base de datos.'
+        : 'No se pudieron actualizar los datos de la sede. Verifica la conexión con el servidor.');
+    }
+  }
+
+  handlePhoneInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.form.telefono = limitPhoneDigits(this.form.phoneCountry, input.value);
+    input.value = this.form.telefono;
+  }
+
+  onPhoneCountryChange(code: string): void {
+    this.form.phoneCountry = code;
+    this.form.telefono = limitPhoneDigits(code, this.form.telefono);
+  }
+
+  get phoneMaxLength(): number {
+    return maxPhoneDigits(this.form.phoneCountry) + 1;
+  }
+
+  /** El teléfono es opcional: vacío es válido, si se escribe debe tener formato del país. */
+  get isPhoneValid(): boolean {
+    return !this.form.telefono || isValidPhoneFormat(this.form.phoneCountry, this.form.telefono);
+  }
+
+  get isEmailValid(): boolean {
+    const email = this.form.email.trim();
+    return !email || EMAIL_PATTERN.test(email);
+  }
+
+  get phoneCountry(): (typeof COUNTRY_OPTIONS)[number] {
+    return COUNTRY_OPTIONS.find((country) => country.code === this.form.phoneCountry) ?? COUNTRY_OPTIONS[0];
   }
 
   /**
@@ -264,5 +266,29 @@ export class SedesPage {
     });
 
     await alert.present();
+  }
+
+  private openForm(target: 'new' | number): void {
+    this.formError.set('');
+    this.phoneFieldFocused = false;
+    this.emailFieldFocused = false;
+    this.editingSede.set(target);
+  }
+
+  private emptyForm(): SedeForm {
+    return { nombre: '', ciudad: '', email: '', direccion: '', phoneCountry: DEFAULT_PHONE_COUNTRY, telefono: '' };
+  }
+
+  /** Separa "+56 912345678" en país y número nacional, como se guarda desde el formulario. */
+  private splitPhone(value?: string | null): { country: string; number: string } {
+    const phone = (value ?? '').trim();
+    const match = /^(\+\d+)\s+(.*)$/.exec(phone);
+    if (!match) {
+      return { country: DEFAULT_PHONE_COUNTRY, number: phone.replace(/\D/g, '') };
+    }
+    const [, callingCode, rest] = match;
+    const country = COUNTRY_OPTIONS.find((item) => item.code === DEFAULT_PHONE_COUNTRY && item.callingCode === callingCode)
+      ?? COUNTRY_OPTIONS.find((item) => item.callingCode === callingCode);
+    return { country: country?.code ?? DEFAULT_PHONE_COUNTRY, number: rest.replace(/\D/g, '') };
   }
 }

@@ -6,7 +6,7 @@ import {
   SedeTipologia,
   EstadoHabitacion,
 } from '../../../shared/domain/hostal.model';
-import { LocationsRepository } from '../domain/locations.repository';
+import { CreateSedeInput, LocationsRepository } from '../domain/locations.repository';
 
 export type { Sede, SedeHabitacion as Habitacion, SedeTipologia, EstadoHabitacion } from '../../../shared/domain/hostal.model';
 
@@ -98,48 +98,38 @@ export class SedeService {
   /**
    * C (Crear): Agrega una nueva sede al listado
    */
-  async createSede(data: { nombre: string; ciudad: string; email?: string | null }): Promise<Sede> {
-    const created = await firstValueFrom(this.repository.createSede({
-      nombre: data.nombre.trim(),
-      ciudad: data.ciudad.trim(),
-      email: data.email?.trim() || null,
-    }));
+  async createSede(data: CreateSedeInput): Promise<Sede> {
+    const created = await firstValueFrom(this.repository.createSede(this.sanitizeSedeInfo(data)));
     const nuevaSede: Sede = { ...created, tipologias: [], habitaciones: [] };
     this.sedes.update((list) => [...list, nuevaSede]);
     return nuevaSede;
   }
 
   /**
-   * U (Actualizar datos generales): Modifica nombre, ciudad y correo de una sede
+   * U (Actualizar datos generales): Modifica nombre, ciudad, correo, dirección y teléfono de una sede
    */
-  async updateSedeInfo(id: number, data: { nombre: string; ciudad: string; email?: string | null }): Promise<void> {
-    const emailSanitized = data.email !== undefined ? (data.email?.trim() || null) : undefined;
-    await firstValueFrom(this.repository.updateSede(id, {
-      nombre: data.nombre.trim(),
-      ciudad: data.ciudad.trim(),
-      ...(emailSanitized !== undefined ? { email: emailSanitized } : {}),
-    }));
-    this.sedes.update((list) => list.map((sede) =>
-      sede.id === id ? {
-        ...sede,
-        nombre: data.nombre.trim(),
-        ciudad: data.ciudad.trim(),
-        ...(emailSanitized !== undefined ? { email: emailSanitized } : {}),
-      } : sede
-    ));
+  async updateSedeInfo(id: number, data: CreateSedeInput): Promise<void> {
+    const info = this.sanitizeSedeInfo(data);
+    await firstValueFrom(this.repository.updateSede(id, info));
+    this.sedes.update((list) => list.map((sede) => sede.id === id ? { ...sede, ...info } : sede));
 
     // Si la sede editada es la seleccionada, actualizarla
     const selected = this.selectedSede();
     if (selected && selected.id === id) {
-      const updated: Sede = {
-        ...selected,
-        nombre: data.nombre.trim(),
-        ciudad: data.ciudad.trim(),
-        ...(emailSanitized !== undefined ? { email: emailSanitized } : {}),
-      };
+      const updated: Sede = { ...selected, ...info };
       this.selectedSede.set(updated);
       this.saveSelectedSede(updated);
     }
+  }
+
+  private sanitizeSedeInfo(data: CreateSedeInput): CreateSedeInput {
+    return {
+      nombre: data.nombre.trim(),
+      ciudad: data.ciudad.trim(),
+      email: data.email?.trim() || null,
+      direccion: data.direccion?.trim() || null,
+      telefono: data.telefono?.trim() || null,
+    };
   }
 
   /**
@@ -290,6 +280,21 @@ export class SedeService {
     if (selected) {
       this.selectedSede.set(strip(selected));
     }
+  }
+
+  /**
+   * Refleja localmente un cambio de estado que el backend ya guardó (p. ej. al
+   * iniciar o finalizar un mantenimiento), sin volver a enviar la habitación.
+   */
+  applyHabitacionEstadoLocal(habitacionId: number, estado: EstadoHabitacion): void {
+    const current = this.selectedSede();
+    if (!current) return;
+    this.setUpdatedSede({
+      ...current,
+      habitaciones: current.habitaciones.map((h) => h.id === habitacionId
+        ? { ...h, estado, huespedActual: undefined, aseoIniciado: undefined }
+        : h),
+    });
   }
 
   private setUpdatedSede(updated: Sede): void {

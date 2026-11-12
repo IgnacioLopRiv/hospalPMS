@@ -209,6 +209,7 @@ model Habitacion {
   reservas           Reserva[]
   inventario         InventarioHabitacion[]
   fotos              FotoHabitacion[]
+  mantenimientos     MantenimientoHabitacion[]
 
   @@unique([sedeId, numero])
   @@map("habitacion")
@@ -265,6 +266,19 @@ model FotoHabitacion {
 
   @@index([habitacionId, fechaSubida])
   @@map("foto_habitacion")
+}
+
+model MantenimientoHabitacion {
+  id           Int        @id @default(autoincrement())
+  habitacionId Int
+  motivo       String     @db.VarChar(100)
+  descripcion  String?    @db.Text
+  fechaInicio  DateTime   @default(now())
+  fechaTermino DateTime?
+  habitacion   Habitacion @relation(fields: [habitacionId], references: [id], onDelete: Cascade)
+
+  @@index([habitacionId, fechaInicio])
+  @@map("mantenimiento_habitacion")
 }
 
 model Huesped {
