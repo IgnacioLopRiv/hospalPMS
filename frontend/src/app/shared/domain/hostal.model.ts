@@ -88,6 +88,17 @@ export interface SedeTipologia {
   color?: string;
   precioBase?: number;
   descripcion?: string;
+  /** Ids de las características asignadas a la tipología. */
+  caracteristicaIds?: number[];
+}
+
+/** Característica (amenidad) que se puede asignar a una tipología. */
+export interface Caracteristica {
+  id: number;
+  nombre: string;
+  icono?: string | null;
+  /** true para las características base del sistema (no editables). */
+  predeterminada: boolean;
 }
 
 export type EstadoHabitacion = 'libre' | 'ocupada' | 'en aseo';

@@ -32,7 +32,9 @@ export class SedesController {
   async findAll() {
     const sedes = await this.prisma.sede.findMany({
       include: {
-        tipologias: true,
+        tipologias: {
+          include: { caracteristicas: { select: { caracteristicaId: true } } },
+        },
         habitaciones: { where: { activa: true } },
       },
       orderBy: { nombreSede: 'asc' },
@@ -55,6 +57,9 @@ export class SedesController {
         descripcion: typology.descripcion ?? '',
         color: typology.color ?? undefined,
         precioBase: typology.precioBase ?? undefined,
+        caracteristicaIds: typology.caracteristicas.map(
+          (item) => item.caracteristicaId,
+        ),
       })),
       habitaciones: sede.habitaciones.map((room) => ({
         id: room.id,

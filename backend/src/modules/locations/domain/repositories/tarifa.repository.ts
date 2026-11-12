@@ -1,7 +1,6 @@
 import {
   Tarifa,
   TarifaPeriodo,
-  TipoTemporada,
 } from '../entities/tarifa.entity';
 
 export interface TarifaData {
@@ -11,7 +10,6 @@ export interface TarifaData {
   precioBase: number | null;
   fechaInicio: Date | null;
   fechaFin: Date | null;
-  tipoTemporada: TipoTemporada;
   activa: boolean;
   periodos: TarifaPeriodo[];
   precios: Record<number, number>;

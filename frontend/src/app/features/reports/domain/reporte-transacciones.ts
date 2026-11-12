@@ -14,8 +14,8 @@ export interface ClienteTransaccion {
 export const IVA = 0.19;
 const MAX_NOCHES = 366;
 
-export type TipoTarifaAplicada = 'ALTA' | 'BAJA' | 'BASE';
-export type TipoTarifaFiltro = 'TODAS' | 'ALTA' | 'BAJA' | 'PROMOCIONAL' | 'BASE';
+export type TipoTarifaAplicada = 'TARIFA' | 'BASE';
+export type TipoTarifaFiltro = 'TODAS' | 'TARIFA' | 'PROMOCIONAL' | 'BASE';
 type MetodoPagoReporte = 'transferencia' | 'efectivo' | 'debito' | 'credito';
 export type MetodoPagoFiltro = 'TODOS' | MetodoPagoReporte | 'sin-registro';
 export type EstadoPagoTransaccion = 'PAGADO' | 'ABONADO' | 'PENDIENTE' | 'ANULADO';
@@ -106,8 +106,7 @@ export const DATE_PRESETS: { value: Exclude<DatePreset, 'personalizado'>; label:
 ];
 
 export const TIPO_TARIFA_LABELS: Record<TipoTarifaAplicada, string> = {
-  ALTA: 'Temporada alta',
-  BAJA: 'Temporada baja',
+  TARIFA: 'Tarifa configurada',
   BASE: 'Precio base',
 };
 
@@ -126,7 +125,7 @@ export const METODO_PAGO_LABELS: Record<MetodoPagoReporte | 'sin-registro', stri
   'sin-registro': 'Sin registrar',
 };
 
-const SEASON_COLORS: Record<TipoTarifaAplicada, string> = { ALTA: '#ea580c', BAJA: '#0891b2', BASE: '#64748b' };
+const SEASON_COLORS: Record<TipoTarifaAplicada, string> = { TARIFA: '#2563eb', BASE: '#64748b' };
 const METODO_PAGO_COLORS: Record<MetodoPagoReporte | 'sin-registro', string> = {
   transferencia: '#2563eb',
   efectivo: '#16a34a',
@@ -241,7 +240,7 @@ function buildTransaccion(
       const aplicada = tipologia ? tarifaAplicada(ctx.tarifas, tipologia, date) : undefined;
       const precio = aplicada && tipologia ? precioTarifa(aplicada, tipologia) : tipologia?.precioBase ?? 0;
       const nombre = aplicada?.nombre ?? 'Precio base';
-      const tipo: TipoTarifaAplicada = aplicada?.tipoTemporada ?? 'BASE';
+      const tipo: TipoTarifaAplicada = aplicada ? 'TARIFA' : 'BASE';
       nochesDetalle.push({ fecha: toDateKey(date), precio, tarifa: nombre, tipo });
       porTarifa.set(nombre, { tipo, noches: (porTarifa.get(nombre)?.noches ?? 0) + 1 });
       date.setDate(date.getDate() + 1);

@@ -12,13 +12,26 @@ import {
   bedOutline,
   businessOutline,
   cashOutline,
+  checkmarkCircleOutline,
+  checkmarkOutline,
   closeOutline,
+  flameOutline,
+  restaurantOutline,
+  snowOutline,
+  tvOutline,
+  waterOutline,
+  wifiOutline,
   createOutline,
   peopleOutline,
   pricetagsOutline,
   trashOutline,
 } from 'ionicons/icons';
 import { SedeService, SedeTipologia } from '../../application/sede.service';
+import {
+  CARACTERISTICA_ICONO_DEFAULT,
+  CaracteristicaService,
+} from '../../application/caracteristica.service';
+import { Caracteristica } from '../../../../shared/domain/hostal.model';
 import { AuthService } from '../../../../core/auth/application/auth.service';
 
 type FormMode = 'add' | 'edit' | null;
@@ -27,7 +40,11 @@ interface TipologiaForm {
   nombre: string;
   capacidad: number;
   descripcion: string;
+  caracteristicaIds: number[];
 }
+
+/** Máximo de chips de características visibles en cada tarjeta. */
+const MAX_CHIPS = 4;
 
 @Component({
   selector: 'app-edit-tipologias',
@@ -46,6 +63,7 @@ interface TipologiaForm {
 export class EditTipologiasComponent {
   private readonly sedeService = inject(SedeService);
   private readonly auth = inject(AuthService);
+  private readonly caracteristicaService = inject(CaracteristicaService);
 
   readonly isOpen = input(false);
   readonly closed = output<void>();
@@ -56,11 +74,17 @@ export class EditTipologiasComponent {
   readonly successMessage = signal('');
   readonly deleteConfirmId = signal<number | null>(null);
 
-  readonly form = signal<TipologiaForm>({
-    nombre: '',
-    capacidad: 2,
-    descripcion: '',
-  });
+  readonly form = signal<TipologiaForm>(this.emptyForm());
+
+  // ── Características ───────────────────────────────────────────────────────
+  readonly caracteristicas = this.caracteristicaService.caracteristicas;
+  readonly caracteristicasLoading = this.caracteristicaService.loading;
+  readonly caracteristicasLoadError = this.caracteristicaService.loadError;
+  readonly nuevaCaracteristica = signal('');
+  readonly caracteristicaError = signal('');
+  readonly savingCaracteristica = signal(false);
+  readonly deleteCaracteristicaConfirmId = signal<number | null>(null);
+  readonly selectedCaracteristicaIds = computed(() => new Set(this.form().caracteristicaIds));
 
   readonly sede = this.sedeService.selectedSede;
   readonly tipologias = this.sedeService.tipologias;
@@ -77,11 +101,21 @@ export class EditTipologiasComponent {
       cashOutline,
       bedOutline,
       businessOutline,
+      checkmarkOutline,
+      'checkmark-circle-outline': checkmarkCircleOutline,
+      // Íconos de las características predeterminadas (seed)
+      wifi: wifiOutline,
+      water: waterOutline,
+      snow: snowOutline,
+      tv: tvOutline,
+      restaurant: restaurantOutline,
+      flame: flameOutline,
     });
 
     effect(() => {
       if (this.isOpen()) {
         this.resetState();
+        void this.caracteristicaService.load();
       }
     });
   }
@@ -90,11 +124,8 @@ export class EditTipologiasComponent {
 
   openAdd(): void {
     if (!this.isAdmin()) return;
-    this.form.set({
-      nombre: '',
-      capacidad: 2,
-      descripcion: '',
-    });
+    this.form.set(this.emptyForm());
+    this.resetCaracteristicaInput();
     this.editingId.set(null);
     this.formMode.set('add');
     this.errorMessage.set('');
@@ -107,7 +138,9 @@ export class EditTipologiasComponent {
       nombre: tipologia.nombre,
       capacidad: tipologia.capacidad,
       descripcion: tipologia.descripcion ?? '',
+      caracteristicaIds: [...(tipologia.caracteristicaIds ?? [])],
     });
+    this.resetCaracteristicaInput();
     this.editingId.set(tipologia.id);
     this.formMode.set('edit');
     this.errorMessage.set('');
@@ -118,6 +151,7 @@ export class EditTipologiasComponent {
     this.formMode.set(null);
     this.editingId.set(null);
     this.errorMessage.set('');
+    this.resetCaracteristicaInput();
   }
 
   async saveForm(): Promise<void> {
@@ -130,6 +164,9 @@ export class EditTipologiasComponent {
     const nombre = f.nombre.trim();
     const capacidad = Number(f.capacidad);
     const descripcion = f.descripcion.trim();
+    // Solo se envían ids de características que siguen existiendo.
+    const existentes = this.caracteristicaService.byId();
+    const caracteristicaIds = f.caracteristicaIds.filter((id) => existentes.has(id));
 
     if (!nombre) {
       this.errorMessage.set('El nombre de la tipología es obligatorio.');
@@ -150,20 +187,27 @@ export class EditTipologiasComponent {
       return;
     }
 
-    if (this.formMode() === 'add') {
-      await this.sedeService.addTipologia({
-        nombre,
-        capacidad,
-        descripcion,
-      });
-      this.showSuccess('Tipología agregada correctamente.');
-    } else {
-      await this.sedeService.updateTipologia(this.editingId()!, {
-        nombre,
-        capacidad,
-        descripcion,
-      });
-      this.showSuccess('Tipología actualizada correctamente.');
+    try {
+      if (this.formMode() === 'add') {
+        await this.sedeService.addTipologia({
+          nombre,
+          capacidad,
+          descripcion,
+          caracteristicaIds,
+        });
+        this.showSuccess('Tipología agregada correctamente.');
+      } else {
+        await this.sedeService.updateTipologia(this.editingId()!, {
+          nombre,
+          capacidad,
+          descripcion,
+          caracteristicaIds,
+        });
+        this.showSuccess('Tipología actualizada correctamente.');
+      }
+    } catch {
+      this.errorMessage.set('No se pudo guardar la tipología. Intenta nuevamente.');
+      return;
     }
 
     this.cancelForm();
@@ -171,6 +215,79 @@ export class EditTipologiasComponent {
 
   patchForm(field: keyof TipologiaForm, value: unknown): void {
     this.form.update((f) => ({ ...f, [field]: value }));
+  }
+
+  // ── Características ───────────────────────────────────────────────────────
+
+  isCaracteristicaSelected(id: number): boolean {
+    return this.selectedCaracteristicaIds().has(id);
+  }
+
+  toggleCaracteristica(id: number, checked: boolean): void {
+    this.form.update((f) => {
+      const ids = new Set(f.caracteristicaIds);
+      if (checked) ids.add(id);
+      else ids.delete(id);
+      return { ...f, caracteristicaIds: [...ids] };
+    });
+  }
+
+  async addCaracteristica(): Promise<void> {
+    if (!this.isAdmin() || this.savingCaracteristica()) return;
+    this.caracteristicaError.set('');
+    this.savingCaracteristica.set(true);
+    const result = await this.caracteristicaService.create(this.nuevaCaracteristica());
+    this.savingCaracteristica.set(false);
+    if (!result.ok) {
+      this.caracteristicaError.set(result.message);
+      return;
+    }
+    // La nueva característica queda marcada para la tipología en edición.
+    this.toggleCaracteristica(result.value.id, true);
+    this.nuevaCaracteristica.set('');
+  }
+
+  requestDeleteCaracteristica(id: number): void {
+    if (!this.isAdmin()) return;
+    this.caracteristicaError.set('');
+    this.deleteCaracteristicaConfirmId.set(id);
+  }
+
+  cancelDeleteCaracteristica(): void {
+    this.deleteCaracteristicaConfirmId.set(null);
+  }
+
+  async confirmDeleteCaracteristica(id: number): Promise<void> {
+    if (!this.isAdmin()) return;
+    const result = await this.caracteristicaService.remove(id);
+    this.deleteCaracteristicaConfirmId.set(null);
+    if (!result.ok) {
+      this.caracteristicaError.set(result.message);
+      return;
+    }
+    this.toggleCaracteristica(id, false);
+  }
+
+  countTipologiasWith(caracteristicaId: number): number {
+    return this.tipologias().filter((t) => t.caracteristicaIds?.includes(caracteristicaId)).length;
+  }
+
+  caracteristicaIcon(caracteristica: Caracteristica): string {
+    return caracteristica.icono || CARACTERISTICA_ICONO_DEFAULT;
+  }
+
+  /** Características asignadas a una tipología, en el orden del catálogo. */
+  assignedCaracteristicas(tipologia: SedeTipologia): Caracteristica[] {
+    const ids = new Set(tipologia.caracteristicaIds ?? []);
+    return this.caracteristicas().filter((c) => ids.has(c.id));
+  }
+
+  visibleChips(tipologia: SedeTipologia): Caracteristica[] {
+    return this.assignedCaracteristicas(tipologia).slice(0, MAX_CHIPS);
+  }
+
+  hiddenChipsCount(tipologia: SedeTipologia): number {
+    return Math.max(0, this.assignedCaracteristicas(tipologia).length - MAX_CHIPS);
   }
 
   // ── Eliminación ───────────────────────────────────────────────────────────
@@ -230,6 +347,17 @@ export class EditTipologiasComponent {
     this.errorMessage.set('');
     this.deleteConfirmId.set(null);
     this.successMessage.set('');
+    this.resetCaracteristicaInput();
+  }
+
+  private resetCaracteristicaInput(): void {
+    this.nuevaCaracteristica.set('');
+    this.caracteristicaError.set('');
+    this.deleteCaracteristicaConfirmId.set(null);
+  }
+
+  private emptyForm(): TipologiaForm {
+    return { nombre: '', capacidad: 2, descripcion: '', caracteristicaIds: [] };
   }
 
   private showSuccess(msg: string): void {

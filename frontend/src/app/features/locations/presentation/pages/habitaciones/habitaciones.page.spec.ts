@@ -9,6 +9,8 @@ import { InventarioRepository } from '../../../../inventory/domain/inventario.re
 import { LocationsRepository } from '../../../domain/locations.repository';
 import { createLocationsRepositoryStub } from '../../../domain/testing/locations.repository.stub';
 import { FotoHabitacionRepository } from '../../../domain/foto-habitacion.repository';
+import { CaracteristicaRepository } from '../../../domain/caracteristica.repository';
+import { createCaracteristicaRepositoryStub } from '../../../domain/testing/caracteristica.repository.stub';
 import { of, throwError } from 'rxjs';
 import JSZip from 'jszip';
 
@@ -58,6 +60,7 @@ describe('HabitacionesPage', () => {
       providers: [
         provideHttpClient(),
         { provide: LocationsRepository, useValue: createLocationsRepositoryStub() },
+        { provide: CaracteristicaRepository, useValue: createCaracteristicaRepositoryStub() },
         { provide: InventarioRepository, useValue: inventarioRepository },
         {
           provide: FotoHabitacionRepository,

@@ -4,7 +4,6 @@ import { PrismaService } from '../../../../database/prisma.service';
 import {
   Tarifa,
   TarifaPeriodo,
-  TipoTemporada,
 } from '../../domain/entities/tarifa.entity';
 import {
   TarifaData,
@@ -35,7 +34,6 @@ export class PrismaTarifaRepository implements TarifaRepository {
       raw.precioBase,
       raw.fechaInicio,
       raw.fechaFin,
-      raw.tipoTemporada as TipoTemporada,
       raw.activa,
       raw.periodos as unknown as TarifaPeriodo[],
       Object.fromEntries(
@@ -77,7 +75,6 @@ export class PrismaTarifaRepository implements TarifaRepository {
         precioBase: data.precioBase,
         fechaInicio: data.fechaInicio,
         fechaFin: data.fechaFin,
-        tipoTemporada: data.tipoTemporada,
         activa: data.activa,
         periodos: data.periodos as unknown as Prisma.InputJsonValue,
         precios: { create: this.toPreciosRows(data.precios) },
@@ -105,9 +102,6 @@ export class PrismaTarifaRepository implements TarifaRepository {
           ? { fechaInicio: data.fechaInicio }
           : {}),
         ...(data.fechaFin !== undefined ? { fechaFin: data.fechaFin } : {}),
-        ...(data.tipoTemporada !== undefined
-          ? { tipoTemporada: data.tipoTemporada }
-          : {}),
         ...(data.activa !== undefined ? { activa: data.activa } : {}),
         ...(data.periodos !== undefined
           ? { periodos: data.periodos as unknown as Prisma.InputJsonValue }

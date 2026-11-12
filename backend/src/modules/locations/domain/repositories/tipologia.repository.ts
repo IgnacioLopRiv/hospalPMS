@@ -14,6 +14,8 @@ export abstract class TipologiaRepository {
     descripcion?: string | null;
     color?: string | null;
     precioBase?: number | null;
+    /** Características asignadas a la tipología. */
+    caracteristicaIds?: number[];
   }): Promise<Tipologia>;
   abstract update(
     id: number,
@@ -24,6 +26,8 @@ export abstract class TipologiaRepository {
       descripcion: string;
       color: string | null;
       precioBase: number | null;
+      /** Si se envía, reemplaza el conjunto completo de características. */
+      caracteristicaIds: number[];
     }>,
   ): Promise<Tipologia>;
   abstract delete(id: number): Promise<void>;

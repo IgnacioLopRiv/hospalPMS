@@ -24,7 +24,9 @@ async function main() {
     },
   });
 
-  console.log(`✅ Hostal registrado: "${hostal.nombreFantasia}" (ID: ${hostal.id})`);
+  console.log(
+    `✅ Hostal registrado: "${hostal.nombreFantasia}" (ID: ${hostal.id})`,
+  );
 
   // 2. Características / Amenidades comunes por defecto
   const amenidadesBase = [
@@ -46,7 +48,13 @@ async function main() {
           nombre: amenidad.nombre,
           icono: amenidad.icono,
           activo: true,
+          predeterminada: true,
         },
+      });
+    } else if (!existe.predeterminada) {
+      await prisma.caracteristica.update({
+        where: { id: existe.id },
+        data: { predeterminada: true },
       });
     }
   }
@@ -68,7 +76,9 @@ async function main() {
         horaCheckOut: '12:00',
       },
     });
-    console.log(`✅ Sede por defecto creada: "${firstSede.nombreSede}" (ID: ${firstSede.id})`);
+    console.log(
+      `✅ Sede por defecto creada: "${firstSede.nombreSede}" (ID: ${firstSede.id})`,
+    );
   }
 
   // 4. Funcionario Administrador por defecto
@@ -87,7 +97,9 @@ async function main() {
       rol: 'ADMINISTRADOR',
     },
   });
-  console.log(`✅ Funcionario administrador verificado: "${admin.email}" (ID: ${admin.id})`);
+  console.log(
+    `✅ Funcionario administrador verificado: "${admin.email}" (ID: ${admin.id})`,
+  );
 
   console.log('🎉 Seed finalizado con éxito.');
 }

@@ -96,7 +96,7 @@ describe('TarifasPage', () => {
     expect(component.tarifas()[0].nombre).toBe('Verano');
     expect('abonoPorcentaje' in component.tarifas()[0]).toBeFalse();
     expect(component.periodSummary(component.tarifas()[0].periodos[0])).toBe('Dic');
-    expect(storedTarifas).toContain(jasmine.objectContaining({ id: 1, nombre: 'Verano', tipoTemporada: 'ALTA', activa: true }));
+    expect(storedTarifas).toContain(jasmine.objectContaining({ id: 1, nombre: 'Verano', activa: true }));
     expect(TestBed.inject(TarifasRepository).createTarifa).toHaveBeenCalledWith(7, jasmine.objectContaining({ nombre: 'Verano' }));
   });
 
@@ -174,7 +174,6 @@ describe('TarifasPage', () => {
     period.fechaFin = '2025-01-31';
     component.tarifas.set([{
       id: 1,
-      tipoTemporada: 'ALTA',
       activa: true,
       nombre: 'Invierno',
       periodos: [period],
@@ -199,7 +198,6 @@ describe('TarifasPage', () => {
     expect(component.periodSummary(period)).toBe('29 de Febrero de 2028');
     component.tarifas.set([{
       id: 2,
-      tipoTemporada: 'ALTA',
       activa: true,
       nombre: 'Año bisiesto',
       periodos: [period],
@@ -313,7 +311,6 @@ describe('TarifasPage', () => {
     };
     component.tarifas.set([{
       id: 1,
-      tipoTemporada: 'ALTA',
       activa: true,
       nombre: 'Jueves',
       periodos: [existingWeekdays],
@@ -343,7 +340,6 @@ describe('TarifasPage', () => {
     };
     component.tarifas.set([{
       id: 1,
-      tipoTemporada: 'ALTA',
       activa: true,
       nombre: 'Abril',
       periodos: [existingApril],
@@ -370,7 +366,6 @@ describe('TarifasPage', () => {
     };
     component.tarifas.set([{
       id: 1,
-      tipoTemporada: 'ALTA',
       activa: true,
       nombre: 'Jueves',
       periodos: [existingWeekdays],
@@ -406,7 +401,6 @@ describe('TarifasPage', () => {
     component.tarifas.set([
       {
         id: 1,
-      tipoTemporada: 'ALTA',
       activa: true,
         nombre: 'Abril',
         periodos: [aprilPeriod],
@@ -414,7 +408,6 @@ describe('TarifasPage', () => {
       },
       {
         id: 2,
-      tipoTemporada: 'ALTA',
       activa: true,
         nombre: 'Jueves',
         periodos: [thursdayPeriod],
@@ -439,7 +432,6 @@ describe('TarifasPage', () => {
     };
     component.tarifas.set([{
       id: 1,
-      tipoTemporada: 'ALTA',
       activa: true,
       nombre: 'Jueves',
       periodos: [existingWeekdays],

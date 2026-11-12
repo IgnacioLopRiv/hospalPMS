@@ -117,6 +117,15 @@
     </div>
   </header>
 
+  @if (reservationMessage(); as message) {
+    <p class="reservation-feedback" role="status">
+      {{ message }}
+      <button type="button" aria-label="Cerrar aviso" (click)="reservationMessage.set('')">
+        <ion-icon name="close-circle-outline"></ion-icon>
+      </button>
+    </p>
+  }
+
   <div class="planner-grid-wrapper">
     <div class="planner-header">
       <div class="room-col-header">HABITACIÓN</div>
@@ -194,6 +203,12 @@
                     @let reservation = bar.reservation;
                     <div
                       class="reservation-card"
+                      role="button"
+                      tabindex="0"
+                      [attr.aria-label]="'Ver reserva de ' + reservation.guestName"
+                      (click)="openReservation(reservation.id)"
+                      (keydown.enter)="openReservation(reservation.id)"
+                      (keydown.space)="$event.preventDefault(); openReservation(reservation.id)"
                       [style.left.%]="bar.leftPercent"
                       [style.width.%]="bar.widthPercent"
                       [style.--lane]="bar.lane"
@@ -214,4 +229,161 @@
       }
     </div>
   </div>
+
+  @if (reservationDetail(); as detail) {
+  <dialog #reservationDialog class="entry-modal-backdrop guest-edit-dialog"
+    (cancel)="onReservationDialogCancel($event)">
+    @if (reservationModalMode() === 'detail') {
+    <section class="entry-modal reservation-detail-modal" role="dialog" aria-modal="true"
+      aria-labelledby="reservation-detail-title">
+      <header class="entry-modal-header">
+        <div>
+          <h2 id="reservation-detail-title">{{ detail.guestName }}</h2>
+          <p>
+            Reserva #{{ detail.reservation.id_reserva }}
+            · {{ detail.roomNumber ? 'Hab. ' + detail.roomNumber : 'Habitación' }}{{ detail.roomType ? ' · ' + detail.roomType : '' }}
+          </p>
+        </div>
+        <span class="reservation-status" [ngClass]="'status-' + reservationStatusClass(detail.reservation.estado_reserva)">
+          {{ detail.reservation.estado_reserva }}
+        </span>
+      </header>
+
+      <div class="entry-modal-body">
+        <section class="entry-section">
+          <h3>ESTADÍA</h3>
+          <dl class="reservation-detail-grid">
+            <div>
+              <dt>Llegada</dt>
+              <dd>{{ formatDate(detail.reservation.fecha_llegada) }} · {{ detail.reservation.hora_llegada || 'por confirmar' }}</dd>
+            </div>
+            <div>
+              <dt>Salida</dt>
+              <dd>{{ formatDate(detail.reservation.fecha_salida) }} · {{ detail.reservation.hora_salida || '12:00' }}</dd>
+            </div>
+            <div>
+              <dt>Noches</dt>
+              <dd>{{ detail.nights }} {{ detail.nights === 1 ? 'noche' : 'noches' }}</dd>
+            </div>
+            <div>
+              <dt>Personas</dt>
+              <dd>{{ detail.reservation.cantidad_personas ?? 1 }} {{ (detail.reservation.cantidad_personas ?? 1) === 1 ? 'persona' : 'personas' }}</dd>
+            </div>
+            @if (detail.reservation.precio_total) {
+            <div>
+              <dt>Total</dt>
+              <dd>{{ detail.reservation.precio_total | currency:'CLP':'symbol-narrow':'1.0-0' }}</dd>
+            </div>
+            <div>
+              <dt>Pagado</dt>
+              <dd>{{ (detail.reservation.monto_pagado ?? 0) | currency:'CLP':'symbol-narrow':'1.0-0' }}</dd>
+            </div>
+            }
+          </dl>
+        </section>
+
+        @if (detail.guest; as guest) {
+        <section class="entry-section">
+          <h3>HUÉSPED</h3>
+          <dl class="reservation-detail-grid">
+            <div><dt>Documento</dt><dd>{{ guest.documento || '—' }}</dd></div>
+            <div><dt>País de residencia</dt><dd>{{ guest.nacionalidad || '—' }}</dd></div>
+            <div><dt>Teléfono</dt><dd>{{ guest.telefono || '—' }}</dd></div>
+            <div><dt>Email</dt><dd>{{ guest.email || '—' }}</dd></div>
+          </dl>
+          @if (whatsappUrl(guest.telefono); as waUrl) {
+          <a class="reservation-whatsapp" [href]="waUrl" target="_blank" rel="noopener noreferrer">
+            <ion-icon name="logo-whatsapp"></ion-icon> WhatsApp
+          </a>
+          }
+        </section>
+        }
+
+        @if (reservationError()) {
+        <p class="entry-error" role="alert">{{ reservationError() }}</p>
+        }
+      </div>
+
+      <footer class="entry-form-actions">
+        @if (canCancelReservation(detail.reservation.estado_reserva)) {
+        <button type="button" class="reservation-cancel-button" (click)="cancelReservation()">
+          <ion-icon name="close-circle-outline"></ion-icon>
+          Cancelar reserva
+        </button>
+        }
+        <button type="button" class="entry-cancel-button" (click)="closeReservationModal()">Cerrar</button>
+        @if (canCancelReservation(detail.reservation.estado_reserva)) {
+        <button type="button" class="entry-submit-button" (click)="startReservationEdit()">
+          Modificar reserva
+        </button>
+        }
+      </footer>
+    </section>
+    } @else {
+    <section class="entry-modal reservation-edit-modal" role="dialog" aria-modal="true"
+      aria-labelledby="reservation-edit-title">
+      <header class="entry-modal-header">
+        <div>
+          <h2 id="reservation-edit-title">Modificar reserva</h2>
+          <p>{{ detail.guestName }} · actualiza las fechas, el horario, la cantidad de personas o la habitación.</p>
+        </div>
+      </header>
+      <form class="entry-form" #editReservationRef="ngForm" (ngSubmit)="saveReservationChanges()">
+        <div class="entry-modal-body">
+          <div class="entry-fields-grid">
+            <label class="entry-field">
+              <span>Fecha de llegada</span>
+              <input name="editArrivalDate" type="date" required [(ngModel)]="editReservationForm.fecha_llegada"
+                (ngModelChange)="refreshAvailableReservationRooms()">
+            </label>
+            <label class="entry-field">
+              <span>Fecha de salida</span>
+              <input name="editDepartureDate" type="date" required [(ngModel)]="editReservationForm.fecha_salida"
+                (ngModelChange)="refreshAvailableReservationRooms()">
+            </label>
+            <label class="entry-field">
+              <span>Horario estimado de llegada</span>
+              <input name="editArrivalTime" type="time" required [(ngModel)]="editReservationForm.hora_llegada"
+                (ngModelChange)="refreshAvailableReservationRooms()">
+            </label>
+            <label class="entry-field">
+              <span>Horario estimado de salida</span>
+              <input name="editDepartureTime" type="time" [(ngModel)]="editReservationForm.hora_salida"
+                (ngModelChange)="refreshAvailableReservationRooms()">
+            </label>
+            <label class="entry-field">
+              <span>Cantidad de personas</span>
+              <input name="editPersonCount" type="number" required min="1" step="1"
+                [(ngModel)]="editReservationForm.cantidad_personas"
+                (ngModelChange)="refreshAvailableReservationRooms()">
+            </label>
+            <label class="entry-field">
+              <span>Habitación disponible</span>
+              <select name="editRoomId" required [(ngModel)]="editReservationForm.id_habitacion">
+                <option value="" disabled>Selecciona una habitación</option>
+                @for (room of availableReservationRooms; track room.id_habitacion) {
+                <option [value]="room.id_habitacion">Hab. {{ room.numero_habitacion }}</option>
+                }
+              </select>
+            </label>
+          </div>
+          @if (availableReservationRooms.length === 0) {
+          <p class="entry-hint">No hay habitaciones con capacidad suficiente disponibles en ese rango de fechas.</p>
+          }
+          @if (reservationError()) {
+          <p class="entry-error" role="alert">{{ reservationError() }}</p>
+          }
+        </div>
+        <footer class="entry-form-actions">
+          <button type="button" class="entry-cancel-button" (click)="backToReservationDetail()">Volver</button>
+          <button type="submit" class="entry-submit-button"
+            [disabled]="editReservationRef.invalid || !isReservationRoomAvailable">
+            Guardar cambios
+          </button>
+        </footer>
+      </form>
+    </section>
+    }
+  </dialog>
+  }
 </div>

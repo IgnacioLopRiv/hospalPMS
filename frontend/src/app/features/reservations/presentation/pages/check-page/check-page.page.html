@@ -708,10 +708,18 @@
               <ion-icon name="log-in-outline"></ion-icon>
               <span>{{ isRoomEnAseo(item.roomNumber) ? 'Habitación en aseo' : isRoomOcupada(item.roomNumber) ? 'Habitación ocupada' : 'Registrar Check-in' }}</span>
             </button>
-            <button type="button" class="btn-action-secondary">
-              <ion-icon name="call-outline"></ion-icon>
-              <span>Contactar</span>
+            @if (whatsappUrl(item.phone); as waUrl) {
+            <a class="btn-action-secondary" [href]="waUrl" target="_blank" rel="noopener noreferrer">
+              <ion-icon name="logo-whatsapp"></ion-icon>
+              <span>WhatsApp</span>
+            </a>
+            } @else {
+            <button type="button" class="btn-action-secondary" disabled
+              title="El huésped no tiene teléfono registrado">
+              <ion-icon name="logo-whatsapp"></ion-icon>
+              <span>WhatsApp</span>
             </button>
+            }
           </div>
         </article>
         } @empty {
@@ -736,7 +744,18 @@
             <p class="column-subtitle">Huéspedes programados para desalojar habitaciones hoy</p>
           </div>
         </div>
-        <span class="count-badge checkout">{{ pendingCheckOuts.length }} pendientes</span>
+        <span class="count-badge-group">
+          <span class="count-badge checkout">{{ pendingCheckOuts.length }} pendientes</span>
+          <span class="early-checkout-info" tabindex="0" role="note"
+            aria-label="Para un check-out anticipado, modifica la fecha de salida de la reserva en el apartado de Huéspedes.">
+            <ion-icon name="alert-circle-outline"></ion-icon>
+            <span class="early-checkout-tooltip">
+              <strong>Check-out anticipado</strong>
+              Aquí solo aparecen las salidas programadas para hoy. Para un check-out anticipado,
+              modifica la fecha de salida de la reserva en el apartado de Huéspedes.
+            </span>
+          </span>
+        </span>
       </div>
 
       <div class="cards-list">
@@ -798,10 +817,18 @@
               <ion-icon name="log-out-outline"></ion-icon>
               <span>{{ isRoomEnAseo(item.roomNumber) ? 'En Aseo' : 'Procesar Check-out' }}</span>
             </button>
-            <button type="button" class="btn-action-secondary">
-              <ion-icon name="call-outline"></ion-icon>
-              <span>Contactar</span>
+            @if (whatsappUrl(item.phone); as waUrl) {
+            <a class="btn-action-secondary" [href]="waUrl" target="_blank" rel="noopener noreferrer">
+              <ion-icon name="logo-whatsapp"></ion-icon>
+              <span>WhatsApp</span>
+            </a>
+            } @else {
+            <button type="button" class="btn-action-secondary" disabled
+              title="El huésped no tiene teléfono registrado">
+              <ion-icon name="logo-whatsapp"></ion-icon>
+              <span>WhatsApp</span>
             </button>
+            }
           </div>
         </article>
         } @empty {

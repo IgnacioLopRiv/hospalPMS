@@ -523,7 +523,6 @@ export class TarifasPage {
     return {
       id: 0,
       nombre: '',
-      tipoTemporada: 'ALTA',
       activa: true,
       periodos: [emptyPeriod()],
       precios: Object.fromEntries(this.tipologias().map((typology) => [typology.id, typology.precioBase ?? 0])),
@@ -534,7 +533,6 @@ export class TarifasPage {
     return {
       id: tarifa.id,
       nombre: tarifa.nombre,
-      tipoTemporada: tarifa.tipoTemporada,
       activa: tarifa.activa,
       periodos: tarifa.periodos.map((period) => ({
         ...period,

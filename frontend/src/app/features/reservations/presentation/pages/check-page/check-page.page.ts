@@ -5,6 +5,7 @@ import { IonIcon } from '@ionic/angular/standalone';
 import { firstValueFrom, Subscription } from 'rxjs';
 import { addIcons } from 'ionicons';
 import {
+  alertCircleOutline,
   enterOutline,
   exitOutline,
   bedOutline,
@@ -13,6 +14,7 @@ import {
   peopleOutline,
   star,
   callOutline,
+  logoWhatsapp,
   mailOutline,
   logInOutline,
   logOutOutline,
@@ -247,6 +249,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
 
   constructor() {
     addIcons({
+      alertCircleOutline,
       enterOutline,
       exitOutline,
       bedOutline,
@@ -255,6 +258,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
       peopleOutline,
       star,
       callOutline,
+      logoWhatsapp,
       mailOutline,
       logInOutline,
       logOutOutline,
@@ -367,14 +371,23 @@ export class CheckPagePage implements OnInit, OnDestroy {
     }
   }
 
+  /** Mismo enlace de WhatsApp que las tarjetas de huéspedes. */
+  whatsappUrl(phone?: string): string | null {
+    const digits = (phone ?? '').replace(/\D/g, '');
+    return digits.length >= 6 ? `https://web.whatsapp.com/send?phone=${digits}` : null;
+  }
+
   refreshPendingChecks(): void {
     const today = this.localDateString(new Date());
     const entries = this.hostalService.getReservationCalendarData();
     const checkIns = entries.filter((entry) =>
       entry.arrivalDate === today && ['CONFIRMADA', 'CHECK-IN HOY'].includes(entry.status)
     );
-    // Cualquier huésped hospedado puede hacer check-out (también antes de su fecha de salida).
-    const checkOuts = entries.filter((entry) => ['HOSPEDADO', 'CHECK-OUT HOY'].includes(entry.status));
+    // Solo salidas de hoy (o atrasadas que siguen hospedadas). El check-out anticipado se hace
+    // modificando la fecha de salida de la reserva en el apartado de huéspedes.
+    const checkOuts = entries.filter((entry) =>
+      entry.departureDate <= today && ['HOSPEDADO', 'CHECK-OUT HOY'].includes(entry.status)
+    );
 
     this.pendingCheckIns.splice(
       0,

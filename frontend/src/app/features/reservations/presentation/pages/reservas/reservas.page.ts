@@ -1,5 +1,19 @@
-import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  computed,
+  DestroyRef,
+  DOCUMENT,
+  ElementRef,
+  inject,
+  OnDestroy,
+  OnInit,
+  Renderer2,
+  signal,
+  ViewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
@@ -8,15 +22,21 @@ import {
   chevronBackOutline,
   chevronDownOutline,
   chevronForwardOutline,
+  closeCircleOutline,
+  createOutline,
   logInOutline,
   logOutOutline,
+  logoWhatsapp,
+  peopleOutline,
+  timeOutline,
 } from 'ionicons/icons';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HostalService, ReservationCalendarEntry } from '../../../../huespedes/application/hostal.service';
 import { SedeService } from '../../../../locations/application/sede.service';
+import { Habitacion, Huesped, Reserva } from '../../../../../shared/domain/hostal.model';
 import { toTimelineMinutes } from '../../../domain/stay-schedule';
 
-const VISIBLE_DAYS = 14;
+const VISIBLE_DAYS = 10;
 const NAVIGATION_DAYS = 7;
 const MINUTES_PER_DAY = 24 * 60;
 const VISIBLE_MINUTES = VISIBLE_DAYS * MINUTES_PER_DAY;
@@ -56,7 +76,7 @@ export interface CategoryTheme {
 /** Barra de una reserva en la línea de tiempo: posición proporcional a la hora real. */
 export interface ReservationBar {
   reservation: ReservationBlock;
-  /** Inicio y ancho en % del rango visible (14 días). */
+  /** Inicio y ancho en % del rango visible (VISIBLE_DAYS). */
   leftPercent: number;
   widthPercent: number;
   /** Fila dentro de la habitación (solo > 0 si hay reservas antiguas que se cruzan). */
@@ -83,6 +103,16 @@ export interface DayColumn {
   isCurrent: boolean;
 }
 
+/** Datos que muestra el modal al hacer click en una reserva del calendario. */
+export interface ReservationDetail {
+  reservation: Reserva;
+  guest: Huesped | undefined;
+  guestName: string;
+  roomNumber: string;
+  roomType: string;
+  nights: number;
+}
+
 interface CalendarDay {
   dateKey: string;
   dayNumber: number;
@@ -96,12 +126,52 @@ interface CalendarDay {
   templateUrl: './reservas.page.html',
   styleUrls: ['./reservas.page.scss'],
   standalone: true,
-  imports: [CommonModule, IonIcon],
+  imports: [CommonModule, FormsModule, IonIcon],
 })
-export class ReservasPage implements OnInit {
+export class ReservasPage implements OnInit, OnDestroy {
   private readonly hostalService = inject(HostalService);
   private readonly sedeService = inject(SedeService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly renderer = inject(Renderer2);
+  private readonly document = inject(DOCUMENT);
+  private readonly changeDetector = inject(ChangeDetectorRef);
+
+  @ViewChild('reservationDialog') reservationDialog?: ElementRef<HTMLDialogElement>;
+
+  /** Reserva abierta en el modal y si se está viendo el detalle o editándola. */
+  readonly selectedReservationId = signal<number | null>(null);
+  readonly reservationModalMode = signal<'detail' | 'edit'>('detail');
+  readonly reservationError = signal('');
+  readonly reservationMessage = signal('');
+  availableReservationRooms: Habitacion[] = [];
+  editReservationForm = {
+    fecha_llegada: '',
+    fecha_salida: '',
+    hora_llegada: '14:00',
+    hora_salida: '12:00',
+    cantidad_personas: 1,
+    id_habitacion: '',
+  };
+
+  readonly reservationDetail = computed<ReservationDetail | null>(() => {
+    const id = this.selectedReservationId();
+    // Se lee la señal para recalcular cuando el servicio refresca las reservas.
+    this.reservations();
+    if (id === null) return null;
+    const reservation = this.hostalService.getReservations().find((item) => item.id_reserva === id);
+    if (!reservation) return null;
+    const detail = this.hostalService.getGuestReservationDetails(reservation.id_huesped)
+      .find((item) => item.reservation.id_reserva === id);
+    const guest = this.hostalService.getGuests().find((item) => item.id_huesped === reservation.id_huesped);
+    return {
+      reservation,
+      guest,
+      guestName: guest ? `${guest.nombre} ${guest.apellido}` : 'Huésped',
+      roomNumber: detail?.roomNumber ?? '',
+      roomType: detail?.roomType ?? '',
+      nights: detail?.nights ?? 0,
+    };
+  });
 
   readonly sede = this.sedeService.selectedSede;
   readonly savedRooms = this.sedeService.habitaciones;
@@ -206,9 +276,158 @@ export class ReservasPage implements OnInit {
       chevronBackOutline,
       chevronDownOutline,
       chevronForwardOutline,
+      closeCircleOutline,
+      createOutline,
       logInOutline,
       logOutOutline,
+      logoWhatsapp,
+      peopleOutline,
+      timeOutline,
     });
+  }
+
+  ngOnDestroy(): void {
+    const dialog = this.reservationDialog?.nativeElement;
+    if (dialog?.open) dialog.close();
+    this.setPageScrollLocked(false);
+  }
+
+  // ── Modal de reserva ──────────────────────────────────────────────────────
+
+  openReservation(reservationId: number): void {
+    if (!this.hostalService.getReservations().some((item) => item.id_reserva === reservationId)) {
+      this.reservationMessage.set('No se encontró la reserva. Actualiza la vista e inténtalo otra vez.');
+      return;
+    }
+    this.selectedReservationId.set(reservationId);
+    this.reservationModalMode.set('detail');
+    this.reservationError.set('');
+    this.reservationMessage.set('');
+    this.setPageScrollLocked(true);
+    this.changeDetector.detectChanges();
+    const dialog = this.reservationDialog?.nativeElement;
+    if (dialog && !dialog.open) dialog.showModal();
+  }
+
+  closeReservationModal(): void {
+    const dialog = this.reservationDialog?.nativeElement;
+    if (dialog?.open) dialog.close();
+    this.selectedReservationId.set(null);
+    this.reservationModalMode.set('detail');
+    this.reservationError.set('');
+    this.setPageScrollLocked(false);
+  }
+
+  onReservationDialogCancel(event: Event): void {
+    event.preventDefault();
+    if (this.reservationModalMode() === 'edit') this.backToReservationDetail();
+    else this.closeReservationModal();
+  }
+
+  startReservationEdit(): void {
+    const reservation = this.reservationDetail()?.reservation;
+    if (!reservation) return;
+    this.editReservationForm = {
+      fecha_llegada: reservation.fecha_llegada,
+      fecha_salida: reservation.fecha_salida,
+      hora_llegada: reservation.hora_llegada ?? '14:00',
+      hora_salida: reservation.hora_salida ?? '12:00',
+      cantidad_personas: reservation.cantidad_personas ?? 1,
+      id_habitacion: String(reservation.id_habitacion),
+    };
+    this.reservationError.set('');
+    this.refreshAvailableReservationRooms();
+    this.reservationModalMode.set('edit');
+  }
+
+  backToReservationDetail(): void {
+    this.reservationError.set('');
+    this.reservationModalMode.set('detail');
+  }
+
+  refreshAvailableReservationRooms(): void {
+    const id = this.selectedReservationId();
+    if (id === null) return;
+    this.availableReservationRooms = this.hostalService.getAvailableRooms(
+      this.editReservationForm.fecha_llegada,
+      this.editReservationForm.fecha_salida,
+      this.editReservationForm.cantidad_personas,
+      id,
+      { arrivalTime: this.editReservationForm.hora_llegada, departureTime: this.editReservationForm.hora_salida },
+    );
+  }
+
+  get isReservationRoomAvailable(): boolean {
+    return this.availableReservationRooms.some(
+      (room) => room.id_habitacion === Number(this.editReservationForm.id_habitacion)
+    );
+  }
+
+  async saveReservationChanges(): Promise<void> {
+    const id = this.selectedReservationId();
+    if (id === null) return;
+    try {
+      await this.hostalService.updateReservation(id, {
+        id_habitacion: Number(this.editReservationForm.id_habitacion),
+        fecha_llegada: this.editReservationForm.fecha_llegada,
+        fecha_salida: this.editReservationForm.fecha_salida,
+        hora_llegada: this.editReservationForm.hora_llegada,
+        hora_salida: this.editReservationForm.hora_salida || '12:00',
+        cantidad_personas: this.editReservationForm.cantidad_personas,
+      });
+      this.reservationError.set('');
+      this.reservationModalMode.set('detail');
+      this.reservationMessage.set('Reserva actualizada correctamente.');
+    } catch (error) {
+      this.reservationError.set(error instanceof Error ? error.message : 'No se pudo actualizar la reserva.');
+    }
+  }
+
+  async cancelReservation(): Promise<void> {
+    const id = this.selectedReservationId();
+    if (id === null) return;
+    if (!this.document.defaultView?.confirm('¿Confirmas que quieres cancelar esta reserva? El huésped permanecerá registrado.')) {
+      return;
+    }
+    try {
+      await this.hostalService.cancelReservation(id);
+      this.closeReservationModal();
+      this.reservationMessage.set('Reserva cancelada. El huésped continúa registrado.');
+    } catch (error) {
+      this.reservationError.set(error instanceof Error ? error.message : 'No se pudo cancelar la reserva.');
+    }
+  }
+
+  canCancelReservation(status: Reserva['estado_reserva']): boolean {
+    return status !== 'FINALIZADA' && status !== 'CANCELADA';
+  }
+
+  reservationStatusClass(status: Reserva['estado_reserva']): string {
+    const classes: Record<Reserva['estado_reserva'], string> = {
+      'HOSPEDADO': 'hospedado',
+      'CHECK-IN HOY': 'checkin_hoy',
+      'CHECK-OUT HOY': 'checkout_hoy',
+      'CONFIRMADA': 'confirmada',
+      'FINALIZADA': 'finalizada',
+      'CANCELADA': 'cancelada',
+    };
+    return classes[status];
+  }
+
+  formatDate(value: string): string {
+    const [year, month, day] = value.split('-');
+    return day && month && year ? `${day}/${month}/${year}` : value;
+  }
+
+  /** Enlace de WhatsApp Web para el teléfono del huésped, o null si no hay número usable. */
+  whatsappUrl(phone?: string): string | null {
+    const digits = (phone ?? '').replace(/\D/g, '');
+    return digits.length >= 6 ? `https://web.whatsapp.com/send?phone=${digits}` : null;
+  }
+
+  private setPageScrollLocked(locked: boolean): void {
+    if (locked) this.renderer.addClass(this.document.body, 'entry-modal-open');
+    else this.renderer.removeClass(this.document.body, 'entry-modal-open');
   }
 
   ngOnInit(): void {
@@ -278,7 +497,7 @@ export class ReservasPage implements OnInit {
   }
 
   /**
-   * Barras de cada habitación posicionadas por fecha + hora dentro de los 14 días visibles
+   * Barras de cada habitación posicionadas por fecha + hora dentro de los días visibles
    * (llegar a las 14:00 empieza en el 58% del día). Si dos reservas se cruzan (datos antiguos),
    * van en filas distintas para no taparse.
    */

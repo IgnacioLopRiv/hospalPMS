@@ -14,7 +14,6 @@ import {
   Tarifa,
   TarifaPeriodo,
   TIPOS_PERIODO,
-  TipoTemporada,
 } from '../../domain/entities/tarifa.entity';
 import { SedeRepository } from '../../domain/repositories/sede.repository';
 import { TarifaAbonoRepository } from '../../domain/repositories/tarifa-abono.repository';
@@ -23,7 +22,6 @@ import { TipologiaRepository } from '../../domain/repositories/tipologia.reposit
 
 interface TarifaInput {
   nombre?: string;
-  tipoTemporada?: string;
   activa?: boolean;
   precioBase?: number | null;
   periodos?: unknown;
@@ -75,8 +73,6 @@ export class TarifasController {
       nombre,
       precioBase: this.parsePrecioBase(input.precioBase) ?? null,
       ...Tarifa.calcularVigencia(periodos),
-      tipoTemporada:
-        this.parseTipoTemporada(input.tipoTemporada) ?? TipoTemporada.ALTA,
       activa: input.activa ?? true,
       periodos,
       precios,
@@ -105,9 +101,6 @@ export class TarifasController {
     const row = await this.tarifas.update(id, {
       ...(input.nombre !== undefined
         ? { nombre: this.parseNombre(input.nombre) }
-        : {}),
-      ...(input.tipoTemporada !== undefined
-        ? { tipoTemporada: this.parseTipoTemporada(input.tipoTemporada) }
         : {}),
       ...(input.activa !== undefined ? { activa: input.activa } : {}),
       ...(input.precioBase !== undefined
@@ -144,16 +137,6 @@ export class TarifasController {
       );
     }
     return nombre.trim();
-  }
-
-  private parseTipoTemporada(tipo: unknown): TipoTemporada | undefined {
-    if (tipo === undefined) return undefined;
-    if (!Object.values(TipoTemporada).includes(tipo as TipoTemporada)) {
-      throw new BadRequestException(
-        `tipoTemporada inválido. Opciones: ${Object.values(TipoTemporada).join(', ')}.`,
-      );
-    }
-    return tipo as TipoTemporada;
   }
 
   private parsePrecioBase(precio: unknown): number | null | undefined {
@@ -289,7 +272,6 @@ export class TarifasController {
       sedeId: tarifa.sedeId,
       tarifaAbonoId: tarifa.tarifaAbonoId,
       nombre: tarifa.nombre,
-      tipoTemporada: tarifa.tipoTemporada,
       activa: tarifa.activa,
       precioBase: tarifa.precioBase,
       fechaInicio: tarifa.fechaInicio?.toISOString().slice(0, 10) ?? null,

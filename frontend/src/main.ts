@@ -25,6 +25,8 @@ import { HostalRepository } from './app/features/hostal/domain/hostal.repository
 import { HostalHttpRepository } from './app/features/hostal/infraestructure/hostal-http.repository';
 import { FotoHabitacionRepository } from './app/features/locations/domain/foto-habitacion.repository';
 import { FotoHabitacionHttpRepository } from './app/features/locations/infraestructure/foto-habitacion-http.repository';
+import { CaracteristicaRepository } from './app/features/locations/domain/caracteristica.repository';
+import { CaracteristicaHttpRepository } from './app/features/locations/infraestructure/caracteristica-http.repository';
 import { ReportesRepository } from './app/features/reports/domain/reportes.repository';
 import { ReportesHttpRepository } from './app/features/reports/infraestructure/reportes-http.repository';
 import { PosRepository } from './app/features/payments-pos/domain/pos.repository';
@@ -48,6 +50,7 @@ bootstrapApplication(AppComponent, {
     { provide: LocationsRepository, useClass: LocationsHttpRepository },
     { provide: ReservasRepository, useClass: ReservasHttpRepository },
     { provide: FotoHabitacionRepository, useClass: FotoHabitacionHttpRepository },
+    { provide: CaracteristicaRepository, useClass: CaracteristicaHttpRepository },
     { provide: ReportesRepository, useClass: ReportesHttpRepository },
     { provide: HostalRepository, useClass: HostalHttpRepository },
     { provide: PosRepository, useClass: PosHttpRepository },

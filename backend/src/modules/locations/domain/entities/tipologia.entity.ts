@@ -13,5 +13,6 @@ export class Tipologia {
     public descripcion: string | null,
     public color: string | null = null,
     public precioBase: number | null = null,
+    public caracteristicaIds: number[] = [],
   ) {}
 }

@@ -201,6 +201,7 @@ export class SedeService {
       ...(patch.precioBase !== undefined ? { precioBase: Number(patch.precioBase) } : {}),
       ...(patch.descripcion !== undefined ? { descripcion: patch.descripcion.trim() } : {}),
       ...(patch.color !== undefined ? { color: patch.color } : {}),
+      ...(patch.caracteristicaIds !== undefined ? { caracteristicaIds: [...patch.caracteristicaIds] } : {}),
     }));
     const updatedTipologias = (selected.tipologias ?? []).map((t) =>
       t.id === id
@@ -271,6 +272,24 @@ export class SedeService {
     }
     this.setUpdatedSede(updatedSede);
     return { ok: true };
+  }
+
+  /**
+   * Quita una característica eliminada de todas las tipologías en memoria
+   * (en la BD las asignaciones se eliminan en cascada).
+   */
+  removeCaracteristicaFromTipologias(caracteristicaId: number): void {
+    const strip = (sede: Sede): Sede => ({
+      ...sede,
+      tipologias: (sede.tipologias ?? []).map((t) => t.caracteristicaIds?.includes(caracteristicaId)
+        ? { ...t, caracteristicaIds: t.caracteristicaIds.filter((id) => id !== caracteristicaId) }
+        : t),
+    });
+    this.sedes.update((list) => list.map(strip));
+    const selected = this.selectedSede();
+    if (selected) {
+      this.selectedSede.set(strip(selected));
+    }
   }
 
   private setUpdatedSede(updated: Sede): void {

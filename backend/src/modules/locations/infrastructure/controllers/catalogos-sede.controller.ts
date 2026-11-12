@@ -15,6 +15,7 @@ import { Prisma } from '@prisma/client';
 import { HabitacionRepository } from '../../domain/repositories/habitacion.repository';
 import { TipologiaRepository } from '../../domain/repositories/tipologia.repository';
 import { EstadoHabitacion } from '../../domain/entities/habitacion.entity';
+import { Tipologia } from '../../domain/entities/tipologia.entity';
 
 type FrontRoomState =
   'libre' | 'ocupada' | 'en aseo' | 'reservada' | 'mantenimiento';
@@ -38,6 +39,7 @@ interface TipologiaInput {
   descripcion?: string;
   color?: string;
   precioBase?: number;
+  caracteristicaIds?: number[];
 }
 
 const STATE_TO_DOMAIN: Record<FrontRoomState, EstadoHabitacion> = {
@@ -89,7 +91,8 @@ export class CatalogosSedeController {
         numero: input.numero.trim(),
         tipologiaId: input.tipologiaId,
         // El formulario no pide capacidad: se hereda de la tipología.
-        cantidadPersonas: input.cantidadPersonas ?? tipologia?.capacidadMax ?? 1,
+        cantidadPersonas:
+          input.cantidadPersonas ?? tipologia?.capacidadMax ?? 1,
         estado: input.estado ? STATE_TO_DOMAIN[input.estado] : undefined,
         tamanoM2: input.tamanoM2,
         disposicionMuebles: input.disposicionMuebles,
@@ -192,14 +195,7 @@ export class CatalogosSedeController {
   @Get('sedes/:sedeId/tipologias')
   async listTypologies(@Param('sedeId', ParseIntPipe) sedeId: number) {
     const rows = await this.tipologias.findBySedeId(sedeId);
-    return rows.map((row) => ({
-      id: row.id,
-      nombre: row.nombre,
-      capacidad: row.capacidadMax,
-      descripcion: row.descripcion ?? '',
-      color: row.color ?? undefined,
-      precioBase: row.precioBase ?? undefined,
-    }));
+    return rows.map((row) => this.toTypologyResponse(row));
   }
 
   @Post('sedes/:sedeId/tipologias')
@@ -216,23 +212,25 @@ export class CatalogosSedeController {
         'nombre y capacidad válida son obligatorios.',
       );
     }
-    const row = await this.tipologias.create({
-      sedeId,
-      nombre: input.nombre.trim(),
-      capacidadMax: input.capacidad!,
-      numCamas: 1,
-      descripcion: input.descripcion?.trim() || null,
-      color: input.color?.trim() || null,
-      precioBase: input.precioBase ?? null,
-    });
-    return {
-      id: row.id,
-      nombre: row.nombre,
-      capacidad: row.capacidadMax,
-      descripcion: row.descripcion ?? '',
-      color: row.color ?? undefined,
-      precioBase: row.precioBase ?? undefined,
-    };
+    const caracteristicaIds = this.parseCaracteristicaIds(
+      input.caracteristicaIds,
+    );
+    try {
+      const row = await this.tipologias.create({
+        sedeId,
+        nombre: input.nombre.trim(),
+        capacidadMax: input.capacidad!,
+        numCamas: 1,
+        descripcion: input.descripcion?.trim() || null,
+        color: input.color?.trim() || null,
+        precioBase: input.precioBase ?? null,
+        ...(caracteristicaIds !== undefined ? { caracteristicaIds } : {}),
+      });
+      return this.toTypologyResponse(row);
+    } catch (error) {
+      this.rethrowInvalidCaracteristica(error);
+      throw error;
+    }
   }
 
   @Patch('tipologias/:id')
@@ -240,6 +238,9 @@ export class CatalogosSedeController {
     @Param('id', ParseIntPipe) id: number,
     @Body() input: TipologiaInput,
   ) {
+    const caracteristicaIds = this.parseCaracteristicaIds(
+      input.caracteristicaIds,
+    );
     try {
       const row = await this.tipologias.update(id, {
         ...(input.nombre !== undefined ? { nombre: input.nombre.trim() } : {}),
@@ -255,16 +256,11 @@ export class CatalogosSedeController {
         ...(input.precioBase !== undefined
           ? { precioBase: input.precioBase }
           : {}),
+        ...(caracteristicaIds !== undefined ? { caracteristicaIds } : {}),
       });
-      return {
-        id: row.id,
-        nombre: row.nombre,
-        capacidad: row.capacidadMax,
-        descripcion: row.descripcion ?? '',
-        color: row.color ?? undefined,
-        precioBase: row.precioBase ?? undefined,
-      };
-    } catch {
+      return this.toTypologyResponse(row);
+    } catch (error) {
+      this.rethrowInvalidCaracteristica(error);
       throw new NotFoundException(`No existe la tipología ${id}.`);
     }
   }
@@ -277,6 +273,44 @@ export class CatalogosSedeController {
     } catch {
       throw new ConflictException(
         `No se pudo eliminar la tipología ${id}; puede tener habitaciones asociadas.`,
+      );
+    }
+  }
+
+  private toTypologyResponse(row: Tipologia) {
+    return {
+      id: row.id,
+      nombre: row.nombre,
+      capacidad: row.capacidadMax,
+      descripcion: row.descripcion ?? '',
+      color: row.color ?? undefined,
+      precioBase: row.precioBase ?? undefined,
+      caracteristicaIds: row.caracteristicaIds,
+    };
+  }
+
+  /** Valida que caracteristicaIds sea un arreglo de enteros positivos. */
+  private parseCaracteristicaIds(value: unknown): number[] | undefined {
+    if (value === undefined) return undefined;
+    if (
+      !Array.isArray(value) ||
+      !value.every((id) => Number.isInteger(id) && id > 0)
+    ) {
+      throw new BadRequestException(
+        'caracteristicaIds debe ser un arreglo de ids válidos.',
+      );
+    }
+    return value as number[];
+  }
+
+  /** Una característica inexistente produce un error de FK (P2003). */
+  private rethrowInvalidCaracteristica(error: unknown): void {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2003'
+    ) {
+      throw new BadRequestException(
+        'Una o más características seleccionadas no existen.',
       );
     }
   }

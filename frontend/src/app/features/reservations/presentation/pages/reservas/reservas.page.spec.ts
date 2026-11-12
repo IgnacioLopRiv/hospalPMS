@@ -160,7 +160,7 @@ describe('ReservasPage', () => {
     [...component.roomBars().values()].flat().find((bar) => bar.reservation.id === reservationId)!;
   const percentOfView = (days: number, time: string) => {
     const [hours, minutes] = time.split(':').map(Number);
-    return ((days * 24 * 60 + hours * 60 + minutes) / (14 * 24 * 60)) * 100;
+    return ((days * 24 * 60 + hours * 60 + minutes) / (10 * 24 * 60)) * 100;
   };
 
   it('draws the bar proportional to the arrival and departure times', async () => {
@@ -184,6 +184,37 @@ describe('ReservasPage', () => {
     expect(component.visibleReservations()).toContain(block);
     expect(bar.leftPercent).toBe(0);
     expect(bar.widthPercent).toBeCloseTo(percentOfView(0, block.departureTime), 5);
+  });
+
+  it('shows 10 days in the calendar', () => {
+    expect(component.days().length).toBe(10);
+    expect(component.days()[9].dateKey).toBe(dateAfter(9));
+  });
+
+  it('opens the reservation detail modal and allows editing and cancelling it', async () => {
+    const reservation = await addReservation(1, 3);
+    fixture.detectChanges();
+
+    component.openReservation(reservation.id_reserva);
+    fixture.detectChanges();
+    expect(component.reservationDetail()?.reservation.id_reserva).toBe(reservation.id_reserva);
+    expect(component.reservationDetail()?.guestName).toBe('Huésped Prueba');
+    expect(component.reservationDetail()?.nights).toBe(2);
+
+    component.startReservationEdit();
+    expect(component.reservationModalMode()).toBe('edit');
+    component.editReservationForm.fecha_salida = dateAfter(4);
+    component.refreshAvailableReservationRooms();
+    await component.saveReservationChanges();
+    expect(component.reservationError()).toBe('');
+    expect(component.reservationModalMode()).toBe('detail');
+    expect(component.reservationDetail()?.reservation.fecha_salida).toBe(dateAfter(4));
+
+    spyOn(window, 'confirm').and.returnValue(true);
+    await component.cancelReservation();
+    expect(component.selectedReservationId()).toBeNull();
+    expect(hostalService.getReservations()
+      .find((item) => item.id_reserva === reservation.id_reserva)?.estado_reserva).toBe('CANCELADA');
   });
 
   it('assigns different colors to managed typologies', async () => {

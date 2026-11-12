@@ -128,9 +128,6 @@
               <span class="rate-icon"><ion-icon name="pricetag-outline"></ion-icon></span>
               <div>
                 <h2>{{ tarifa.nombre }}</h2>
-                <span class="rate-season" [class.season-alta]="tarifa.tipoTemporada === 'ALTA'">
-                  Temporada {{ tarifa.tipoTemporada === 'ALTA' ? 'alta' : 'baja' }}
-                </span>
                 @if (activeTarifas().includes(tarifa)) {
                   <span class="rate-active-label"><span class="active-dot"></span>Vigente hoy</span>
                 }
@@ -221,11 +218,6 @@
                 [(ngModel)]="editTarifa.nombre"
                 placeholder="Ej. Temporada de verano"
                 maxlength="60">
-              <label class="field-label" for="rate-season">Tipo de temporada</label>
-              <select id="rate-season" class="text-input" [(ngModel)]="editTarifa.tipoTemporada">
-                <option value="ALTA">Temporada alta</option>
-                <option value="BAJA">Temporada baja</option>
-              </select>
             </section>
 
             <section class="config-section">

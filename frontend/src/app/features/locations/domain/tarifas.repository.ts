@@ -1,7 +1,6 @@
 import { Observable } from 'rxjs';
 
 export type PeriodType = 'months' | 'weekdays' | 'month-days' | 'specific-month-days' | 'date-range' | 'specific-dates';
-export type TipoTemporada = 'ALTA' | 'BAJA';
 
 export interface TarifaPeriodo {
   id: string;
@@ -20,7 +19,6 @@ export interface TarifaPeriodo {
 export interface Tarifa {
   id: number;
   nombre: string;
-  tipoTemporada: TipoTemporada;
   activa: boolean;
   periodos: TarifaPeriodo[];
   precios: Record<number, number>;

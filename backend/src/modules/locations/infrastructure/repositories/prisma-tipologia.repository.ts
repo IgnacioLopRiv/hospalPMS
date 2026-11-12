@@ -4,6 +4,14 @@ import { TipologiaRepository } from '../../domain/repositories/tipologia.reposit
 import { Tipologia } from '../../domain/entities/tipologia.entity';
 import type { Tipologia as PrismaTipologia } from '@prisma/client';
 
+type PrismaTipologiaConCaracteristicas = PrismaTipologia & {
+  caracteristicas?: { caracteristicaId: number }[];
+};
+
+const INCLUDE_CARACTERISTICAS = {
+  caracteristicas: { select: { caracteristicaId: true } },
+} as const;
+
 /**
  * Adaptador de repositorio Prisma para Tipologia – Infrastructure layer
  */
@@ -11,7 +19,7 @@ import type { Tipologia as PrismaTipologia } from '@prisma/client';
 export class PrismaTipologiaRepository implements TipologiaRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  private toEntity(raw: PrismaTipologia): Tipologia {
+  private toEntity(raw: PrismaTipologiaConCaracteristicas): Tipologia {
     return new Tipologia(
       raw.id,
       raw.sedeId,
@@ -21,19 +29,28 @@ export class PrismaTipologiaRepository implements TipologiaRepository {
       raw.descripcion,
       raw.color,
       raw.precioBase,
+      (raw.caracteristicas ?? []).map((c) => c.caracteristicaId),
     );
+  }
+
+  private toCreateMany(ids: number[]) {
+    return [...new Set(ids)].map((caracteristicaId) => ({ caracteristicaId }));
   }
 
   async findBySedeId(sedeId: number): Promise<Tipologia[]> {
     const rows = await this.prisma.tipologia.findMany({
       where: { sedeId },
+      include: INCLUDE_CARACTERISTICAS,
       orderBy: { nombre: 'asc' },
     });
     return rows.map((r) => this.toEntity(r));
   }
 
   async findById(id: number): Promise<Tipologia | null> {
-    const raw = await this.prisma.tipologia.findUnique({ where: { id } });
+    const raw = await this.prisma.tipologia.findUnique({
+      where: { id },
+      include: INCLUDE_CARACTERISTICAS,
+    });
     return raw ? this.toEntity(raw) : null;
   }
 
@@ -45,8 +62,20 @@ export class PrismaTipologiaRepository implements TipologiaRepository {
     descripcion?: string | null;
     color?: string | null;
     precioBase?: number | null;
+    caracteristicaIds?: number[];
   }): Promise<Tipologia> {
-    const raw = await this.prisma.tipologia.create({ data });
+    const { caracteristicaIds, ...rest } = data;
+    const raw = await this.prisma.tipologia.create({
+      data: {
+        ...rest,
+        ...(caracteristicaIds?.length
+          ? {
+              caracteristicas: { create: this.toCreateMany(caracteristicaIds) },
+            }
+          : {}),
+      },
+      include: INCLUDE_CARACTERISTICAS,
+    });
     return this.toEntity(raw);
   }
 
@@ -59,9 +88,25 @@ export class PrismaTipologiaRepository implements TipologiaRepository {
       descripcion: string | null;
       color: string | null;
       precioBase: number | null;
+      caracteristicaIds: number[];
     }>,
   ): Promise<Tipologia> {
-    const raw = await this.prisma.tipologia.update({ where: { id }, data });
+    const { caracteristicaIds, ...rest } = data;
+    const raw = await this.prisma.tipologia.update({
+      where: { id },
+      data: {
+        ...rest,
+        ...(caracteristicaIds !== undefined
+          ? {
+              caracteristicas: {
+                deleteMany: {},
+                create: this.toCreateMany(caracteristicaIds),
+              },
+            }
+          : {}),
+      },
+      include: INCLUDE_CARACTERISTICAS,
+    });
     return this.toEntity(raw);
   }
 

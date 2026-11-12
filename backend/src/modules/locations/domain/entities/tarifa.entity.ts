@@ -1,11 +1,3 @@
-/**
- * Valor de dominio: Tipo de temporada (espeja el enum de Prisma).
- */
-export enum TipoTemporada {
-  ALTA = 'ALTA',
-  BAJA = 'BAJA',
-}
-
 export type TipoPeriodo =
   | 'months'
   | 'weekdays'
@@ -63,7 +55,6 @@ export class Tarifa {
     public precioBase: number | null,
     public fechaInicio: Date | null,
     public fechaFin: Date | null,
-    public tipoTemporada: TipoTemporada,
     public activa: boolean,
     public periodos: TarifaPeriodo[],
     public precios: Record<number, number>,

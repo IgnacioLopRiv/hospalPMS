@@ -4,6 +4,7 @@ import {
   ConflictException,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   NotFoundException,
   Param,
@@ -20,16 +21,22 @@ interface CaracteristicaInput {
   activo?: boolean;
 }
 
+const NOMBRE_MAX = 60;
+
 /**
  * Controller REST para Caracteristica (amenidades/features de tipologías).
  *
- * Rutas:
- *   GET    /caracteristicas        → listar todas
- *   POST   /caracteristicas        → crear
- *   PATCH  /caracteristicas/:id    → actualizar
- *   DELETE /caracteristicas/:id    → eliminar
+ * Las características predeterminadas vienen del seed y no se pueden editar
+ * ni eliminar; las personalizadas las crea el administrador.
  *
- * Ruta para gestionar la relación tipología↔característica:
+ * Rutas:
+ *   GET    /caracteristicas        → listar las activas (predeterminadas primero)
+ *   POST   /caracteristicas        → crear una personalizada
+ *   PATCH  /caracteristicas/:id    → actualizar una personalizada
+ *   DELETE /caracteristicas/:id    → eliminar una personalizada (y sus asignaciones)
+ *
+ * La asignación a tipologías se envía como `caracteristicaIds` al crear o
+ * actualizar una tipología. También se mantienen las rutas individuales:
  *   POST   /caracteristicas/tipologia/:tipologiaId/:caracteristicaId  → asignar
  *   DELETE /caracteristicas/tipologia/:tipologiaId/:caracteristicaId  → desasignar
  */
@@ -39,19 +46,22 @@ export class CaracteristicasController {
 
   @Get()
   async findAll() {
-    return this.prisma.caracteristica.findMany({ orderBy: { nombre: 'asc' } });
+    return this.prisma.caracteristica.findMany({
+      where: { activo: true },
+      orderBy: [{ predeterminada: 'desc' }, { nombre: 'asc' }],
+    });
   }
 
   @Post()
   async create(@Body() input: CaracteristicaInput) {
-    if (!input.nombre?.trim()) {
-      throw new BadRequestException('El campo nombre es obligatorio.');
-    }
+    const nombre = this.validateNombre(input.nombre);
+    await this.ensureUniqueNombre(nombre);
     return this.prisma.caracteristica.create({
       data: {
-        nombre: input.nombre.trim(),
-        icono: input.icono?.trim() ?? null,
-        activo: input.activo ?? true,
+        nombre,
+        icono: input.icono?.trim() || null,
+        activo: true,
+        predeterminada: false,
       },
     });
   }
@@ -61,45 +71,31 @@ export class CaracteristicasController {
     @Param('id', ParseIntPipe) id: number,
     @Body() input: CaracteristicaInput,
   ) {
-    const data = {
-      ...(input.nombre !== undefined ? { nombre: input.nombre.trim() } : {}),
-      ...(input.icono !== undefined
-        ? { icono: input.icono?.trim() ?? null }
-        : {}),
-      ...(input.activo !== undefined ? { activo: input.activo } : {}),
-    };
-    try {
-      return await this.prisma.caracteristica.update({ where: { id }, data });
-    } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2025'
-      ) {
-        throw new NotFoundException(`No existe la característica ${id}.`);
-      }
-      throw error;
-    }
+    await this.findCustomOrFail(id);
+    const nombre =
+      input.nombre !== undefined
+        ? this.validateNombre(input.nombre)
+        : undefined;
+    if (nombre !== undefined) await this.ensureUniqueNombre(nombre, id);
+
+    return this.prisma.caracteristica.update({
+      where: { id },
+      data: {
+        ...(nombre !== undefined ? { nombre } : {}),
+        ...(input.icono !== undefined
+          ? { icono: input.icono?.trim() || null }
+          : {}),
+        ...(input.activo !== undefined ? { activo: input.activo } : {}),
+      },
+    });
   }
 
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number) {
-    try {
-      await this.prisma.$transaction(async (tx) => {
-        await tx.tipologiaCaracteristica.deleteMany({
-          where: { caracteristicaId: id },
-        });
-        await tx.caracteristica.delete({ where: { id } });
-      });
-      return { deleted: true };
-    } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2025'
-      ) {
-        throw new NotFoundException(`No existe la característica ${id}.`);
-      }
-      throw error;
-    }
+    await this.findCustomOrFail(id);
+    // Las asignaciones se eliminan en cascada (onDelete: Cascade).
+    await this.prisma.caracteristica.delete({ where: { id } });
+    return { deleted: true };
   }
 
   /** Asignar una característica a una tipología */
@@ -114,13 +110,17 @@ export class CaracteristicasController {
       });
       return { assigned: true };
     } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
-        throw new ConflictException(
-          'La característica ya está asignada a esta tipología.',
-        );
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          throw new ConflictException(
+            'La característica ya está asignada a esta tipología.',
+          );
+        }
+        if (error.code === 'P2003') {
+          throw new NotFoundException(
+            'La tipología o la característica no existe.',
+          );
+        }
       }
       throw error;
     }
@@ -150,5 +150,49 @@ export class CaracteristicasController {
       }
       throw error;
     }
+  }
+
+  private validateNombre(value: string | undefined): string {
+    const nombre = value?.trim() ?? '';
+    if (!nombre) {
+      throw new BadRequestException('El campo nombre es obligatorio.');
+    }
+    if (nombre.length > NOMBRE_MAX) {
+      throw new BadRequestException(
+        `El nombre no puede superar los ${NOMBRE_MAX} caracteres.`,
+      );
+    }
+    return nombre;
+  }
+
+  /** Evita duplicados sin distinguir mayúsculas/minúsculas. */
+  private async ensureUniqueNombre(nombre: string, excludeId?: number) {
+    const existentes = await this.prisma.caracteristica.findMany({
+      where: excludeId ? { id: { not: excludeId } } : {},
+      select: { nombre: true },
+    });
+    const normalizado = nombre.toLocaleLowerCase('es');
+    if (
+      existentes.some((c) => c.nombre.toLocaleLowerCase('es') === normalizado)
+    ) {
+      throw new ConflictException(
+        'Ya existe una característica con ese nombre.',
+      );
+    }
+  }
+
+  private async findCustomOrFail(id: number) {
+    const caracteristica = await this.prisma.caracteristica.findUnique({
+      where: { id },
+    });
+    if (!caracteristica) {
+      throw new NotFoundException(`No existe la característica ${id}.`);
+    }
+    if (caracteristica.predeterminada) {
+      throw new ForbiddenException(
+        'Las características predeterminadas no se pueden modificar ni eliminar.',
+      );
+    }
+    return caracteristica;
   }
 }

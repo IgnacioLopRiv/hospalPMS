@@ -15,7 +15,6 @@ describe('reporte-transacciones', () => {
   const verano: Tarifa = {
     id: 90,
     nombre: 'Verano',
-    tipoTemporada: 'ALTA',
     activa: true,
     periodos: [{ id: 'p', tipo: 'months', meses: [0], diasSemana: [], diasMes: [], fechaInicio: '', fechaFin: '', fechas: [] }],
     precios: { 1: 60000 },
@@ -59,7 +58,7 @@ describe('reporte-transacciones', () => {
     expect(trx.huesped).toBe('Luis Soto');
     expect(trx.noches).toBe(3);
     expect(trx.tarifaNombre).toBe('Verano');
-    expect(trx.tipoTarifa).toBe('ALTA');
+    expect(trx.tipoTarifa).toBe('TARIFA');
     expect(trx.tarifaNocheBase).toBe(60000);
     expect(trx.subtotalTarifa).toBe(180000);
     expect(trx.ajuste).toBe(-9000);

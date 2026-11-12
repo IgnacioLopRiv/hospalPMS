@@ -42,11 +42,6 @@ enum TipoOperacion {
   REEMBOLSO
 }
 
-enum TipoTemporada {
-  ALTA
-  BAJA
-}
-
 enum TipoDocumento {
   BOLETA
   FACTURA
@@ -147,11 +142,12 @@ model Tipologia {
 }
 
 model Caracteristica {
-  id         Int                       @id @default(autoincrement())
-  nombre     String
-  icono      String?
-  activo     Boolean                   @default(true)
-  tipologias TipologiaCaracteristica[]
+  id             Int                       @id @default(autoincrement())
+  nombre         String
+  icono          String?
+  activo         Boolean                   @default(true)
+  predeterminada Boolean                   @default(false)
+  tipologias     TipologiaCaracteristica[]
 
   @@map("caracteristica")
 }
@@ -159,8 +155,8 @@ model Caracteristica {
 model TipologiaCaracteristica {
   tipologiaId      Int
   caracteristicaId Int
-  tipologia        Tipologia      @relation(fields: [tipologiaId], references: [id])
-  caracteristica   Caracteristica @relation(fields: [caracteristicaId], references: [id])
+  tipologia        Tipologia      @relation(fields: [tipologiaId], references: [id], onDelete: Cascade)
+  caracteristica   Caracteristica @relation(fields: [caracteristicaId], references: [id], onDelete: Cascade)
 
   @@id([tipologiaId, caracteristicaId])
   @@map("tipologia_caracteristica")
@@ -174,7 +170,6 @@ model Tarifa {
   precioBase    Int?
   fechaInicio   DateTime?         @db.Date
   fechaFin      DateTime?         @db.Date
-  tipoTemporada TipoTemporada
   activa        Boolean           @default(true)
   periodos      Json
   sede          Sede              @relation(fields: [sedeId], references: [id])
@@ -260,13 +255,13 @@ model InventarioHabitacion {
 }
 
 model FotoHabitacion {
-  id          Int        @id @default(autoincrement())
+  id           Int        @id @default(autoincrement())
   habitacionId Int
-  url         String     @db.Text
-  titulo      String?    @db.VarChar(255)
-  descripcion String?    @db.Text
-  fechaSubida DateTime   @default(now())
-  habitacion  Habitacion @relation(fields: [habitacionId], references: [id], onDelete: Cascade)
+  url          String     @db.Text
+  titulo       String?    @db.VarChar(255)
+  descripcion  String?    @db.Text
+  fechaSubida  DateTime   @default(now())
+  habitacion   Habitacion @relation(fields: [habitacionId], references: [id], onDelete: Cascade)
 
   @@index([habitacionId, fechaSubida])
   @@map("foto_habitacion")
@@ -284,7 +279,7 @@ model Huesped {
   esRecurrente       Boolean   @default(false)
   diasUltimoRegistro Int?
   eliminadoEn        DateTime?
-  sede              Sede      @relation(fields: [sedeId], references: [id])
+  sede               Sede      @relation(fields: [sedeId], references: [id])
   reservas           Reserva[]
 
   @@unique([sedeId, rutPasaporte])

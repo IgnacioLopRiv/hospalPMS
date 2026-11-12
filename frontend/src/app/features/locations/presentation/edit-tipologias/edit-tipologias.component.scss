@@ -15,7 +15,8 @@ ion-modal.edit-tipologias-banner {
   --max-height: 90vh;
   --max-height: 90dvh;
   --border-radius: 16px;
-  --box-shadow: 0 12px 40px rgba(30, 80, 216, 0.18);
+  --box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+  --backdrop-opacity: 0.55;
   align-items: center;
   justify-content: center;
 }
@@ -28,6 +29,9 @@ ion-modal.edit-tipologias-banner {
   min-height: 0;
   max-height: 90vh;
   max-height: 90dvh;
+  box-sizing: border-box;
+  border: 1px solid #e2e8f0;
+  border-top: 3px solid $blue-primary;
   border-radius: 16px;
   overflow: hidden;
   background: #ffffff;
@@ -38,79 +42,101 @@ ion-modal.edit-tipologias-banner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 20px;
-  background: $blue-primary;
-  color: #ffffff;
-  gap: 12px;
+  gap: 1rem;
+  padding: 1.35rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: #ffffff;
   flex-shrink: 0;
 
-  .banner-title {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+  .banner-title { min-width: 0; }
 
-    .title-icon {
-      font-size: 1.5rem;
-      opacity: 0.95;
-    }
-
-    h2 {
-      margin: 0;
-      font-size: 1.05rem;
-      font-weight: 600;
-      letter-spacing: -0.2px;
-      line-height: 1.2;
-    }
-
-    .sede-subtitle {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 0.78rem;
-      opacity: 0.85;
-      margin-top: 2px;
-
-      ion-icon {
-        font-size: 0.85rem;
-      }
-    }
+  .banner-eyebrow {
+    display: block;
+    margin-bottom: 0.2rem;
+    color: $blue-primary;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
   }
 
-  .banner-header-actions {
+  h2 {
+    margin: 0 0 0.15rem;
+    color: #0f172a;
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+
+  .sede-subtitle {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
+    color: #64748b;
+    font-size: 0.82rem;
+
+    ion-icon { font-size: 0.9rem; }
   }
 }
 
-.add-btn,
 .close-btn {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  place-items: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #64748b;
+  font-size: 1.25rem;
+  cursor: pointer;
+
+  &:hover { border-color: #bfdbfe; background: #eff6ff; color: $blue-primary; }
+  &:focus-visible { outline: 3px solid rgba(30, 80, 216, 0.2); outline-offset: 2px; }
+}
+
+// ── Footer ──────────────────────────────────────────────────────────────────
+.banner-actions {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border: none;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.15);
-  color: #ffffff;
-  font-size: 1.3rem;
-  cursor: pointer;
-  transition: background 0.15s ease, transform 0.1s ease;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+  flex-shrink: 0;
 
-  &:hover {
-    background: rgba(255, 255, 255, 0.28);
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 40px;
+    padding: 0.5rem 0.85rem;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.18s ease;
+
+    &:focus-visible { outline: 3px solid rgba(30, 80, 216, 0.2); outline-offset: 2px; }
+    ion-icon { font-size: 1.1rem; }
   }
 
-  &:active {
-    transform: scale(0.92);
+  .footer-close-btn {
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #334155;
+    &:hover { background: #f1f5f9; }
   }
-}
 
-.add-btn {
-  border: 1.5px solid rgba(255, 255, 255, 0.45);
-  font-size: 1.4rem;
-  font-weight: 700;
+  .add-btn {
+    border: 1px solid $blue-primary;
+    background: $blue-primary;
+    color: #ffffff;
+    &:hover { background: #1d4ed8; }
+  }
 }
 
 // ── Body ────────────────────────────────────────────────────────────────────
@@ -118,7 +144,7 @@ ion-modal.edit-tipologias-banner {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  padding: 16px 20px 28px;
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -253,6 +279,223 @@ ion-modal.edit-tipologias-banner {
 
       &:hover { background: #1d4ed8; }
     }
+  }
+}
+
+// ── Características (formulario) ─────────────────────────────────────────────
+.features-field {
+  margin: 18px 0 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
+
+  legend {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    margin-bottom: 8px;
+    padding: 0;
+    color: #1f2937;
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+
+  .features-count {
+    margin-left: auto;
+    padding: 2px 9px;
+    border-radius: 20px;
+    background: $blue-light;
+    color: $blue-primary;
+    font-size: 0.7rem;
+    font-weight: 700;
+  }
+}
+
+.features-hint {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  color: #64748b;
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.feature-option {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+
+  &:hover { border-color: #bfdbfe; }
+
+  &.selected {
+    border-color: #93c5fd;
+    background: #eff6ff;
+  }
+
+  .feature-delete {
+    flex-shrink: 0;
+    margin-right: 4px;
+  }
+}
+
+.feature-check {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px 10px;
+  color: #0f172a;
+  font-size: 0.85rem;
+  cursor: pointer;
+
+  input[type='checkbox'] {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    margin: 0;
+    accent-color: $blue-primary;
+    cursor: pointer;
+  }
+
+  ion-icon {
+    flex-shrink: 0;
+    color: $blue-primary;
+    font-size: 1.05rem;
+  }
+
+  .feature-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.feature-custom-badge {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 1px 7px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.66rem;
+  font-weight: 600;
+}
+
+.feature-confirm {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 4px 4px 10px;
+  color: $danger;
+  font-size: 0.8rem;
+  font-weight: 600;
+
+  span {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+  }
+
+  small {
+    color: #64748b;
+    font-weight: 500;
+  }
+}
+
+.feature-add {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+
+  ion-input {
+    flex: 1;
+    min-height: 40px;
+    box-sizing: border-box;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    --background: #ffffff;
+    --color: #0f172a;
+    --placeholder-color: #94a3b8;
+    --placeholder-opacity: 1;
+    --padding-start: 12px;
+    --padding-end: 12px;
+    font-size: 0.86rem;
+  }
+
+  ion-input.has-focus {
+    border-color: $blue-primary;
+    box-shadow: 0 0 0 3px rgba(30, 80, 216, 0.12);
+  }
+}
+
+.feature-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 40px;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: $blue-primary;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover:not(:disabled) { background: #dbeafe; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+  &:focus-visible { outline: 3px solid rgba(30, 80, 216, 0.2); outline-offset: 2px; }
+}
+
+// ── Características (chips en tarjeta) ───────────────────────────────────────
+.feature-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.feature-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border: 1px solid var(--typology-border, #e2e8f0);
+  border-radius: 12px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 0.7rem;
+  font-weight: 500;
+
+  ion-icon {
+    color: var(--typology-color, $blue-primary);
+    font-size: 0.8rem;
+  }
+
+  &.more {
+    color: #64748b;
+    font-weight: 700;
   }
 }
 
@@ -492,20 +735,17 @@ ion-modal.edit-tipologias-banner {
     --width: calc(100% - 1rem);
   }
 
-  .banner-header {
-    align-items: flex-start;
-    padding: 12px;
-
-    .banner-title {
-      min-width: 0;
-    }
+  .banner-header,
+  .banner-actions {
+    padding: 1rem;
   }
 
   .banner-body {
-    padding: 12px 12px 20px;
+    padding: 1rem;
   }
 
-  .user-form .form-grid {
+  .user-form .form-grid,
+  .features-grid {
     grid-template-columns: 1fr;
   }
 

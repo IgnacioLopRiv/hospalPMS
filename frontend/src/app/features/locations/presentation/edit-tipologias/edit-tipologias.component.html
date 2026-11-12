@@ -10,40 +10,24 @@
       <!-- ── Header ── -->
       <header class="banner-header">
         <div class="banner-title">
-          <ion-icon name="pricetags-outline" class="title-icon"></ion-icon>
-          <div>
-            <h2>Gestionar tipologías</h2>
-            @if (sede(); as currentSede) {
-              <span class="sede-subtitle">
-                <ion-icon name="business-outline"></ion-icon>
-                {{ currentSede.nombre }} ({{ currentSede.ciudad }})
-              </span>
-            }
-          </div>
-        </div>
-        <div class="banner-header-actions">
-          @if (isAdmin()) {
-            <button
-              type="button"
-              class="add-btn"
-              id="add-tipologia-btn"
-              (click)="openAdd()"
-              aria-label="Agregar nueva tipología"
-              title="Agregar nueva tipología"
-            >
-              <ion-icon name="add-outline"></ion-icon>
-            </button>
+          <span class="banner-eyebrow">Configuración de sede</span>
+          <h2>Gestionar tipologías</h2>
+          @if (sede(); as currentSede) {
+            <span class="sede-subtitle">
+              <ion-icon name="business-outline"></ion-icon>
+              {{ currentSede.nombre }} ({{ currentSede.ciudad }})
+            </span>
           }
-          <button
-            type="button"
-            class="close-btn"
-            id="close-tipologias-btn"
-            (click)="dismiss()"
-            aria-label="Cerrar panel de tipologías"
-          >
-            <ion-icon name="close-outline"></ion-icon>
-          </button>
         </div>
+        <button
+          type="button"
+          class="close-btn"
+          id="close-tipologias-btn"
+          (click)="dismiss()"
+          aria-label="Cerrar panel de tipologías"
+        >
+          <ion-icon name="close-outline"></ion-icon>
+        </button>
       </header>
 
       <!-- ── Body ── -->
@@ -99,6 +83,109 @@
               </label>
             </div>
 
+            <!-- Características de la tipología -->
+            <fieldset class="features-field">
+              <legend>
+                Características
+                <span class="features-count">{{ form().caracteristicaIds.length }} seleccionadas</span>
+              </legend>
+
+              @if (caracteristicasLoading() && caracteristicas().length === 0) {
+                <p class="features-hint">Cargando características…</p>
+              } @else if (caracteristicasLoadError()) {
+                <p class="error-msg" role="alert">{{ caracteristicasLoadError() }}</p>
+              } @else if (caracteristicas().length === 0) {
+                <p class="features-hint">Aún no hay características. Agrega una abajo.</p>
+              } @else {
+                <ul class="features-grid" role="list">
+                  @for (caracteristica of caracteristicas(); track caracteristica.id) {
+                    <li
+                      class="feature-option"
+                      [class.selected]="isCaracteristicaSelected(caracteristica.id)"
+                    >
+                      @if (deleteCaracteristicaConfirmId() === caracteristica.id) {
+                        <div class="feature-confirm" role="alert">
+                          <span>
+                            ¿Eliminar «{{ caracteristica.nombre }}»?
+                            @if (countTipologiasWith(caracteristica.id) > 0) {
+                              <small>Se quitará de {{ countTipologiasWith(caracteristica.id) }} tipología(s).</small>
+                            }
+                          </span>
+                          <button
+                            type="button"
+                            class="icon-btn danger"
+                            (click)="confirmDeleteCaracteristica(caracteristica.id)"
+                            aria-label="Confirmar eliminación de la característica"
+                          >
+                            <ion-icon name="checkmark-outline"></ion-icon>
+                          </button>
+                          <button
+                            type="button"
+                            class="icon-btn"
+                            (click)="cancelDeleteCaracteristica()"
+                            aria-label="Cancelar eliminación"
+                          >
+                            <ion-icon name="close-outline"></ion-icon>
+                          </button>
+                        </div>
+                      } @else {
+                        <label class="feature-check">
+                          <input
+                            type="checkbox"
+                            [checked]="isCaracteristicaSelected(caracteristica.id)"
+                            (change)="toggleCaracteristica(caracteristica.id, $any($event.target).checked)"
+                          />
+                          <ion-icon [name]="caracteristicaIcon(caracteristica)" aria-hidden="true"></ion-icon>
+                          <span class="feature-name">{{ caracteristica.nombre }}</span>
+                          @if (!caracteristica.predeterminada) {
+                            <span class="feature-custom-badge">Personalizada</span>
+                          }
+                        </label>
+                        @if (!caracteristica.predeterminada && isAdmin()) {
+                          <button
+                            type="button"
+                            class="icon-btn delete feature-delete"
+                            (click)="requestDeleteCaracteristica(caracteristica.id)"
+                            [attr.aria-label]="'Eliminar característica ' + caracteristica.nombre"
+                            title="Eliminar característica"
+                          >
+                            <ion-icon name="trash-outline"></ion-icon>
+                          </button>
+                        }
+                      }
+                    </li>
+                  }
+                </ul>
+              }
+
+              @if (isAdmin()) {
+                <div class="feature-add">
+                  <ion-input
+                    type="text"
+                    maxlength="60"
+                    placeholder="Nueva característica (ej. Jacuzzi)"
+                    aria-label="Nombre de la nueva característica"
+                    [value]="nuevaCaracteristica()"
+                    (ionInput)="nuevaCaracteristica.set($any($event.target).value ?? '')"
+                    (keydown.enter)="$event.preventDefault(); addCaracteristica()"
+                  ></ion-input>
+                  <button
+                    type="button"
+                    class="feature-add-btn"
+                    [disabled]="savingCaracteristica() || !nuevaCaracteristica().trim()"
+                    (click)="addCaracteristica()"
+                  >
+                    <ion-icon name="add-outline"></ion-icon>
+                    Agregar
+                  </button>
+                </div>
+              }
+
+              @if (caracteristicaError()) {
+                <p class="error-msg" role="alert">{{ caracteristicaError() }}</p>
+              }
+            </fieldset>
+
             @if (errorMessage()) {
               <p class="error-msg" role="alert">{{ errorMessage() }}</p>
             }
@@ -126,7 +213,7 @@
           </div>
 
           @if (tipologias().length === 0) {
-            <p class="empty-state">No hay tipologías configuradas para esta sede. Agrega una con el botón (+).</p>
+            <p class="empty-state">No hay tipologías configuradas para esta sede. Agrega una con el botón «Nueva tipología».</p>
           } @else {
             <ul class="user-list" role="list">
               @for (tipologia of tipologias(); track tipologia.id) {
@@ -158,6 +245,21 @@
                     </div>
                     @if (tipologia.descripcion) {
                       <span class="user-email tipologia-desc">{{ tipologia.descripcion }}</span>
+                    }
+                    @if (visibleChips(tipologia).length > 0) {
+                      <ul class="feature-chips" aria-label="Características">
+                        @for (caracteristica of visibleChips(tipologia); track caracteristica.id) {
+                          <li class="feature-chip">
+                            <ion-icon [name]="caracteristicaIcon(caracteristica)" aria-hidden="true"></ion-icon>
+                            {{ caracteristica.nombre }}
+                          </li>
+                        }
+                        @if (hiddenChipsCount(tipologia) > 0) {
+                          <li class="feature-chip more" [title]="assignedCaracteristicas(tipologia).length + ' características'">
+                            +{{ hiddenChipsCount(tipologia) }}
+                          </li>
+                        }
+                      </ul>
                     }
                   </div>
 
@@ -201,6 +303,23 @@
         </section>
 
       </div>
+
+      <!-- ── Footer ── -->
+      <footer class="banner-actions">
+        <button type="button" class="footer-close-btn" (click)="dismiss()">Cerrar</button>
+        @if (isAdmin()) {
+          <button
+            type="button"
+            class="add-btn"
+            id="add-tipologia-btn"
+            (click)="openAdd()"
+            aria-label="Agregar nueva tipología"
+          >
+            <ion-icon name="add-outline"></ion-icon>
+            Nueva tipología
+          </button>
+        }
+      </footer>
     </div>
   </ng-template>
 </ion-modal>

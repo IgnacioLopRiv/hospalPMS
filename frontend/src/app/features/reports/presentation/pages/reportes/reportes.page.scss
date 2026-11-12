@@ -123,6 +123,20 @@ ion-content {
   margin-bottom: 1.5rem;
 }
 
+.analytics-main {
+  display: grid;
+  gap: 1.3rem;
+  min-width: 0;
+
+  .section-heading { margin: 0 0 -0.4rem; }
+  .report-card.trx-card { margin-bottom: 0; }
+}
+
+.filters-panel {
+  position: sticky;
+  top: 1rem;
+}
+
 .card-subtitle { margin: 0.2rem 0 0; color: $text-muted; font-size: 0.78rem; }
 
 .demand-card .ranking-list { margin-top: 1.1rem; }
@@ -515,7 +529,7 @@ ion-content {
 
 .trx-table {
   width: 100%;
-  min-width: 760px;
+  min-width: 640px;
   border-collapse: collapse;
 
   th {
@@ -564,8 +578,7 @@ ion-content {
   font-weight: 600;
   white-space: nowrap;
 
-  &.tag-alta { background: #fff7ed; color: #c2410c; }
-  &.tag-baja { background: #ecfeff; color: #0e7490; }
+  &.tag-tarifa { background: #eff6ff; color: #1d4ed8; }
   &.tag-base { background: #f1f5f9; color: #475569; }
   &.tag-promo { background: #fdf2f8; color: #be185d; }
 }
@@ -811,7 +824,7 @@ ion-content {
 
 @media (max-width: 1024px) {
   .analytics-layout { grid-template-columns: minmax(0, 1fr); }
-  .filters-panel { order: -1; }
+  .filters-panel { order: -1; position: static; }
 }
 
 @media (max-width: 700px) {

@@ -123,6 +123,7 @@
       </section>
 
       <div class="analytics-layout">
+        <div class="analytics-main">
         <!-- Demanda por habitación y tarifa -->
         <section class="report-card demand-card" aria-labelledby="demand-title">
           <div class="card-heading">
@@ -218,6 +219,88 @@
           }
         </section>
 
+        <!-- Historial de transacciones -->
+        <div class="section-heading">
+          <div>
+            <h2>Historial de transacciones</h2>
+            <p>{{ transaccionesFiltradas().length }} resultados · {{ formatMoney(totalFiltrado()) }} facturado</p>
+          </div>
+        </div>
+        <section class="report-card trx-card">
+          <div class="trx-table-wrapper">
+            <table class="trx-table">
+              <thead>
+                <tr>
+                  <th scope="col">ID Transacción</th>
+                  <th scope="col">Reserva</th>
+                  <th scope="col">Tipología</th>
+                  <th scope="col" class="num">Tarifa aplicada ($)</th>
+                  <th scope="col">Estado del pago</th>
+                  <th scope="col" class="actions-col">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (trx of transaccionesVisibles(); track trx.id) {
+                  <tr class="trx-row" tabindex="0" (click)="openDetalle(trx)" (keydown.enter)="openDetalle(trx)" [class.row-cancelled]="trx.estadoPago === 'ANULADO'">
+                    <td data-label="ID Transacción">
+                      <span class="trx-id">{{ trx.id }}</span>
+                      <small class="cell-sub">{{ formatFecha(trx.llegada) }}</small>
+                    </td>
+                    <td data-label="Reserva">
+                      <span class="cell-main">{{ trx.reservaCodigo }} · {{ trx.huesped }}</span>
+                      <small class="cell-sub">@if (esGlobal()) {{{ trx.sede }} · }Hab. {{ trx.habitacion }} · {{ trx.noches }} {{ trx.noches === 1 ? 'noche' : 'noches' }}</small>
+                    </td>
+                    <td data-label="Tipología">
+                      <span class="ranking-name"><i class="legend-dot" [style.background-color]="trx.tipologiaColor"></i>{{ trx.tipologia }}</span>
+                      <span class="tag" [ngClass]="'tag-' + trx.tipoTarifa.toLowerCase()">{{ trx.tarifaNombre }}</span>
+                      @if (trx.esPromocional) {
+                        <span class="tag tag-promo">Promocional</span>
+                      }
+                    </td>
+                    <td data-label="Tarifa aplicada ($)" class="num">
+                      <strong>{{ formatMoney(trx.total) }}</strong>
+                      <small class="cell-sub">{{ formatMoney(trx.tarifaNocheBase) }} / noche</small>
+                    </td>
+                    <td data-label="Estado del pago">
+                      <span class="pay-status" [ngClass]="'status-' + trx.estadoPago.toLowerCase()">{{ estadoPagoLabel(trx.estadoPago) }}</span>
+                      <small class="cell-sub">{{ metodoPagoLabel(trx.metodoPago) }}</small>
+                    </td>
+                    <td data-label="Acciones" class="actions-col">
+                      <button type="button" class="btn-row-detail" (click)="$event.stopPropagation(); openDetalle(trx)" [attr.aria-label]="'Ver detalle de ' + trx.id">
+                        <ion-icon name="receipt-outline"></ion-icon>
+                        <span>Detalle</span>
+                      </button>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr class="trx-empty-row">
+                    <td colspan="6">
+                      <div class="trx-empty">
+                        <ion-icon name="funnel-outline"></ion-icon>
+                        @if (operacionesLoading()) {
+                          <p>Cargando transacciones…</p>
+                        } @else if (transaccionesPeriodo().length === 0) {
+                          <p>No hay reservas con llegada en el período seleccionado.</p>
+                        } @else {
+                          <p>Ninguna transacción coincide con los filtros aplicados.</p>
+                          <button type="button" class="btn-outline" (click)="limpiarFiltros()">Limpiar filtros</button>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          @if (transaccionesFiltradas().length > transaccionesVisibles().length) {
+            <footer class="trx-footer">
+              <span>Mostrando {{ transaccionesVisibles().length }} de {{ transaccionesFiltradas().length }}</span>
+              <button type="button" class="btn-outline" (click)="mostrarMas()">Mostrar más</button>
+            </footer>
+          }
+        </section>
+        </div>
+
         <!-- Filtros -->
         <aside class="report-card filters-panel" aria-labelledby="filters-title">
           <div class="card-heading">
@@ -272,11 +355,10 @@
             </div>
 
             <label class="filter-field">
-              <span class="filter-label">Tarifa / temporada</span>
+              <span class="filter-label">Tarifa</span>
               <select class="filter-control" [ngModel]="tipoTarifaFiltro()" (ngModelChange)="setTipoTarifaFiltro($event)">
                 <option value="TODAS">Todas</option>
-                <option value="ALTA">Temporada alta</option>
-                <option value="BAJA">Temporada baja</option>
+                <option value="TARIFA">Tarifa configurada</option>
                 <option value="PROMOCIONAL">Promocional (con descuento)</option>
                 <option value="BASE">Precio base</option>
               </select>
@@ -310,86 +392,6 @@
         </aside>
       </div>
 
-      <!-- Historial de transacciones -->
-      <div class="section-heading">
-        <div>
-          <h2>Historial de transacciones</h2>
-          <p>{{ transaccionesFiltradas().length }} resultados · {{ formatMoney(totalFiltrado()) }} facturado</p>
-        </div>
-      </div>
-      <section class="report-card trx-card">
-        <div class="trx-table-wrapper">
-          <table class="trx-table">
-            <thead>
-              <tr>
-                <th scope="col">ID Transacción</th>
-                <th scope="col">Reserva</th>
-                <th scope="col">Tipología</th>
-                <th scope="col" class="num">Tarifa aplicada ($)</th>
-                <th scope="col">Estado del pago</th>
-                <th scope="col" class="actions-col">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (trx of transaccionesVisibles(); track trx.id) {
-                <tr class="trx-row" tabindex="0" (click)="openDetalle(trx)" (keydown.enter)="openDetalle(trx)" [class.row-cancelled]="trx.estadoPago === 'ANULADO'">
-                  <td data-label="ID Transacción">
-                    <span class="trx-id">{{ trx.id }}</span>
-                    <small class="cell-sub">{{ formatFecha(trx.llegada) }}</small>
-                  </td>
-                  <td data-label="Reserva">
-                    <span class="cell-main">{{ trx.reservaCodigo }} · {{ trx.huesped }}</span>
-                    <small class="cell-sub">@if (esGlobal()) {{{ trx.sede }} · }Hab. {{ trx.habitacion }} · {{ trx.noches }} {{ trx.noches === 1 ? 'noche' : 'noches' }}</small>
-                  </td>
-                  <td data-label="Tipología">
-                    <span class="ranking-name"><i class="legend-dot" [style.background-color]="trx.tipologiaColor"></i>{{ trx.tipologia }}</span>
-                    <span class="tag" [ngClass]="'tag-' + trx.tipoTarifa.toLowerCase()">{{ trx.tarifaNombre }}</span>
-                    @if (trx.esPromocional) {
-                      <span class="tag tag-promo">Promocional</span>
-                    }
-                  </td>
-                  <td data-label="Tarifa aplicada ($)" class="num">
-                    <strong>{{ formatMoney(trx.total) }}</strong>
-                    <small class="cell-sub">{{ formatMoney(trx.tarifaNocheBase) }} / noche</small>
-                  </td>
-                  <td data-label="Estado del pago">
-                    <span class="pay-status" [ngClass]="'status-' + trx.estadoPago.toLowerCase()">{{ estadoPagoLabel(trx.estadoPago) }}</span>
-                    <small class="cell-sub">{{ metodoPagoLabel(trx.metodoPago) }}</small>
-                  </td>
-                  <td data-label="Acciones" class="actions-col">
-                    <button type="button" class="btn-row-detail" (click)="$event.stopPropagation(); openDetalle(trx)" [attr.aria-label]="'Ver detalle de ' + trx.id">
-                      <ion-icon name="receipt-outline"></ion-icon>
-                      <span>Detalle</span>
-                    </button>
-                  </td>
-                </tr>
-              } @empty {
-                <tr class="trx-empty-row">
-                  <td colspan="6">
-                    <div class="trx-empty">
-                      <ion-icon name="funnel-outline"></ion-icon>
-                      @if (operacionesLoading()) {
-                        <p>Cargando transacciones…</p>
-                      } @else if (transaccionesPeriodo().length === 0) {
-                        <p>No hay reservas con llegada en el período seleccionado.</p>
-                      } @else {
-                        <p>Ninguna transacción coincide con los filtros aplicados.</p>
-                        <button type="button" class="btn-outline" (click)="limpiarFiltros()">Limpiar filtros</button>
-                      }
-                    </div>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-        @if (transaccionesFiltradas().length > transaccionesVisibles().length) {
-          <footer class="trx-footer">
-            <span>Mostrando {{ transaccionesVisibles().length }} de {{ transaccionesFiltradas().length }}</span>
-            <button type="button" class="btn-outline" (click)="mostrarMas()">Mostrar más</button>
-          </footer>
-        }
-      </section>
     </main>
   </div>
 

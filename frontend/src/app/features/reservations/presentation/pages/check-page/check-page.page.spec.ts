@@ -376,7 +376,6 @@ describe('CheckPagePage', () => {
     tarifasConfig = { sedeId, porcentajeAbono: 35, tarifas: [{
       id: 1,
       nombre: 'Temporada de prueba',
-      tipoTemporada: 'ALTA',
       activa: true,
       periodos: [{
         id: 'rango-prueba',

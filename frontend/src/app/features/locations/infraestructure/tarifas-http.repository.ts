@@ -54,7 +54,6 @@ export class TarifasHttpRepository extends TarifasRepository {
     return {
       id: row.id,
       nombre: row.nombre,
-      tipoTemporada: row.tipoTemporada,
       activa: row.activa,
       periodos: row.periodos,
       precios: row.precios,

@@ -209,6 +209,14 @@ export class HuespedesPage implements OnInit, OnDestroy {
     const dialog = this.guestDetailDialog?.nativeElement;
     if (dialog?.open) {
       dialog.close();
+      // El <dialog> devuelve el foco a la tarjeta que lo abrió; al cerrar con Escape eso
+      // deja visible el anillo de foco. Lo quitamos para que la tarjeta quede limpia.
+      setTimeout(() => {
+        const active = document.activeElement;
+        if (active instanceof HTMLElement && active.classList.contains('guest-card')) {
+          active.blur();
+        }
+      });
     }
     this.guestDetail = null;
     this.setPageScrollLocked(false);
