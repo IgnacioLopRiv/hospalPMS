@@ -103,15 +103,7 @@ export class FuncionariosController {
       throw new BadRequestException('El nombre es obligatorio.');
     }
 
-    let rol: RolFuncionario = 'RECEPCIONISTA';
-    const roleInput = (input.rol || input.role || '').toUpperCase();
-    if (roleInput === 'ADMIN' || roleInput === 'ADMINISTRADOR') {
-      rol = 'ADMINISTRADOR';
-    } else if (roleInput === 'PERSONAL_LIMPIEZA' || roleInput === 'LIMPIEZA') {
-      rol = 'PERSONAL_LIMPIEZA';
-    } else if (roleInput === 'STAFF' || roleInput === 'RECEPCIONISTA') {
-      rol = 'RECEPCIONISTA';
-    }
+    const rol = this.toDatabaseRole(input) ?? 'RECEPCIONISTA';
 
     let sedeId = input.sedeId;
     if (!sedeId) {
@@ -163,20 +155,7 @@ export class FuncionariosController {
     @Param('id', ParseIntPipe) id: number,
     @Body() input: FuncionarioInput,
   ) {
-    let rol: RolFuncionario | undefined = undefined;
-    if (input.rol || input.role) {
-      const roleInput = (input.rol || input.role || '').toUpperCase();
-      if (roleInput === 'ADMIN' || roleInput === 'ADMINISTRADOR') {
-        rol = 'ADMINISTRADOR';
-      } else if (
-        roleInput === 'PERSONAL_LIMPIEZA' ||
-        roleInput === 'LIMPIEZA'
-      ) {
-        rol = 'PERSONAL_LIMPIEZA';
-      } else {
-        rol = 'RECEPCIONISTA';
-      }
-    }
+    const rol = this.toDatabaseRole(input);
 
     let nombres = input.nombres?.trim();
     let apellidos = input.apellidos?.trim();
@@ -253,7 +232,30 @@ export class FuncionariosController {
       name: `${f.nombres} ${f.apellidos}`.trim(),
       email: f.email,
       rol: f.rol,
-      role: f.rol === 'ADMINISTRADOR' ? 'admin' : 'staff',
+      role: FRONTEND_ROLE[f.rol],
     };
   }
+
+  /**
+   * Rol recibido del front ('admin' | 'staff' | 'aseo') o del enum de la BD.
+   * Devuelve undefined si no viene rol (en update se conserva el actual).
+   */
+  private toDatabaseRole(input: FuncionarioInput): RolFuncionario | undefined {
+    const roleInput = (input.rol || input.role || '').trim().toUpperCase();
+    if (!roleInput) return undefined;
+    if (roleInput === 'ADMIN' || roleInput === 'ADMINISTRADOR') {
+      return 'ADMINISTRADOR';
+    }
+    if (['ASEO', 'LIMPIEZA', 'PERSONAL_LIMPIEZA'].includes(roleInput)) {
+      return 'PERSONAL_LIMPIEZA';
+    }
+    return 'RECEPCIONISTA';
+  }
 }
+
+/** Rol que usa el front para permisos y vistas. */
+const FRONTEND_ROLE: Record<RolFuncionario, 'admin' | 'staff' | 'aseo'> = {
+  ADMINISTRADOR: 'admin',
+  RECEPCIONISTA: 'staff',
+  PERSONAL_LIMPIEZA: 'aseo',
+};

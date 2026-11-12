@@ -9,7 +9,7 @@ import { InventarioRepository } from '../../../../inventory/domain/inventario.re
 import { LocationsRepository } from '../../../domain/locations.repository';
 import { createLocationsRepositoryStub } from '../../../domain/testing/locations.repository.stub';
 import { FotoHabitacionRepository } from '../../../domain/foto-habitacion.repository';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import JSZip from 'jszip';
 
 describe('HabitacionesPage', () => {
@@ -615,4 +615,93 @@ describe('HabitacionesPage', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.room-photo-notice')).toBeNull();
   }));
+
+  describe('Terminar aseo', () => {
+    const setRooms = (estados: { id: number; numero: string; estado: 'libre' | 'ocupada' | 'en aseo' }[]) => {
+      sedeService.selectedSede.update((sede) => ({
+        ...sede!,
+        habitaciones: estados.map((room) => ({
+          ...sede!.habitaciones[0],
+          ...room,
+          aseoIniciado: room.estado === 'en aseo' ? Date.now() : undefined,
+        })),
+      }));
+      fixture.detectChanges();
+    };
+    const finishButtons = () =>
+      Array.from(fixture.nativeElement.querySelectorAll('.room-card-footer .btn-finish-cleaning')) as HTMLButtonElement[];
+    /** Pulsa el botón y espera al handler (whenStable no sirve: la página tiene un setInterval activo). */
+    const clickFinish = async () => {
+      const handler = spyOn(component, 'terminarAseo').and.callThrough();
+      finishButtons()[0].click();
+      await handler.calls.mostRecent().returnValue;
+    };
+
+    it('shows the button only on rooms that are being cleaned', () => {
+      setRooms([
+        { id: 10, numero: '105', estado: 'libre' },
+        { id: 11, numero: '106', estado: 'ocupada' },
+        { id: 12, numero: '107', estado: 'en aseo' },
+      ]);
+
+      const buttons = finishButtons();
+      expect(buttons.length).toBe(1);
+      expect(buttons[0].textContent?.trim()).toBe('Terminar aseo');
+      expect(buttons[0].closest('.room-summary')?.textContent).toContain('Habitación 107');
+    });
+
+    it('lets staff release a room in cleaning, leaving it available', async () => {
+      authService.currentUser.set({ id: 2, name: 'Recepción', email: 'recepcion@hostal.cl', role: 'staff' });
+      setRooms([{ id: 12, numero: '107', estado: 'en aseo' }]);
+
+      await clickFinish();
+      fixture.detectChanges();
+
+      const room = sedeService.selectedSede()!.habitaciones.find((h) => h.id === 12)!;
+      expect(room.estado).toBe('libre');
+      expect(room.aseoIniciado).toBeUndefined();
+      expect(finishButtons().length).toBe(0);
+      expect(component.totalLibres()).toBe(1);
+      expect(component.totalEnAseo()).toBe(0);
+    });
+
+    it('does not open the room editor when an admin presses the button', async () => {
+      authService.currentUser.set({ id: 1, name: 'Administrador', email: 'admin@hostal.cl', role: 'admin' });
+      setRooms([{ id: 12, numero: '107', estado: 'en aseo' }]);
+
+      await clickFinish();
+
+      expect(component.editingRoomId()).toBeNull();
+      expect(sedeService.selectedSede()!.habitaciones[0].estado).toBe('libre');
+    });
+
+    it('releases the room by its id, not another room whose number matches that id', async () => {
+      setRooms([
+        { id: 10, numero: '105', estado: 'en aseo' },
+        { id: 11, numero: '10', estado: 'en aseo' },
+      ]);
+
+      await sedeService.terminarAseo(10);
+
+      const [byId, byNumber] = sedeService.selectedSede()!.habitaciones;
+      expect(byId.estado).toBe('libre');
+      expect(byNumber.estado).toBe('en aseo');
+    });
+
+    it('keeps the room in cleaning and shows the error when the backend rejects the change', async () => {
+      const repository = TestBed.inject(LocationsRepository);
+      spyOn(repository, 'updateRoom').and.returnValue(throwError(() => ({
+        status: 500,
+        error: { message: 'No se pudo conectar con la base de datos.' },
+      })));
+      setRooms([{ id: 12, numero: '107', estado: 'en aseo' }]);
+
+      await clickFinish();
+      fixture.detectChanges();
+
+      expect(sedeService.selectedSede()!.habitaciones[0].estado).toBe('en aseo');
+      expect(fixture.nativeElement.querySelector('.room-card-error')?.textContent).toContain('No se pudo conectar con la base de datos.');
+      expect(finishButtons()[0].disabled).toBeFalse();
+    });
+  });
 });

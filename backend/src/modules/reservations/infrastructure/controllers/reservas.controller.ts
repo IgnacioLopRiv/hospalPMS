@@ -27,6 +27,15 @@ import {
   ReservaSedeQueryDto,
   TIME_PATTERN,
 } from '../dto/reserva.dto';
+import {
+  CHECKOUT_MARGIN_DAYS,
+  DEFAULT_ARRIVAL_TIME,
+  DEFAULT_DEPARTURE_TIME,
+  StayTimeDefaults,
+  stayInterval,
+  staysConflictWithMargin,
+  staysOverlap,
+} from '../../domain/stay-schedule';
 
 type Transaction = Prisma.TransactionClient;
 
@@ -35,21 +44,26 @@ const ACTIVE_STATES: EstadoReserva[] = [
   EstadoReserva.EN_CURSO,
 ];
 
-/**
- * Días después de la salida de una reserva activa en los que nadie más puede
- * reservar la habitación, para que esa misma reserva pueda extender su estadía.
- * El margen se libera cuando la reserva finaliza o se cancela.
- */
-export const CHECKOUT_MARGIN_DAYS = 2;
+export { CHECKOUT_MARGIN_DAYS };
 
 /** Zona horaria del hostal para decidir qué día es "hoy" (el contenedor puede estar en UTC). */
 const HOTEL_TIME_ZONE = process.env.HOTEL_TIMEZONE || 'America/Santiago';
+
+/** Estados de habitación que impiden recibir un huésped hoy (hay que liberarla primero). */
+const ROOM_STATES_NOT_READY: EstadoHabitacion[] = [
+  EstadoHabitacion.EN_LIMPIEZA,
+  EstadoHabitacion.OCUPADA,
+];
 
 interface AvailabilityCheck {
   habitacionId: number;
   huespedId: number;
   arrivalDate: string;
+  arrivalTime: string;
   departureDate: string;
+  departureTime: string;
+  /** Horas de la sede para reservas guardadas sin hora de llegada/salida. */
+  defaults: StayTimeDefaults;
   nextState: EstadoReserva;
   excludeReservationId?: number;
 }
@@ -82,7 +96,6 @@ export class ReservasController {
         'Completa huésped, habitación y fechas de la reserva.',
       );
     }
-    this.validateDateRange(input.fecha_llegada, input.fecha_salida);
     this.validateNotInPast(input.fecha_llegada, 'llegada');
     this.validateNotInPast(input.fecha_salida, 'salida');
 
@@ -114,13 +127,19 @@ export class ReservasController {
         'No se puede crear una reserva en estado CANCELADA.',
       );
     }
+    const defaults = this.sedeTimeDefaults(habitacion.sede);
     const availability: AvailabilityCheck = {
       habitacionId: input.id_habitacion,
       huespedId: input.id_huesped,
       arrivalDate: input.fecha_llegada,
+      arrivalTime: input.hora_llegada ?? defaults.arrivalTime,
       departureDate: input.fecha_salida,
+      departureTime: input.hora_salida ?? defaults.departureTime,
+      defaults,
       nextState: expectedState,
     };
+    this.validateStayRange(availability);
+    this.validateRoomReadyToday(habitacion, input.fecha_llegada);
     await this.assertAvailability(this.prisma, availability);
 
     let createdPaymentId: number | null = null;
@@ -182,7 +201,6 @@ export class ReservasController {
         input.fecha_llegada ?? this.toDateKey(existing.fechaCheckIn);
       const nextFechaSalida =
         input.fecha_salida ?? this.toDateKey(existing.fechaCheckOut);
-      this.validateDateRange(nextFechaLlegada, nextFechaSalida);
       if (nextFechaLlegada !== this.toDateKey(existing.fechaCheckIn)) {
         this.validateNotInPast(nextFechaLlegada, 'llegada');
       }
@@ -242,14 +260,39 @@ export class ReservasController {
           : existing.estado;
       this.validateStateTransition(existing.estado, nextState);
 
+      const defaults = this.sedeTimeDefaults(habitacion.sede);
       const availability: AvailabilityCheck = {
         habitacionId: targetHabitacionId,
         huespedId: targetHuespedId,
         arrivalDate: nextFechaLlegada,
+        arrivalTime:
+          input.hora_llegada ?? existing.horaLlegada ?? defaults.arrivalTime,
         departureDate: nextFechaSalida,
+        departureTime:
+          input.hora_salida ?? existing.horaSalida ?? defaults.departureTime,
+        defaults,
         nextState,
         excludeReservationId: id,
       };
+      this.validateStayRange(availability);
+
+      // Habitación en aseo u ocupada: no se puede hacer check-in ni mover a ella
+      // (o adelantar a hoy) una reserva hasta que se libere.
+      const isCheckIn =
+        existing.estado === EstadoReserva.CONFIRMADA &&
+        nextState === EstadoReserva.EN_CURSO;
+      const movesToRoomOrDate =
+        targetHabitacionId !== existing.habitacionId ||
+        nextFechaLlegada !== this.toDateKey(existing.fechaCheckIn);
+      if (isCheckIn) {
+        this.validateRoomReadyForGuest(habitacion);
+      } else if (
+        movesToRoomOrDate &&
+        nextState === EstadoReserva.CONFIRMADA
+      ) {
+        this.validateRoomReadyToday(habitacion, nextFechaLlegada);
+      }
+
       await this.assertAvailability(this.prisma, availability);
 
       let createdPaymentId: number | null = null;
@@ -386,12 +429,59 @@ export class ReservasController {
     });
   }
 
-  private validateDateRange(arrivalDate: string, departureDate: string): void {
-    if (arrivalDate >= departureDate) {
+  /** La salida debe ser posterior a la llegada por fecha y hora (se permiten estadías del mismo día). */
+  private validateStayRange(check: AvailabilityCheck): void {
+    const stay = stayInterval(
+      check.arrivalDate,
+      check.arrivalTime,
+      check.departureDate,
+      check.departureTime,
+    );
+    if (stay.end <= stay.start) {
       throw new BadRequestException(
-        'La fecha de salida debe ser posterior a la fecha de llegada.',
+        'La salida debe ser posterior a la llegada (fecha y hora).',
       );
     }
+  }
+
+  /** Una habitación en aseo u ocupada no puede recibir un huésped hasta que se libere. */
+  private validateRoomReadyForGuest(habitacion: {
+    estado: EstadoHabitacion;
+    numero: string;
+  }): void {
+    if (!ROOM_STATES_NOT_READY.includes(habitacion.estado)) return;
+    const motivo =
+      habitacion.estado === EstadoHabitacion.EN_LIMPIEZA
+        ? 'está en aseo'
+        : 'está ocupada';
+    throw new ConflictException(
+      `La habitación ${habitacion.numero} ${motivo}. Debe quedar libre antes de recibir un nuevo huésped.`,
+    );
+  }
+
+  /** Solo las reservas que empiezan hoy dependen del estado actual de la habitación. */
+  private validateRoomReadyToday(
+    habitacion: { estado: EstadoHabitacion; numero: string },
+    arrivalDate: string,
+  ): void {
+    if (arrivalDate === this.todayKey()) {
+      this.validateRoomReadyForGuest(habitacion);
+    }
+  }
+
+  private validTime(time: string | null | undefined): string | undefined {
+    return time && TIME_PATTERN.test(time) ? time : undefined;
+  }
+
+  /** Horas de check-in/out de la sede para reservas sin hora propia. */
+  private sedeTimeDefaults(sede: {
+    horaCheckIn?: string | null;
+    horaCheckOut?: string | null;
+  }): StayTimeDefaults {
+    return {
+      arrivalTime: this.validTime(sede.horaCheckIn) ?? DEFAULT_ARRIVAL_TIME,
+      departureTime: this.validTime(sede.horaCheckOut) ?? DEFAULT_DEPARTURE_TIME,
+    };
   }
 
   /**
@@ -477,9 +567,9 @@ export class ReservasController {
   }
 
   /**
-   * Valida, para una reserva activa:
-   * - que el huésped no tenga otra reserva activa en las mismas fechas;
-   * - que la habitación no tenga otra reserva activa que se solape, incluyendo
+   * Valida, para una reserva activa (comparando fecha + hora):
+   * - que el huésped no tenga otra reserva activa que se cruce con esta estadía;
+   * - que la habitación no tenga otra reserva activa que se cruce, incluyendo
    *   el margen de CHECKOUT_MARGIN_DAYS después de la salida de cada reserva.
    */
   private async assertAvailability(
@@ -488,61 +578,106 @@ export class ReservasController {
   ): Promise<void> {
     if (!ACTIVE_STATES.includes(check.nextState)) return;
 
+    const stay = stayInterval(
+      check.arrivalDate,
+      check.arrivalTime,
+      check.departureDate,
+      check.departureTime,
+    );
+    // Prefiltro por fecha (con un día extra por las horas); el cruce exacto se calcula en el dominio.
     const arrival = this.fromDateKey(check.arrivalDate);
     const departure = this.fromDateKey(check.departureDate);
+    const select = {
+      codigo: true,
+      fechaCheckIn: true,
+      fechaCheckOut: true,
+      horaLlegada: true,
+      horaSalida: true,
+    } as const;
     const excludeSelf =
       check.excludeReservationId !== undefined
         ? { id: { not: check.excludeReservationId } }
         : {};
+    const toStay = (r: {
+      fechaCheckIn: Date;
+      fechaCheckOut: Date;
+      horaLlegada: string | null;
+      horaSalida: string | null;
+    }) =>
+      stayInterval(
+        this.toDateKey(r.fechaCheckIn),
+        r.horaLlegada,
+        this.toDateKey(r.fechaCheckOut),
+        r.horaSalida,
+        check.defaults,
+      );
 
-    const guestOverlap = await client.reserva.findFirst({
+    const guestCandidates = await client.reserva.findMany({
       where: {
         huespedId: check.huespedId,
         estado: { in: ACTIVE_STATES },
         ...excludeSelf,
-        fechaCheckIn: { lt: departure },
-        fechaCheckOut: { gt: arrival },
+        fechaCheckIn: { lt: this.addDays(departure, 1) },
+        fechaCheckOut: { gt: this.addDays(arrival, -1) },
       },
-      select: { codigo: true, fechaCheckIn: true, fechaCheckOut: true },
+      select,
     });
+    const guestOverlap = guestCandidates.find((r) =>
+      staysOverlap(stay, toStay(r)),
+    );
     if (guestOverlap) {
       throw new ConflictException(
         `El huésped ya tiene una reserva activa${guestOverlap.codigo ? ` (${guestOverlap.codigo})` : ''} ` +
-          `del ${this.toDateKey(guestOverlap.fechaCheckIn)} al ${this.toDateKey(guestOverlap.fechaCheckOut)} que coincide con estas fechas.`,
+          `${this.describeStay(guestOverlap, check.defaults)} que coincide con esta estadía.`,
       );
     }
 
-    // Con margen: [llegada, salida + margen) de ambas reservas no debe cruzarse.
-    const roomConflict = await client.reserva.findFirst({
+    const roomCandidates = await client.reserva.findMany({
       where: {
         habitacionId: check.habitacionId,
         estado: { in: ACTIVE_STATES },
         ...excludeSelf,
         fechaCheckIn: {
-          lt: this.addDays(departure, CHECKOUT_MARGIN_DAYS),
+          lt: this.addDays(departure, CHECKOUT_MARGIN_DAYS + 1),
         },
         fechaCheckOut: {
-          gt: this.addDays(arrival, -CHECKOUT_MARGIN_DAYS),
+          gt: this.addDays(arrival, -(CHECKOUT_MARGIN_DAYS + 1)),
         },
       },
       orderBy: { fechaCheckIn: 'asc' },
-      select: { codigo: true, fechaCheckIn: true, fechaCheckOut: true },
+      select,
     });
+    const roomConflict = roomCandidates.find((r) =>
+      staysConflictWithMargin(stay, toStay(r)),
+    );
     if (!roomConflict) return;
 
-    const range = `${this.toDateKey(roomConflict.fechaCheckIn)} al ${this.toDateKey(roomConflict.fechaCheckOut)}`;
+    const range = this.describeStay(roomConflict, check.defaults);
     const code = roomConflict.codigo ? ` (${roomConflict.codigo})` : '';
-    const strictOverlap =
-      roomConflict.fechaCheckIn < departure &&
-      roomConflict.fechaCheckOut > arrival;
+    const strictOverlap = staysOverlap(stay, toStay(roomConflict));
     if (strictOverlap) {
       throw new ConflictException(
-        `La habitación ya tiene una reserva activa${code} del ${range} que se solapa con estas fechas.`,
+        `La habitación ya tiene una reserva activa${code} ${range} que se solapa con esta estadía.`,
       );
     }
     throw new ConflictException(
-      `La habitación tiene una reserva activa${code} del ${range}. ` +
+      `La habitación tiene una reserva activa${code} ${range}. ` +
         `Se deben dejar ${CHECKOUT_MARGIN_DAYS} días libres después de cada salida para permitir extensiones de estadía.`,
+    );
+  }
+
+  private describeStay(
+    r: {
+      fechaCheckIn: Date;
+      fechaCheckOut: Date;
+      horaLlegada: string | null;
+      horaSalida: string | null;
+    },
+    defaults: StayTimeDefaults,
+  ): string {
+    return (
+      `del ${this.toDateKey(r.fechaCheckIn)} ${r.horaLlegada || defaults.arrivalTime} ` +
+      `al ${this.toDateKey(r.fechaCheckOut)} ${r.horaSalida || defaults.departureTime}`
     );
   }
 

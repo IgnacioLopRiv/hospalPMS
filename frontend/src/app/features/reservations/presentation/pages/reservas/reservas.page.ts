@@ -14,10 +14,13 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HostalService, ReservationCalendarEntry } from '../../../../huespedes/application/hostal.service';
 import { SedeService } from '../../../../locations/application/sede.service';
+import { toTimelineMinutes } from '../../../domain/stay-schedule';
 
 const VISIBLE_DAYS = 14;
 const NAVIGATION_DAYS = 7;
-const DAY_MS = 24 * 60 * 60 * 1000;
+const MINUTES_PER_DAY = 24 * 60;
+const VISIBLE_MINUTES = VISIBLE_DAYS * MINUTES_PER_DAY;
+const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 const MONTHS = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
@@ -48,6 +51,16 @@ export interface CategoryTheme {
   background: string;
   border: string;
   text: string;
+}
+
+/** Barra de una reserva en la línea de tiempo: posición proporcional a la hora real. */
+export interface ReservationBar {
+  reservation: ReservationBlock;
+  /** Inicio y ancho en % del rango visible (14 días). */
+  leftPercent: number;
+  widthPercent: number;
+  /** Fila dentro de la habitación (solo > 0 si hay reservas antiguas que se cruzan). */
+  lane: number;
 }
 
 export interface ReservationBlock {
@@ -166,7 +179,7 @@ export class ReservasPage implements OnInit {
       managedRooms.has(reservation.roomNumber) &&
       reservation.status !== 'CANCELADA' &&
       reservation.arrivalDate <= selected &&
-      reservation.departureDate > selected
+      (reservation.departureDate > selected || reservation.arrivalDate === selected)
     );
   });
 
@@ -264,22 +277,58 @@ export class ReservasPage implements OnInit {
     this.datePickerOpen.set(false);
   }
 
-  getReservationsForRoom(roomNumber: string): ReservationBlock[] {
-    return this.visibleReservations().filter((reservation) => reservation.roomNumber === roomNumber);
+  /**
+   * Barras de cada habitación posicionadas por fecha + hora dentro de los 14 días visibles
+   * (llegar a las 14:00 empieza en el 58% del día). Si dos reservas se cruzan (datos antiguos),
+   * van en filas distintas para no taparse.
+   */
+  readonly roomBars = computed(() => {
+    const viewStart = toTimelineMinutes(this.viewStartDate(), '00:00');
+    const viewEnd = viewStart + VISIBLE_MINUTES;
+    const bars = new Map<string, ReservationBar[]>();
+
+    const sorted = [...this.visibleReservations()]
+      .map((reservation) => ({ reservation, ...this.reservationMinutes(reservation) }))
+      .filter((item) => item.end > viewStart && item.start < viewEnd)
+      .sort((a, b) => a.start - b.start);
+
+    const laneEnds = new Map<string, number[]>();
+    for (const item of sorted) {
+      const room = item.reservation.roomNumber;
+      const lanes = laneEnds.get(room) ?? [];
+      let lane = lanes.findIndex((end) => end <= item.start);
+      if (lane === -1) lane = lanes.length;
+      lanes[lane] = item.end;
+      laneEnds.set(room, lanes);
+
+      const start = Math.max(item.start, viewStart);
+      const end = Math.min(item.end, viewEnd);
+      const list = bars.get(room) ?? [];
+      list.push({
+        reservation: item.reservation,
+        leftPercent: ((start - viewStart) / VISIBLE_MINUTES) * 100,
+        widthPercent: ((end - start) / VISIBLE_MINUTES) * 100,
+        lane,
+      });
+      bars.set(room, list);
+    }
+    return bars;
+  });
+
+  getRoomBars(roomNumber: string): ReservationBar[] {
+    return this.roomBars().get(roomNumber) ?? [];
   }
 
-  getGridColumnStart(reservation: ReservationBlock): number {
-    const visibleStart = this.viewStartDate();
-    const start = reservation.arrivalDate < visibleStart ? visibleStart : reservation.arrivalDate;
-    return Math.max(1, Math.min(VISIBLE_DAYS, this.dayOffset(visibleStart, start) + 1));
+  getRoomLaneCount(roomNumber: string): number {
+    return Math.max(1, ...this.getRoomBars(roomNumber).map((bar) => bar.lane + 1));
   }
 
-  getGridColumnSpan(reservation: ReservationBlock): number {
-    const visibleStart = this.viewStartDate();
-    const visibleEnd = addDays(visibleStart, VISIBLE_DAYS - 1);
-    const start = reservation.arrivalDate < visibleStart ? visibleStart : reservation.arrivalDate;
-    const end = reservation.departureDate > visibleEnd ? visibleEnd : reservation.departureDate;
-    return Math.max(1, this.dayOffset(start, end) + 1);
+  private reservationMinutes(reservation: ReservationBlock): { start: number; end: number } {
+    const time = (value: string, fallback: string) => (TIME_PATTERN.test(value) ? value : fallback);
+    return {
+      start: toTimelineMinutes(reservation.arrivalDate, time(reservation.arrivalTime, '14:00')),
+      end: toTimelineMinutes(reservation.departureDate, time(reservation.departureTime, '12:00')),
+    };
   }
 
   getThemeForColor(color: string): CategoryTheme {
@@ -350,9 +399,5 @@ export class ReservasPage implements OnInit {
         isToday: value === today,
       };
     });
-  }
-
-  private dayOffset(start: string, end: string): number {
-    return Math.round((fromDateKey(end).getTime() - fromDateKey(start).getTime()) / DAY_MS);
   }
 }

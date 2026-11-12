@@ -29,6 +29,9 @@ interface StoredReservation {
   fechaCheckOut: Date;
   estado: EstadoReserva;
   codigo: string | null;
+  horaLlegada?: string | null;
+  horaSalida?: string | null;
+  cantidadPersonas?: number;
 }
 
 type RangeFilter = { lt?: Date; gt?: Date };
@@ -36,7 +39,7 @@ interface ReservationWhere {
   huespedId?: number;
   habitacionId?: number;
   estado?: { in: EstadoReserva[] };
-  id?: { not: number };
+  id?: number | { not: number };
   fechaCheckIn?: RangeFilter;
   fechaCheckOut?: RangeFilter;
 }
@@ -45,26 +48,36 @@ const matchesRange = (value: Date, filter?: RangeFilter) =>
   (!filter?.lt || value < filter.lt) && (!filter?.gt || value > filter.gt);
 
 function buildController(existing: StoredReservation[]) {
-  const findFirst = jest.fn(({ where }: { where: ReservationWhere }) =>
-    Promise.resolve(
-      existing.find(
-        (reservation) =>
-          (where.huespedId === undefined ||
-            reservation.huespedId === where.huespedId) &&
-          (where.habitacionId === undefined ||
-            reservation.habitacionId === where.habitacionId) &&
-          (!where.estado || where.estado.in.includes(reservation.estado)) &&
-          (!where.id || reservation.id !== where.id.not) &&
-          matchesRange(reservation.fechaCheckIn, where.fechaCheckIn) &&
-          matchesRange(reservation.fechaCheckOut, where.fechaCheckOut),
-      ) ?? null,
-    ),
+  const matches = (where: ReservationWhere) => (reservation: StoredReservation) =>
+    (where.huespedId === undefined || reservation.huespedId === where.huespedId) &&
+    (where.habitacionId === undefined ||
+      reservation.habitacionId === where.habitacionId) &&
+    (!where.estado || where.estado.in.includes(reservation.estado)) &&
+    (where.id === undefined ||
+      (typeof where.id === 'number'
+        ? reservation.id === where.id
+        : reservation.id !== where.id.not)) &&
+    matchesRange(reservation.fechaCheckIn, where.fechaCheckIn) &&
+    matchesRange(reservation.fechaCheckOut, where.fechaCheckOut);
+  const withDefaults = (reservation: StoredReservation) => ({
+    horaLlegada: null,
+    horaSalida: null,
+    cantidadPersonas: 1,
+    ...reservation,
+  });
+  const findFirst = jest.fn(({ where }: { where: ReservationWhere }) => {
+    const found = existing.find(matches(where));
+    return Promise.resolve(found ? withDefaults(found) : null);
+  });
+  const findMany = jest.fn(({ where }: { where: ReservationWhere }) =>
+    Promise.resolve(existing.filter(matches(where)).map(withDefaults)),
   );
 
   const created = { id: 99, codigo: 'HP-000099', estado: 'CONFIRMADA' };
   const transaction = {
     reserva: {
       findFirst,
+      findMany,
       create: jest.fn().mockResolvedValue({ id: 99 }),
       update: jest.fn().mockResolvedValue({
         ...created,
@@ -78,7 +91,7 @@ function buildController(existing: StoredReservation[]) {
   };
 
   const prisma = {
-    reserva: { findFirst },
+    reserva: { findFirst, findMany },
     huesped: {
       findUnique: jest.fn(({ where }: { where: { id: number } }) =>
         Promise.resolve({ id: where.id, sedeId: 1, eliminadoEn: null }),
@@ -90,7 +103,7 @@ function buildController(existing: StoredReservation[]) {
           id: where.id,
           sedeId: 1,
           numero: String(where.id),
-          estado: EstadoHabitacion.DISPONIBLE,
+          estado: EstadoHabitacion.DISPONIBLE as EstadoHabitacion,
           activa: true,
           cantidadPersonas: 4,
           tipologia: { capacidadMax: 4 },
@@ -136,16 +149,18 @@ describe('ReservasController – reglas de reserva', () => {
     ).rejects.toThrow(BadRequestException);
   });
 
-  it('rechaza llegada igual o posterior a la salida', async () => {
+  it('rechaza una salida igual o anterior a la llegada (por fecha y hora)', async () => {
     const { controller } = buildController([]);
     await expect(
       controller.create({
         id_huesped: 1,
         id_habitacion: 10,
         fecha_llegada: dateKey(3),
+        hora_llegada: '14:00',
         fecha_salida: dateKey(3),
+        hora_salida: '12:00',
       }),
-    ).rejects.toThrow('posterior a la fecha de llegada');
+    ).rejects.toThrow('La salida debe ser posterior a la llegada');
   });
 
   it('rechaza reservas solapadas del mismo huésped en otra habitación', async () => {
@@ -303,5 +318,101 @@ describe('ReservasController – reglas de reserva', () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+
+  it('permite estadías del mismo día de algunas horas', async () => {
+    const { controller } = buildController([]);
+    await expect(
+      controller.create({
+        id_huesped: 1,
+        id_habitacion: 10,
+        fecha_llegada: dateKey(3),
+        hora_llegada: '10:00',
+        fecha_salida: dateKey(3),
+        hora_salida: '14:00',
+      }),
+    ).resolves.toBeDefined();
+  });
+
+  it('valida el cruce del mismo huésped por hora: puede llegar justo cuando termina su otra estadía', async () => {
+    const existing = reservation({ horaLlegada: '14:00', horaSalida: '12:00' });
+    const { controller } = buildController([existing]);
+    await expect(
+      controller.create({
+        id_huesped: 1,
+        id_habitacion: 20,
+        fecha_llegada: dateKey(8),
+        hora_llegada: '12:00',
+        fecha_salida: dateKey(9),
+      }),
+    ).resolves.toBeDefined();
+    await expect(
+      controller.create({
+        id_huesped: 1,
+        id_habitacion: 20,
+        fecha_llegada: dateKey(8),
+        hora_llegada: '11:00',
+        fecha_salida: dateKey(9),
+      }),
+    ).rejects.toThrow('El huésped ya tiene una reserva activa');
+  });
+
+  describe('habitación en aseo u ocupada', () => {
+    const roomInState = (estado: EstadoHabitacion) => ({
+      id: 10,
+      sedeId: 1,
+      numero: '10',
+      estado,
+      activa: true,
+      cantidadPersonas: 4,
+      tipologia: { capacidadMax: 4 },
+      sede: { horaCheckOut: '12:00' },
+    });
+
+    it.each([
+      [EstadoHabitacion.EN_LIMPIEZA, 'está en aseo'],
+      [EstadoHabitacion.OCUPADA, 'está ocupada'],
+    ])('no se puede reservar para hoy si está %s', async (estado, mensaje) => {
+      const { controller, prisma } = buildController([]);
+      prisma.habitacion.findUnique.mockResolvedValueOnce(roomInState(estado));
+      await expect(
+        controller.create({
+          id_huesped: 1,
+          id_habitacion: 10,
+          fecha_llegada: dateKey(0),
+          hora_llegada: '15:00',
+          fecha_salida: dateKey(1),
+        }),
+      ).rejects.toThrow(mensaje);
+    });
+
+    it('sí se puede reservar para una fecha futura', async () => {
+      const { controller, prisma } = buildController([]);
+      prisma.habitacion.findUnique.mockResolvedValueOnce(
+        roomInState(EstadoHabitacion.EN_LIMPIEZA),
+      );
+      await expect(
+        controller.create({
+          id_huesped: 1,
+          id_habitacion: 10,
+          fecha_llegada: dateKey(3),
+          fecha_salida: dateKey(4),
+        }),
+      ).resolves.toBeDefined();
+    });
+
+    it('bloquea el check-in mientras la habitación sigue en aseo', async () => {
+      const pending = reservation({
+        fechaCheckIn: toDate(dateKey(0)),
+        fechaCheckOut: toDate(dateKey(2)),
+      });
+      const { controller, prisma } = buildController([pending]);
+      prisma.habitacion.findUnique.mockResolvedValueOnce(
+        roomInState(EstadoHabitacion.EN_LIMPIEZA),
+      );
+      await expect(
+        controller.update(1, { sedeId: 1 }, { estado_reserva: 'HOSPEDADO' }),
+      ).rejects.toThrow('está en aseo');
+    });
   });
 });

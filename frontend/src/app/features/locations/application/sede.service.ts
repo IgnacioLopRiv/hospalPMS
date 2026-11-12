@@ -388,35 +388,34 @@ export class SedeService {
   }
 
   /**
-   * Revisa automáticamente habitaciones en aseo y las libera si ya transcurrió el tiempo de aseo.
-   * @param maxMinutos Duración del aseo antes de volver a libre (por defecto 30 min)
+   * Termina manualmente el aseo de una habitación: pasa de "en aseo" a "libre" y queda
+   * disponible para nuevas reservas. Busca solo por ID para no confundirla con otra
+   * habitación cuyo número coincida con ese ID.
    */
-  async autoLiberarAseo(maxMinutos = 30): Promise<void> {
+  async terminarAseo(habitacionId: number): Promise<void> {
     const current = this.selectedSede();
-    if (!current) return;
-
-    const ahora = Date.now();
-    const tiempoLimiteMs = maxMinutos * 60 * 1000;
-    let huboCambios = false;
-
-    const nextHabitaciones = current.habitaciones.map((h) => {
-      if (h.estado === 'en aseo' && h.aseoIniciado) {
-        if (ahora - h.aseoIniciado >= tiempoLimiteMs) {
-          huboCambios = true;
-          return {
-            ...h,
-            estado: 'libre' as EstadoHabitacion,
-            aseoIniciado: undefined,
-          };
-        }
-      }
-      return h;
-    });
-
-    if (huboCambios) {
-      await this.updateSelectedSede({ nombre: current.nombre, habitaciones: nextHabitaciones });
+    const room = current?.habitaciones.find((h) => h.id === habitacionId);
+    if (!current || !room) {
+      throw new Error('La habitación ya no existe en la sede seleccionada.');
     }
+    if (room.estado !== 'en aseo') {
+      throw new Error(`La habitación ${room.numero} no está en aseo.`);
+    }
+
+    const saved = await firstValueFrom(this.repository.updateRoom(habitacionId, {
+      numero: room.numero,
+      tipologiaId: room.tipologiaId,
+      estado: 'libre',
+    }));
+    const latest = this.selectedSede() ?? current;
+    this.setUpdatedSede({
+      ...latest,
+      habitaciones: latest.habitaciones.map((h) => h.id === habitacionId
+        ? { ...h, ...saved, estado: 'libre' as EstadoHabitacion, aseoIniciado: undefined, huespedActual: undefined }
+        : h),
+    });
   }
+
 
   private assignMissingTypologyColors(tipologias: SedeTipologia[]): SedeTipologia[] {
     const usedColors = new Set<string>();

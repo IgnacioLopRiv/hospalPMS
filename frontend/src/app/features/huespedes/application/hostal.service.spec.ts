@@ -104,6 +104,56 @@ describe('HostalService HTTP persistence', () => {
 
   afterEach(() => TestBed.resetTestingModule());
 
+  describe('reglas de calendario (fecha + hora)', () => {
+    const localKey = (date: Date) =>
+      `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const setReservations = (list: Reserva[]) => {
+      (service as unknown as { reservations: Reserva[] }).reservations = list;
+    };
+
+    it('permite estadías del mismo día y respeta el margen de 2 días tras cada salida', () => {
+      setReservations([{
+        id_reserva: 1, id_huesped: 1, id_habitacion: 10, estado_reserva: 'CONFIRMADA',
+        fecha_llegada: '2099-03-05', hora_llegada: '14:00', fecha_salida: '2099-03-08', hora_salida: '12:00',
+      }]);
+
+      expect(service.getAvailableRooms('2099-03-09', '2099-03-10')).toEqual([]);
+      expect(service.getAvailableRooms('2099-03-10', '2099-03-10', undefined, undefined, {
+        arrivalTime: '10:00', departureTime: '14:00',
+      }).map((room) => room.id_habitacion)).toEqual([10]);
+      expect(service.getAvailableRooms('2099-03-10', '2099-03-10', undefined, undefined, {
+        arrivalTime: '14:00', departureTime: '10:00',
+      })).toEqual([]);
+    });
+
+    it('no ofrece una habitación en aseo para una reserva nueva que empieza hoy, pero sí para fechas futuras', () => {
+      const sedeService = TestBed.inject(SedeService) as unknown as { habitaciones: ReturnType<typeof signal<SedeHabitacion[]>> };
+      sedeService.habitaciones.set(rooms.map((room) => ({ ...room, estado: 'en aseo' as const })));
+      const today = new Date();
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      expect(service.getAvailableRooms(localKey(today), localKey(tomorrow))).toEqual([]);
+      expect(service.getAvailableRooms('2099-03-10', '2099-03-11').map((room) => room.id_habitacion)).toEqual([10]);
+    });
+
+    it('el check-out anticipado guarda la salida real con la hora del reloj', async () => {
+      setReservations([{
+        id_reserva: 7, id_huesped: 1, id_habitacion: 10, estado_reserva: 'HOSPEDADO',
+        fecha_llegada: '2000-01-01', hora_llegada: '14:00', fecha_salida: '2099-01-05', hora_salida: '12:00',
+      }]);
+      reservations = (service as unknown as { reservations: Reserva[] }).reservations;
+      const before = new Date();
+
+      await service.processCheckOut(7);
+
+      const sent = reservasRepository.update.calls.mostRecent().args[1] as Reserva;
+      expect(sent.estado_reserva).toBe('FINALIZADA');
+      expect(sent.fecha_salida).toBe(localKey(before));
+      expect(sent.hora_salida).toMatch(/^([01]\d|2[0-3]):[0-5]\d$/);
+    });
+  });
+
   it('loads guests and reservations from the API for the selected sede', () => {
     expect(huespedRepository.list).toHaveBeenCalled();
     expect(reservasRepository.listBySede).toHaveBeenCalledWith(TEST_SEDE_ID);

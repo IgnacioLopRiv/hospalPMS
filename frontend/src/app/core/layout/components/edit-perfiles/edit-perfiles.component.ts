@@ -17,10 +17,11 @@ import {
   personAddOutline,
   personOutline,
   shieldCheckmarkOutline,
+  sparklesOutline,
   trashOutline,
 } from 'ionicons/icons';
 import { AuthService } from '../../../auth/application/auth.service';
-import { StoredUser, UserRole } from '../../../auth/domain/auth.roles';
+import { ROLES_WITH_SEDE, StoredUser, UserRole } from '../../../auth/domain/auth.roles';
 import { SedeService } from '../../../../features/locations/application/sede.service';
 
 type FormMode = 'add' | 'edit' | null;
@@ -30,7 +31,7 @@ interface UserForm {
   email: string;
   password: string;
   role: UserRole;
-  /** Solo 'staff' */
+  /** Solo roles que trabajan en una sede (staff y aseo) */
   sedeId: number | null;
 }
 
@@ -53,7 +54,12 @@ export class EditPerfilesComponent {
   readonly isOpen = input(false);
   readonly closed = output<void>();
 
-  readonly roles: UserRole[] = ['admin', 'staff'];
+  readonly roles: UserRole[] = ['admin', 'staff', 'aseo'];
+  private readonly roleOptionLabels: Record<UserRole, string> = {
+    admin: 'Administrador',
+    staff: 'Personal (Staff)',
+    aseo: 'Personal de aseo',
+  };
 
   readonly formMode = signal<FormMode>(null);
   readonly editingId = signal<number | null>(null);
@@ -74,10 +80,11 @@ export class EditPerfilesComponent {
   readonly sedes = this.sedeService.sedes;
 
   /** True cuando el rol seleccionado requiere elegir sede */
-  readonly requiresSede = computed(() => this.form().role === 'staff');
+  readonly requiresSede = computed(() => ROLES_WITH_SEDE.includes(this.form().role));
 
   readonly admins = computed(() => this.auth.users().filter((u) => u.role === 'admin'));
   readonly staff = computed(() => this.auth.users().filter((u) => u.role === 'staff'));
+  readonly cleaningStaff = computed(() => this.auth.users().filter((u) => u.role === 'aseo'));
 
   constructor() {
     addIcons({
@@ -94,6 +101,7 @@ export class EditPerfilesComponent {
       personAddOutline,
       personOutline,
       shieldCheckmarkOutline,
+      sparklesOutline,
       trashOutline,
     });
 
@@ -164,12 +172,12 @@ export class EditPerfilesComponent {
       this.errorMessage.set('La contraseña debe tener al menos 6 caracteres.');
       return;
     }
-    if (f.role === 'staff' && !f.sedeId) {
-      this.errorMessage.set('Debes asignar una sede al personal (staff).');
+    if (ROLES_WITH_SEDE.includes(f.role) && !f.sedeId) {
+      this.errorMessage.set('Debes asignar una sede a este usuario.');
       return;
     }
 
-    const sedeId = f.role === 'staff' ? f.sedeId ?? undefined : undefined;
+    const sedeId = ROLES_WITH_SEDE.includes(f.role) ? f.sedeId ?? undefined : undefined;
 
     this.errorMessage.set('');
     this.saving.set(true);
@@ -238,6 +246,10 @@ export class EditPerfilesComponent {
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
+
+  roleOptionLabel(role: UserRole): string {
+    return this.roleOptionLabels[role];
+  }
 
   isCurrentUser(id: number): boolean {
     return this.auth.currentUser()?.id === id;

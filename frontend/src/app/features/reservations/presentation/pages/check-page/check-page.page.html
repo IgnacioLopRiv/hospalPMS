@@ -698,9 +698,15 @@
 
           <!-- Acciones rápidas -->
           <div class="card-actions">
-            <button type="button" class="btn-action-primary checkin" (click)="realizarCheckIn(item)">
+            @let checkInBlocked = checkInBlockedReason(item.roomNumber);
+            <button
+              type="button"
+              class="btn-action-primary checkin"
+              [disabled]="!!checkInBlocked"
+              [title]="checkInBlocked ? 'No disponible: ' + checkInBlocked : 'Registrar check-in'"
+              (click)="realizarCheckIn(item)">
               <ion-icon name="log-in-outline"></ion-icon>
-              <span>{{ isRoomOcupada(item.roomNumber) ? 'Check-in Realizado' : 'Registrar Check-in' }}</span>
+              <span>{{ isRoomEnAseo(item.roomNumber) ? 'Habitación en aseo' : isRoomOcupada(item.roomNumber) ? 'Habitación ocupada' : 'Registrar Check-in' }}</span>
             </button>
             <button type="button" class="btn-action-secondary">
               <ion-icon name="call-outline"></ion-icon>

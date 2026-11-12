@@ -156,23 +156,34 @@ describe('ReservasPage', () => {
     expect(component.reservationCount()).toBe(0);
   });
 
-  it('shows the reservation bar from arrival through departure day', async () => {
+  const barOf = (reservationId: number) =>
+    [...component.roomBars().values()].flat().find((bar) => bar.reservation.id === reservationId)!;
+  const percentOfView = (days: number, time: string) => {
+    const [hours, minutes] = time.split(':').map(Number);
+    return ((days * 24 * 60 + hours * 60 + minutes) / (14 * 24 * 60)) * 100;
+  };
+
+  it('draws the bar proportional to the arrival and departure times', async () => {
     const reservation = await addReservation(1, 3);
     fixture.detectChanges();
     const block = component.reservations().find((entry) => entry.id === reservation.id_reserva)!;
+    const bar = barOf(reservation.id_reserva);
 
-    expect(component.getGridColumnStart(block)).toBe(2);
-    expect(component.getGridColumnSpan(block)).toBe(3);
+    const start = percentOfView(1, block.arrivalTime);
+    expect(bar.leftPercent).toBeCloseTo(start, 5);
+    expect(bar.widthPercent).toBeCloseTo(percentOfView(3, block.departureTime) - start, 5);
+    expect(bar.lane).toBe(0);
   });
 
-  it('keeps the checkout day visible when it is the first day of the calendar', async () => {
+  it('keeps the part of a stay that ends on the first visible day, up to its checkout time', async () => {
     const reservation = await addReservation(-1, 0);
     fixture.detectChanges();
     const block = component.reservations().find((entry) => entry.id === reservation.id_reserva)!;
+    const bar = barOf(reservation.id_reserva);
 
     expect(component.visibleReservations()).toContain(block);
-    expect(component.getGridColumnStart(block)).toBe(1);
-    expect(component.getGridColumnSpan(block)).toBe(1);
+    expect(bar.leftPercent).toBe(0);
+    expect(bar.widthPercent).toBeCloseTo(percentOfView(0, block.departureTime), 5);
   });
 
   it('assigns different colors to managed typologies', async () => {

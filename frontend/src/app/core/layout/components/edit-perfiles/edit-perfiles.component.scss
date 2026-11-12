@@ -514,6 +514,10 @@ ion-modal.edit-perfiles-banner {
   &.staff {
     background: $purple;
   }
+
+  &.aseo {
+    background: #0d9488;
+  }
 }
 
 .user-info {
@@ -718,4 +722,4 @@ ion-modal.edit-perfiles-banner {
     font-size: 0.8rem;
     flex-shrink: 0;
   }
-}
+}

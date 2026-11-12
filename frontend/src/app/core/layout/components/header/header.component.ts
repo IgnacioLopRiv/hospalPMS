@@ -12,6 +12,7 @@ import {
 } from 'ionicons/icons';
 
 import { SedeService } from '../../../../features/locations/application/sede.service';
+import { AuthService } from '../../../auth/application/auth.service';
 import { ConfigOptionsComponent } from '../../../../features/locations/presentation/config-options/config-options.component';
 import { EditPerfilesComponent } from '../edit-perfiles/edit-perfiles.component';
 import { ClockComponent } from '../../../../shared/presentation/clock/clock.component';
@@ -34,6 +35,10 @@ import { PosConfigModalComponent } from '../../../../features/payments-pos/prese
 export class HeaderComponent {
   private readonly sedeService = inject(SedeService);
   private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
+
+  /** El personal de aseo trabaja solo en su sede: ve el nombre pero no puede cambiarla. */
+  readonly canChangeSede = this.auth.canChangeSede;
 
   readonly configOptionsOpen = signal(false);
   readonly sedeOptionsOpen = signal(false);
@@ -62,6 +67,7 @@ export class HeaderComponent {
   }
 
   toggleSedeOptions(): void {
+    if (!this.canChangeSede()) return;
     this.sedeOptionsOpen.update((open) => !open);
   }
 

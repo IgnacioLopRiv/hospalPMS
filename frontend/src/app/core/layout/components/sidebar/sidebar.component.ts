@@ -16,6 +16,7 @@ import {
 } from 'ionicons/icons';
 
 import { AuthService } from '../../../auth/application/auth.service';
+import { ROLE_LABELS } from '../../../auth/domain/auth.roles';
 import { SedeService } from '../../../../features/locations/application/sede.service';
 
 @Component({
@@ -38,6 +39,9 @@ export class SidebarComponent {
 
   readonly currentUser = this.auth.currentUser;
   readonly canViewReports = this.auth.canViewReports;
+  readonly canUseFrontDesk = this.auth.canUseFrontDesk;
+  readonly canViewRooms = this.auth.canViewRooms;
+  readonly canViewInventory = this.auth.canViewInventory;
 
   constructor() {
     addIcons({
@@ -66,7 +70,7 @@ export class SidebarComponent {
 
   getUserRoleLabel(): string {
     const user = this.currentUser();
-    return user?.role === 'admin' ? 'Administrador' : 'Personal';
+    return user ? ROLE_LABELS[user.role] ?? 'Personal' : '';
   }
 
   async confirmLogout(): Promise<void> {

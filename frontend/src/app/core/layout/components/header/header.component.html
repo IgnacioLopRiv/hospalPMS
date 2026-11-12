@@ -10,12 +10,15 @@
     </div>
 
     <button type="button" class="sede-chip-info" (click)="toggleSedeOptions()"
-      [attr.aria-expanded]="sedeOptionsOpen()"
-      aria-haspopup="menu"
-      [attr.aria-label]="sedeInfoLabel() + '. Cambiar sede'">
+      [attr.aria-expanded]="canChangeSede() ? sedeOptionsOpen() : null"
+      [attr.aria-haspopup]="canChangeSede() ? 'menu' : null"
+      [attr.aria-label]="sedeInfoLabel() + (canChangeSede() ? '. Cambiar sede' : '')"
+      [style.cursor]="canChangeSede() ? null : 'default'">
       <ion-icon name="business-outline" class="sede-icon"></ion-icon>
       <span class="sede-name">{{ sedeInfoLabel() }}</span>
-      <ion-icon name="chevron-down-outline" class="sede-chevron" aria-hidden="true"></ion-icon>
+      @if (canChangeSede()) {
+        <ion-icon name="chevron-down-outline" class="sede-chevron" aria-hidden="true"></ion-icon>
+      }
     </button>
 
     <!-- Reloj y fecha en vivo -->

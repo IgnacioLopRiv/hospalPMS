@@ -100,6 +100,27 @@ describe('EditPerfilesComponent', () => {
     expect(component.errorMessage()).toBe('El nombre es obligatorio.');
   });
 
+  it('crea personal de aseo exigiendo una sede asignada', async () => {
+    const auth = TestBed.inject(AuthService);
+    const addUser = spyOn(auth, 'addUser').and.resolveTo();
+    component.openAdd();
+    component.patchForm('name', 'Rosa Limpieza');
+    component.patchForm('email', 'rosa@hotel.cl');
+    component.patchForm('password', 'secreto123');
+    component.patchForm('role', 'aseo');
+
+    expect(component.requiresSede()).toBeTrue();
+    await component.saveForm();
+    expect(component.errorMessage()).toBe('Debes asignar una sede a este usuario.');
+    expect(addUser).not.toHaveBeenCalled();
+
+    component.patchForm('sedeId', '2');
+    await component.saveForm();
+    expect(addUser).toHaveBeenCalledWith(jasmine.objectContaining({ role: 'aseo', sedeId: 2 }));
+    expect(component.roles).toContain('aseo');
+    expect(component.roleOptionLabel('aseo')).toBe('Personal de aseo');
+  });
+
   it('creates an admin user sending the admin role', async () => {
     const auth = TestBed.inject(AuthService);
     const addUser = spyOn(auth, 'addUser').and.resolveTo();
