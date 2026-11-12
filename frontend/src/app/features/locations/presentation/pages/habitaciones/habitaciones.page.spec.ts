@@ -100,7 +100,18 @@ describe('HabitacionesPage', () => {
     fixture.detectChanges();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    // El gestor de tipologías es un ion-modal que Ionic saca del componente al abrirse:
+    // si no se cierra, queda en el documento y le roba el foco a los tests siguientes.
+    const modals = Array.from(document.querySelectorAll('ion-modal'));
+    await Promise.all(
+      modals.map((modal) =>
+        (modal as HTMLElement & { dismiss?: () => Promise<boolean> }).dismiss?.()
+      )
+    );
+    document.querySelectorAll('ion-modal').forEach((modal) => modal.remove());
+    (document.activeElement as HTMLElement | null)?.blur();
+    document.body.classList.remove('backdrop-no-scroll', 'modal-open', 'entry-modal-open');
     localStorage.removeItem('hospal.sedes');
     localStorage.removeItem('hospal.selectedSede');
     localStorage.removeItem('hospal_fotos_habitaciones');
