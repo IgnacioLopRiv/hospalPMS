@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal, OnInit, OnDestroy, DestroyRef } from '@angular/core';
+import { Component, computed, inject, signal, OnDestroy, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonIcon } from '@ionic/angular/standalone';
@@ -29,6 +29,7 @@ import { FotoHabitacionService } from '../../../application/foto-habitacion.serv
 import { FotoHabitacion } from '../../../domain/foto-habitacion.model';
 import { AuthService } from '../../../../../core/auth/application/auth.service';
 import { useEffect } from '../../../../../shared/presentation/clock/clock.component';
+import { getApiErrorMessage } from '../../../../../shared/domain/api-error-message';
 import {
   AsignacionInventarioHabitacion,
   InsumoInventario,
@@ -49,7 +50,7 @@ interface ArticuloInventarioHabitacion {
   standalone: true,
   imports: [CommonModule, FormsModule, IonIcon, EditTipologiasComponent, ModalPortalDirective],
 })
-export class HabitacionesPage implements OnInit, OnDestroy {
+export class HabitacionesPage implements OnDestroy {
   private photoNoticeTimeout: ReturnType<typeof setTimeout> | null = null;
   private readonly sedeService = inject(SedeService);
   private readonly authService = inject(AuthService);
@@ -112,6 +113,10 @@ export class HabitacionesPage implements OnInit, OnDestroy {
   // Señal de tick en vivo para actualizar tiempos relativos de aseo
   readonly liveTick = signal<number>(Date.now());
 
+  // Botón "Terminar aseo" (disponible para todos los roles)
+  readonly finishingCleaningRoomId = signal<number | null>(null);
+  readonly cleaningError = signal<{ roomId: number; message: string } | null>(null);
+
   // Métricas de estado en tiempo real
   readonly totalLibres = computed(() =>
     this.habitaciones().filter((h) => (h.estado || 'libre') === 'libre').length
@@ -145,22 +150,15 @@ export class HabitacionesPage implements OnInit, OnDestroy {
       pricetagsOutline,
     });
 
-    // Hook reactivo useEffect con setInterval para revisar estados y auto-liberar aseo en vivo
+    // Tick en vivo para el tiempo transcurrido de aseo. El aseo solo termina manualmente
+    // con el botón "Terminar aseo"; no hay liberación automática.
     useEffect(() => {
-      const interval = setInterval(() => {
-        this.liveTick.set(Date.now());
-        // Auto-libera habitaciones en aseo luego de 30 minutos de limpieza
-        this.sedeService.autoLiberarAseo(30);
-      }, 5000);
+      const interval = setInterval(() => this.liveTick.set(Date.now()), 5000);
 
       return () => {
         clearInterval(interval);
       };
     }, this.destroyRef);
-  }
-
-  ngOnInit(): void {
-    this.sedeService.autoLiberarAseo(30);
   }
 
   ngOnDestroy(): void {
@@ -730,6 +728,26 @@ export class HabitacionesPage implements OnInit, OnDestroy {
       case 'libre':
       default:
         return 'Libre';
+    }
+  }
+
+  /** Libera una habitación en aseo. No abre el editor de la tarjeta (el clic no se propaga). */
+  async terminarAseo(habitacion: Habitacion, event: Event): Promise<void> {
+    event.stopPropagation();
+    if (habitacion.estado !== 'en aseo' || this.finishingCleaningRoomId() !== null) {
+      return;
+    }
+    this.cleaningError.set(null);
+    this.finishingCleaningRoomId.set(habitacion.id);
+    try {
+      await this.sedeService.terminarAseo(habitacion.id);
+    } catch (error) {
+      this.cleaningError.set({
+        roomId: habitacion.id,
+        message: getApiErrorMessage(error, 'No se pudo terminar el aseo. Inténtalo nuevamente.'),
+      });
+    } finally {
+      this.finishingCleaningRoomId.set(null);
     }
   }
 

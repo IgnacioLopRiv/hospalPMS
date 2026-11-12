@@ -143,6 +143,25 @@
                 }
               </dl>
             </div>
+
+            <!-- Acción para todos los roles: libera la habitación cuando terminó la limpieza -->
+            @if (habitacion.estado === 'en aseo') {
+              <footer class="room-card-footer">
+                <button
+                  type="button"
+                  class="btn-finish-cleaning"
+                  [disabled]="finishingCleaningRoomId() === habitacion.id"
+                  [attr.aria-label]="'Terminar aseo de la habitación ' + habitacion.numero"
+                  (click)="terminarAseo(habitacion, $event)"
+                  (keydown)="$event.stopPropagation()">
+                  <ion-icon name="checkmark-circle-outline"></ion-icon>
+                  <span>{{ finishingCleaningRoomId() === habitacion.id ? 'Liberando…' : 'Terminar aseo' }}</span>
+                </button>
+                @if (cleaningError()?.roomId === habitacion.id) {
+                  <p class="room-card-error" role="alert">{{ cleaningError()?.message }}</p>
+                }
+              </footer>
+            }
           </article>
         }
       </section>

@@ -2,9 +2,19 @@ import { effect, Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
 import { Huesped, Habitacion, Tipologia, Reserva, GuestCardView, GuestReservationDetail, MetodoPagoReserva, MetodoPagoTarjeta } from '../../../shared/domain/hostal.model';
+import { getApiErrorMessage } from '../../../shared/domain/api-error-message';
 import { SedeService } from '../../locations/application/sede.service';
 import { CreateHuesped, Huesped as HuespedDomain, HuespedRepository } from '../domain/huesped.repository';
 import { CreateReserva, ReservasRepository, UpdateReserva } from '../../reservations/domain/reservas.repository';
+import {
+  DEFAULT_ARRIVAL_TIME,
+  DEFAULT_DEPARTURE_TIME,
+  isRoomReadyForGuest,
+  isValidStayRange,
+  StayTimeDefaults,
+  stayInterval,
+  staysConflictWithMargin,
+} from '../../reservations/domain/stay-schedule';
 
 export interface RegisterEntryInput {
   guestId?: number;
@@ -27,14 +37,6 @@ export interface RegisterEntryInput {
 
 const isCardMethod = (method?: string): method is MetodoPagoTarjeta =>
   method === 'debito' || method === 'credito';
-
-/** Mensaje legible de un error: el que envía el backend (HttpErrorResponse) o el de un Error. */
-export function getApiErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof Error) return error.message;
-  const apiMessage = (error as { error?: { message?: unknown } } | null)?.error?.message;
-  if (Array.isArray(apiMessage)) return apiMessage.join(' ');
-  return typeof apiMessage === 'string' && apiMessage ? apiMessage : fallback;
-}
 
 /**
  * La reserva falló después de crear al huésped nuevo. El huésped ya existe en el
@@ -333,7 +335,7 @@ export class HostalService {
       const room = rooms.find((item) => item.id_habitacion === reservation.id_habitacion);
       if (!guest || !room || !this.isValidDate(reservation.fecha_llegada) ||
         !this.isValidDate(reservation.fecha_salida) ||
-        reservation.fecha_llegada >= reservation.fecha_salida) {
+        reservation.fecha_llegada > reservation.fecha_salida) {
         return;
       }
 
@@ -462,15 +464,14 @@ export class HostalService {
     if (!Number.isInteger(changes.cantidad_personas) || (changes.cantidad_personas ?? 0) < 1) {
       throw new Error('La cantidad de personas debe ser al menos 1.');
     }
-    if (!this.isValidDate(changes.fecha_llegada) || !this.isValidDate(changes.fecha_salida) ||
-      changes.fecha_llegada >= changes.fecha_salida) {
-      throw new Error('La fecha de salida debe ser posterior a la fecha de llegada.');
-    }
     if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(changes.hora_llegada ?? '')) {
       throw new Error('Ingresa un horario de llegada válido.');
     }
     if (changes.hora_salida && !/^([01]\d|2[0-3]):[0-5]\d$/.test(changes.hora_salida)) {
       throw new Error('Ingresa un horario de salida válido.');
+    }
+    if (!this.isValidStay(changes.fecha_llegada, changes.hora_llegada, changes.fecha_salida, changes.hora_salida)) {
+      throw new Error('La salida debe ser posterior a la llegada (fecha y hora).');
     }
 
     const rooms = this.getManagedRooms();
@@ -479,7 +480,8 @@ export class HostalService {
       changes.fecha_llegada,
       changes.fecha_salida,
       undefined,
-      reservationId
+      reservationId,
+      { arrivalTime: changes.hora_llegada, departureTime: changes.hora_salida },
     ).some((available) => available.id_habitacion === changes.id_habitacion)) {
       throw new Error('La habitación seleccionada no está disponible para esas fechas.');
     }
@@ -563,7 +565,22 @@ export class HostalService {
       throw new Error('Esta reserva no está pendiente de check-out.');
     }
 
-    return this.persistReservationUpdate(reservations, { ...reservation, estado_reserva: 'FINALIZADA' });
+    // El check-out se puede hacer a cualquier hora: se guarda la salida real (reloj en vivo),
+    // así una salida anticipada libera el tiempo que no se usó.
+    const now = new Date();
+    const actualDeparture = {
+      fecha_salida: this.localDateKey(now),
+      hora_salida: `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
+    };
+    const leavesAfterArrival = this.isValidStay(
+      reservation.fecha_llegada, reservation.hora_llegada,
+      actualDeparture.fecha_salida, actualDeparture.hora_salida,
+    );
+    return this.persistReservationUpdate(reservations, {
+      ...reservation,
+      estado_reserva: 'FINALIZADA',
+      ...(leavesAfterArrival ? actualDeparture : {}),
+    });
   }
 
   /**
@@ -614,32 +631,64 @@ export class HostalService {
     return normalized;
   }
 
+  /**
+   * Habitaciones disponibles para una estadía (misma regla que el backend):
+   * - no se cruzan por fecha + hora con otra reserva activa de la habitación,
+   *   incluido el margen de extensión de 2 días tras cada salida;
+   * - para una reserva nueva que empieza hoy, la habitación debe estar libre (no en aseo ni ocupada).
+   */
   getAvailableRooms(
     arrivalDate: string,
     departureDate: string,
     personCount?: number,
-    excludeReservationId?: number
+    excludeReservationId?: number,
+    times: { arrivalTime?: string; departureTime?: string } = {},
   ): Habitacion[] {
-    if (!this.isValidDate(arrivalDate) || !this.isValidDate(departureDate) || arrivalDate >= departureDate) {
+    if (!this.isValidStay(arrivalDate, times.arrivalTime, departureDate, times.departureTime)) {
       return [];
     }
 
+    const defaults = this.stayTimeDefaults();
+    const stay = stayInterval(arrivalDate, times.arrivalTime, departureDate, times.departureTime, defaults);
+    const startsToday = arrivalDate === this.localDateKey(new Date());
     const tipologias = this.getManagedTypologies();
     const habitacionesCandidatas = this.getManagedRooms().filter((habitacion) =>
-      personCount === undefined ||
-      (tipologias.find((tipologia) => tipologia.id_tipologia === habitacion.id_tipologia)?.capacidad ?? 0) >= personCount
+      (personCount === undefined ||
+        (tipologias.find((tipologia) => tipologia.id_tipologia === habitacion.id_tipologia)?.capacidad ?? 0) >= personCount) &&
+      !(startsToday && excludeReservationId === undefined && !isRoomReadyForGuest(habitacion.estado))
     );
     const reservas = this.getReservations();
 
-      return habitacionesCandidatas.filter((habitacion) =>
+    return habitacionesCandidatas.filter((habitacion) =>
       !reservas.some((reserva) =>
         reserva.id_reserva !== excludeReservationId &&
         !['FINALIZADA', 'CANCELADA'].includes(reserva.estado_reserva) &&
         reserva.id_habitacion === habitacion.id_habitacion &&
-        arrivalDate < reserva.fecha_salida &&
-        departureDate > reserva.fecha_llegada
+        staysConflictWithMargin(stay, stayInterval(
+          reserva.fecha_llegada, reserva.hora_llegada, reserva.fecha_salida, reserva.hora_salida, defaults,
+        ))
       )
     );
+  }
+
+  private stayTimeDefaults(): StayTimeDefaults {
+    const sede = this.sedeService.selectedSede();
+    const valid = (time?: string) => (time && /^([01]\d|2[0-3]):[0-5]\d$/.test(time) ? time : undefined);
+    return {
+      arrivalTime: valid(sede?.horaCheckIn) ?? DEFAULT_ARRIVAL_TIME,
+      departureTime: valid(sede?.horaCheckOut) ?? DEFAULT_DEPARTURE_TIME,
+    };
+  }
+
+  /** Fechas válidas y salida posterior a la llegada por fecha y hora (permite el mismo día). */
+  private isValidStay(
+    arrivalDate: string,
+    arrivalTime: string | undefined,
+    departureDate: string,
+    departureTime: string | undefined,
+  ): boolean {
+    return this.isValidDate(arrivalDate) && this.isValidDate(departureDate) &&
+      isValidStayRange(stayInterval(arrivalDate, arrivalTime, departureDate, departureTime, this.stayTimeDefaults()));
   }
 
   async registerEntry(input: RegisterEntryInput): Promise<{ guest: Huesped; reservation: Reserva }> {
@@ -662,12 +711,11 @@ export class HostalService {
     )) {
       throw new Error('Los datos del pago no son válidos.');
     }
-    if (!this.isValidDate(input.arrivalDate) || !this.isValidDate(input.departureDate) ||
-      input.arrivalDate >= input.departureDate) {
-      throw new Error('La fecha de salida debe ser posterior a la fecha de llegada.');
-    }
     if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(input.arrivalTime)) {
       throw new Error('Ingresa un horario de llegada válido.');
+    }
+    if (!this.isValidStay(input.arrivalDate, input.arrivalTime, input.departureDate, input.departureTime)) {
+      throw new Error('La salida debe ser posterior a la llegada (fecha y hora).');
     }
 
     const guests = this.getGuests();
@@ -710,8 +758,10 @@ export class HostalService {
     }
 
     const room = rooms.find((item) => item.id_habitacion === input.roomId);
-    if (!room || !this.getAvailableRooms(input.arrivalDate, input.departureDate)
-      .some((available) => available.id_habitacion === input.roomId)) {
+    if (!room || !this.getAvailableRooms(input.arrivalDate, input.departureDate, undefined, undefined, {
+      arrivalTime: input.arrivalTime,
+      departureTime: input.departureTime,
+    }).some((available) => available.id_habitacion === input.roomId)) {
       throw new Error('La habitación seleccionada no está disponible para esas fechas.');
     }
     const roomCapacity = tipologias.find((tipologia) => tipologia.id_tipologia === room.id_tipologia)?.capacidad ?? 0;

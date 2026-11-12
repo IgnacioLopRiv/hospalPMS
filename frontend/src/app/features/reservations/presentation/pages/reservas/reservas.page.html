@@ -189,12 +189,14 @@
                     <div class="grid-cell" [class.current-cell]="day.isCurrent" [class.selected-cell]="day.dateKey === selectedDate()"></div>
                   }
                 </div>
-                <div class="reservations-layer">
-                  @for (reservation of getReservationsForRoom(room.numero); track reservation.id) {
+                <div class="reservations-layer" [style.--lanes]="getRoomLaneCount(room.numero)">
+                  @for (bar of getRoomBars(room.numero); track bar.reservation.id) {
+                    @let reservation = bar.reservation;
                     <div
                       class="reservation-card"
-                      [style.grid-column-start]="getGridColumnStart(reservation)"
-                      [style.grid-column-end]="'span ' + getGridColumnSpan(reservation)"
+                      [style.left.%]="bar.leftPercent"
+                      [style.width.%]="bar.widthPercent"
+                      [style.--lane]="bar.lane"
                       [style.background-color]="category.theme.background"
                       [style.border-color]="category.theme.border"
                       [style.color]="category.theme.text"

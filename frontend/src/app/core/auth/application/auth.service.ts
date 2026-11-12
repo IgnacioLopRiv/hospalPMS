@@ -5,6 +5,7 @@ import { environment } from '../../../../environments/environment';
 import {
   AuthUser,
   Permission,
+  ROLE_HOME_ROUTE,
   ROLE_PERMISSIONS,
   StoredUser,
 } from '../domain/auth.roles';
@@ -51,6 +52,10 @@ export class AuthService {
   readonly canEditSede = computed(() => this.can('editSede'));
   readonly canViewReports = computed(() => this.can('viewReports'));
   readonly canManageUsers = computed(() => this.can('manageUsers'));
+  readonly canUseFrontDesk = computed(() => this.can('frontDesk'));
+  readonly canChangeSede = computed(() => this.can('changeSede'));
+  readonly canViewRooms = computed(() => this.can('viewRooms'));
+  readonly canViewInventory = computed(() => this.can('viewInventory'));
 
   constructor() {
     this.ensureUsers();
@@ -61,6 +66,12 @@ export class AuthService {
     const user = this.currentUser();
     if (!user) return false;
     return ROLE_PERMISSIONS[user.role]?.includes(permission) ?? false;
+  }
+
+  /** Página de inicio del usuario activo según su rol. */
+  homeRoute(): string {
+    const user = this.currentUser();
+    return user ? ROLE_HOME_ROUTE[user.role] ?? '/recepcion' : '/home';
   }
 
   // ── Auth ──────────────────────────────────────────────────────────────────

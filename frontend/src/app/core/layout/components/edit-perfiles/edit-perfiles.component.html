@@ -120,7 +120,7 @@
                   <select (change)="patchForm('role', $any($event.target).value)">
                     @for (rol of roles; track rol) {
                       <option [value]="rol" [selected]="rol === form().role">
-                        {{ rol === 'admin' ? 'Administrador' : 'Personal (Staff)' }}
+                        {{ roleOptionLabel(rol) }}
                       </option>
                     }
                   </select>
@@ -129,7 +129,7 @@
 
               @if (requiresSede()) {
                 <label class="form-field full-width">
-                  <span class="field-label">Sede asignada (Personal / Staff)</span>
+                  <span class="field-label">Sede asignada</span>
                   <div class="field-input-box">
                     <ion-icon name="business-outline" class="field-icon"></ion-icon>
                     <select (change)="patchForm('sedeId', $any($event.target).value)">
@@ -245,11 +245,32 @@
           @if (staff().length === 0) {
             <p class="empty-state">No hay personal registrado.</p>
           } @else {
+            <ng-container *ngTemplateOutlet="userList; context: { $implicit: staff(), avatarClass: 'staff' }"></ng-container>
+          }
+        </section>
+
+        <!-- ── Sección Aseo ── -->
+        <section class="role-section" aria-label="Personal de aseo">
+          <div class="role-heading">
+            <ion-icon name="sparkles-outline"></ion-icon>
+            <span>Personal de aseo</span>
+            <span class="role-count">{{ cleaningStaff().length }}</span>
+          </div>
+
+          @if (cleaningStaff().length === 0) {
+            <p class="empty-state">No hay personal de aseo registrado.</p>
+          } @else {
+            <ng-container *ngTemplateOutlet="userList; context: { $implicit: cleaningStaff(), avatarClass: 'aseo' }"></ng-container>
+          }
+        </section>
+
+        <!-- Lista de usuarios con sede (staff y aseo) -->
+        <ng-template #userList let-users let-avatarClass="avatarClass">
             <ul class="user-list" role="list">
-              @for (user of staff(); track user.id) {
+              @for (user of users; track user.id) {
                 <li class="user-card" [class.is-current]="isCurrentUser(user.id)" role="listitem">
 
-                  <div class="user-avatar staff">{{ user.name.charAt(0).toUpperCase() }}</div>
+                  <div class="user-avatar" [ngClass]="avatarClass">{{ user.name.charAt(0).toUpperCase() }}</div>
 
                   <div class="user-info">
                     <strong class="user-name">
@@ -300,8 +321,7 @@
                 </li>
               }
             </ul>
-          }
-        </section>
+        </ng-template>
 
       </div>
     </div>

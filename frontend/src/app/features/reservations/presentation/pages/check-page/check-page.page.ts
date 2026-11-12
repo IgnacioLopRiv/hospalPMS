@@ -29,10 +29,11 @@ import {
 import { SedeService } from '../../../../locations/application/sede.service';
 import {
   EntryReservationError,
-  getApiErrorMessage,
   HostalService,
   ReservationCalendarEntry,
 } from '../../../../huespedes/application/hostal.service';
+import { getApiErrorMessage } from '../../../../../shared/domain/api-error-message';
+import { isRoomReadyForGuest, isValidStayRange, stayInterval } from '../../../domain/stay-schedule';
 import { GuestCardView, Huesped, Habitacion, MetodoPagoReserva, MetodoPagoTarjeta, SedeHabitacion, SedeTipologia } from '../../../../../shared/domain/hostal.model';
 import { PosCobroService, PosDisponible } from '../../../../payments-pos/application/pos-cobro.service';
 import { PosCobroEstadoComponent } from '../../../../payments-pos/presentation/pos-cobro-estado/pos-cobro-estado.component';
@@ -372,9 +373,8 @@ export class CheckPagePage implements OnInit, OnDestroy {
     const checkIns = entries.filter((entry) =>
       entry.arrivalDate === today && ['CONFIRMADA', 'CHECK-IN HOY'].includes(entry.status)
     );
-    const checkOuts = entries.filter((entry) =>
-      entry.departureDate === today && ['HOSPEDADO', 'CHECK-OUT HOY'].includes(entry.status)
-    );
+    // Cualquier huésped hospedado puede hacer check-out (también antes de su fecha de salida).
+    const checkOuts = entries.filter((entry) => ['HOSPEDADO', 'CHECK-OUT HOY'].includes(entry.status));
 
     this.pendingCheckIns.splice(
       0,
@@ -654,6 +654,16 @@ export class CheckPagePage implements OnInit, OnDestroy {
       });
   }
 
+  /** La salida debe ser posterior a la llegada por fecha y hora (se permiten estadías del mismo día). */
+  isEntryStayValid(): boolean {
+    return isValidStayRange(stayInterval(
+      this.entryForm.arrivalDate,
+      this.entryForm.arrivalTime,
+      this.entryForm.departureDate,
+      this.entryForm.departureTime || '12:00',
+    ));
+  }
+
   /** Fecha mínima de llegada (hoy, en hora local); el backend rechaza fechas pasadas. */
   get minArrivalDate(): string {
     return this.localDateString(new Date());
@@ -664,7 +674,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
       this.isValidReservationDate(this.entryForm.arrivalDate) &&
       this.entryForm.arrivalDate >= this.minArrivalDate &&
       this.isValidReservationDate(this.entryForm.departureDate) &&
-      this.entryForm.arrivalDate < this.entryForm.departureDate &&
+      this.isEntryStayValid() &&
       Number.isInteger(this.entryForm.personCount) &&
       this.entryForm.personCount >= 1 &&
       /^([01]\d|2[0-3]):[0-5]\d$/.test(this.entryForm.arrivalTime) &&
@@ -678,7 +688,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
     return form.valid === true && guestIsValid &&
       this.isValidReservationDate(this.entryForm.arrivalDate) &&
       this.isValidReservationDate(this.entryForm.departureDate) &&
-      this.entryForm.arrivalDate < this.entryForm.departureDate &&
+      this.isEntryStayValid() &&
       Number.isInteger(this.entryForm.personCount) &&
       this.entryForm.personCount >= 1 &&
       /^([01]\d|2[0-3]):[0-5]\d$/.test(this.entryForm.arrivalTime) &&
@@ -690,7 +700,9 @@ export class CheckPagePage implements OnInit, OnDestroy {
     this.availableRooms = this.hostalService.getAvailableRooms(
       this.entryForm.arrivalDate,
       this.entryForm.departureDate,
-      this.entryForm.personCount
+      this.entryForm.personCount,
+      undefined,
+      { arrivalTime: this.entryForm.arrivalTime, departureTime: this.entryForm.departureTime || '12:00' },
     );
     this.updateRoomNightlyPrices();
     this.entryForm.roomId = '';
@@ -772,6 +784,11 @@ export class CheckPagePage implements OnInit, OnDestroy {
 
   realizarCheckIn(item: CheckItemPlaceholder): void {
     this.movementError = '';
+    const blocked = this.checkInBlockedReason(item.roomNumber);
+    if (blocked) {
+      this.movementError = `No se puede hacer el check-in: ${blocked}. Debe quedar libre antes de recibir al huésped.`;
+      return;
+    }
     this.checkInPaymentItem = item;
     this.checkInPaymentMethod = '';
     this.checkInPaymentError = '';
@@ -843,6 +860,15 @@ export class CheckPagePage implements OnInit, OnDestroy {
   isRoomOcupada(roomNumber: string): boolean {
     const room = this.sedeService.habitaciones().find((h) => String(h.numero).trim() === String(roomNumber).trim());
     return room?.estado === 'ocupada';
+  }
+
+  /** Motivo por el que la habitación no puede recibir un check-in, o null si está libre. */
+  checkInBlockedReason(roomNumber: string): string | null {
+    const room = this.sedeService.habitaciones().find((h) => String(h.numero).trim() === String(roomNumber).trim());
+    if (isRoomReadyForGuest(room?.estado)) return null;
+    return room?.estado === 'en aseo'
+      ? `la habitación ${roomNumber} está en aseo`
+      : `la habitación ${roomNumber} está ocupada`;
   }
 
   isRoomEnAseo(roomNumber: string): boolean {
@@ -1053,10 +1079,11 @@ export class CheckPagePage implements OnInit, OnDestroy {
     };
   }
 
+  /** Noches cobradas; una estadía del mismo día (pocas horas) se cobra como 1 noche mínima. */
   private getNights(arrivalDate: string, departureDate: string): number {
     const arrival = Date.parse(`${arrivalDate}T00:00:00Z`);
     const departure = Date.parse(`${departureDate}T00:00:00Z`);
-    return Math.round((departure - arrival) / (24 * 60 * 60 * 1000));
+    return Math.max(1, Math.round((departure - arrival) / (24 * 60 * 60 * 1000)));
   }
 
   private createReservationQuote(): ReservationQuote {

@@ -11,6 +11,7 @@ import {
   mailOutline,
 } from 'ionicons/icons';
 import { AuthService } from '../../../application/auth.service';
+import { ROLES_WITH_SEDE } from '../../../domain/auth.roles';
 import { SedeService } from '../../../../../features/locations/application/sede.service';
 
 @Component({
@@ -62,18 +63,19 @@ export class HomePage {
       return;
     }
 
-    // Si el usuario es staff con sede asignada, ir directo a la sede
+    // Si el usuario trabaja en una sede asignada (staff o aseo), ir directo a ella
     const loggedUser = this.auth.currentUser();
-    if (loggedUser?.role === 'staff' && loggedUser.sedeId) {
+    if (loggedUser && ROLES_WITH_SEDE.includes(loggedUser.role) && loggedUser.sedeId) {
       const sede = this.sedeService.sedes().find((s) => s.id === loggedUser.sedeId);
       if (sede) {
         this.sedeService.selectSede(sede);
-        this.router.navigate(['/recepcion']);
+        this.router.navigate([this.auth.homeRoute()]);
         return;
       }
     }
 
-    this.router.navigate(['/sedes']);
+    // Aseo sin sede asignada no puede elegirla: igual entra a su página de inicio
+    this.router.navigate([this.auth.can('changeSede') ? '/sedes' : this.auth.homeRoute()]);
   }
 
   goRecover(): void {

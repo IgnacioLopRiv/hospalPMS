@@ -14,7 +14,7 @@ export const routes: Routes = [
   },
   {
     path: 'recepcion',
-    canActivate: [authGuard],
+    canActivate: [authGuard, permissionGuard('frontDesk')],
     loadComponent: () => import('../../features/reservations/presentation/pages/check-page/check-page.page').then(m => m.CheckPagePage),
   },
   {
@@ -34,12 +34,12 @@ export const routes: Routes = [
   },
   {
     path: 'sedes',
-    canActivate: [authGuard],
+    canActivate: [authGuard, permissionGuard('changeSede')],
     loadComponent: () => import('../../features/locations/presentation/pages/sedes/sedes.page').then((m) => m.SedesPage),
   },
   {
     path: 'huespedes',
-    canActivate: [authGuard],
+    canActivate: [authGuard, permissionGuard('frontDesk')],
     loadComponent: () => import('../../features/huespedes/presentation/pages/huespedes/huespedes.page').then((m) => m.HuespedesPage),
   },
   {
@@ -49,12 +49,12 @@ export const routes: Routes = [
   },
   {
     path: 'habitaciones',
-    canActivate: [authGuard],
+    canActivate: [authGuard, permissionGuard('viewRooms')],
     loadComponent: () => import('../../features/locations/presentation/pages/habitaciones/habitaciones.page').then((m) => m.HabitacionesPage),
   },
   {
     path: 'inventario',
-    canActivate: [authGuard],
+    canActivate: [authGuard, permissionGuard('viewInventory')],
     loadComponent: () => import('../../features/inventory/presentation/pages/inventario/inventario.page').then((m) => m.InventarioPage),
   },
   {
@@ -64,12 +64,12 @@ export const routes: Routes = [
   },
   {
     path: 'reservas',
-    canActivate: [authGuard],
+    canActivate: [authGuard, permissionGuard('frontDesk')],
     loadComponent: () => import('../../features/reservations/presentation/pages/reservas/reservas.page').then((m) => m.ReservasPage),
   },
   {
     path: 'recepcion',
-    canActivate: [authGuard],
+    canActivate: [authGuard, permissionGuard('frontDesk')],
     loadComponent: () => import('../../features/reservations/presentation/pages/check-page/check-page.page').then(m => m.CheckPagePage),
   },
   {

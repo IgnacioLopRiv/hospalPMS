@@ -473,6 +473,14 @@ $orange-border: #fed7aa;
         background: $orange-primary;
         &:hover { background: #c2410c; }
       }
+
+      /* Habitación en aseo u ocupada: no se puede recibir al huésped todavía */
+      &:disabled,
+      &:disabled:hover {
+        background: #e2e8f0;
+        color: $text-muted;
+        cursor: not-allowed;
+      }
     }
 
     .btn-action-secondary {

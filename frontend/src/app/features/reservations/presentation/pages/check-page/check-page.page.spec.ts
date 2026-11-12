@@ -213,7 +213,9 @@ describe('CheckPagePage', () => {
     expect(searchRooms).toHaveBeenCalledWith(
       component.entryForm.arrivalDate,
       component.entryForm.departureDate,
-      component.entryForm.personCount
+      component.entryForm.personCount,
+      undefined,
+      { arrivalTime: component.entryForm.arrivalTime, departureTime: component.entryForm.departureTime || '12:00' },
     );
   });
 

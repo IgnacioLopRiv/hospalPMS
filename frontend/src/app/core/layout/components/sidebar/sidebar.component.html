@@ -1,5 +1,6 @@
 <aside class="sidebar-container">
   <nav class="nav-menu">
+    @if (canUseFrontDesk()) {
     <a class="nav-item" routerLink="/recepcion" routerLinkActive="active">
       <ion-icon name="swap-horizontal-outline"></ion-icon>
       <span>Recepción</span>
@@ -14,11 +15,14 @@
       <ion-icon name="calendar-outline"></ion-icon>
       <span>Reservas</span>
     </a>
+    }
 
+    @if (canViewRooms()) {
     <a class="nav-item" routerLink="/habitaciones" routerLinkActive="active">
       <ion-icon name="bed-outline"></ion-icon>
       <span>Habitaciones</span>
     </a>
+    }
 
     @if (canViewReports()) {
 
@@ -35,10 +39,12 @@
     </div>
     }
 
+    @if (canViewInventory()) {
     <a class="nav-item" routerLink="/inventario" routerLinkActive="active">
       <ion-icon name="cube-outline"></ion-icon>
       <span>Inventario</span>
     </a>
+    }
 
   </nav>
 

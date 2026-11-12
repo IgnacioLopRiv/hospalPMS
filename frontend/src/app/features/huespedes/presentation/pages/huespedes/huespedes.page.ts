@@ -365,7 +365,8 @@ export class HuespedesPage implements OnInit, OnDestroy {
       this.editReservationForm.fecha_llegada,
       this.editReservationForm.fecha_salida,
       this.editReservationForm.cantidad_personas,
-      this.editingReservationId
+      this.editingReservationId,
+      { arrivalTime: this.editReservationForm.hora_llegada, departureTime: this.editReservationForm.hora_salida },
     );
   }
 
