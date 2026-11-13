@@ -229,7 +229,7 @@ describe('HabitacionesPage', () => {
     component.openNewRoomForm();
     fixture.detectChanges();
 
-    (fixture.nativeElement.querySelector('.new-room-modal-backdrop') as HTMLElement).click();
+    (fixture.nativeElement.querySelector('.room-detail-modal-backdrop') as HTMLElement).click();
     fixture.detectChanges();
 
     expect(component.newRoomFormOpen()).toBeTrue();
@@ -270,7 +270,10 @@ describe('HabitacionesPage', () => {
       tipologiaId: typology.id,
       estado: 'libre',
     }));
-    expect(component.newRoomFormOpen()).toBeFalse();
+    // El asistente avanza a la fase 2 (fotos) con la habitación ya creada.
+    expect(component.newRoomFormOpen()).toBeTrue();
+    expect(component.newRoomStep()).toBe(2);
+    expect(component.wizardRoomId()).toBe(sedeService.habitaciones()[1].id);
   });
 
   it('creates one room with a manually entered number', async () => {

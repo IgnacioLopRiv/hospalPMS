@@ -81,13 +81,23 @@ export class HabitacionesPage implements OnDestroy {
   readonly editingRoom = computed(() =>
     this.habitaciones().find((room) => room.id === this.editingRoomId()) ?? null
   );
+  /** Fase actual del asistente de nueva habitación (1 datos, 2 fotos, 3 inventario). */
+  readonly newRoomStep = signal<1 | 2 | 3>(1);
+  /** Habitación ya creada por el asistente (disponible desde la fase 2). */
+  readonly wizardRoomId = signal<number | null>(null);
+  readonly creatingRoom = signal(false);
+  /** Habitación sobre la que operan los paneles de fotos e inventario. */
+  readonly targetRoomId = computed(() => this.editingRoomId() ?? this.wizardRoomId());
+  readonly targetRoom = computed(() =>
+    this.habitaciones().find((room) => room.id === this.targetRoomId()) ?? null
+  );
   readonly roomDetailTab = signal<'details' | 'inventory' | 'photos'>('details');
   readonly roomFormError = signal('');
   readonly inventoryFormError = signal('');
   readonly insumosInventario = this.inventarioService.insumos;
   readonly insumosActivos = computed(() => this.insumosInventario().filter((insumo) => insumo.producto_activo));
   readonly roomInventory = computed<ArticuloInventarioHabitacion[]>(() => {
-    const roomId = this.editingRoomId();
+    const roomId = this.targetRoomId();
     if (roomId === null) return [];
     const insumos = new Map(this.insumosInventario().map((insumo) => [insumo.id_insumo, insumo]));
     return this.inventarioService.habitacionesAsignadas()
@@ -101,7 +111,7 @@ export class HabitacionesPage implements OnDestroy {
   readonly inventoryQuantity = signal<number | null>(1);
   readonly confirmRoomDelete = signal(false);
   readonly roomPhotos = computed(() => {
-    const roomId = this.editingRoomId();
+    const roomId = this.targetRoomId();
     return roomId === null ? [] : this.fotoHabitacionService.forRoom(roomId);
   });
   readonly photoPreviewUrl = signal<string | null>(null);
@@ -114,9 +124,12 @@ export class HabitacionesPage implements OnDestroy {
   selectedPhotoFile: File | null = null;
   photoTitle = '';
   photoDescription = '';
-  roomNumber = '';
+  roomNumber: string | number = '';
   roomTypologyId: number | null = null;
-  roomSize = '';
+  roomSize: string | number | null = '';
+  newRoomSize: string | number | null = '';
+  newRoomFurniture = '';
+  newRoomDescription = '';
   roomFurniture = '';
   roomDescription = '';
 
@@ -216,14 +229,37 @@ export class HabitacionesPage implements OnDestroy {
     if (!this.isAdmin()) {
       return;
     }
-    this.newRoomTypologyId.set(this.tipologias()[0]?.id ?? null);
+    const tipologia = this.tipologias()[0];
+    this.newRoomTypologyId.set(tipologia?.id ?? null);
     this.newRoomNumber.set('');
+    this.applyNewRoomDefaults(tipologia?.capacidad);
+    this.newRoomDescription = '';
     this.newRoomError.set('');
+    this.newRoomStep.set(1);
+    this.wizardRoomId.set(null);
+    this.discardPhotoPreview();
+    this.lightboxPhoto.set(null);
+    this.inventoryFormError.set('');
+    this.selectedInventorySupplyId.set(this.insumosActivos()[0]?.id_insumo ?? null);
+    this.inventoryQuantity.set(1);
     this.newRoomFormOpen.set(true);
   }
 
   closeNewRoomForm(): void {
+    this.discardPhotoPreview();
+    this.lightboxPhoto.set(null);
     this.newRoomFormOpen.set(false);
+    this.wizardRoomId.set(null);
+    this.newRoomStep.set(1);
+  }
+
+  goToNewRoomStep(step: 2 | 3): void {
+    if (this.wizardRoomId() === null) {
+      return;
+    }
+    this.discardPhotoPreview();
+    this.lightboxPhoto.set(null);
+    this.newRoomStep.set(step);
   }
 
   openEditTipologias(): void {
@@ -285,7 +321,7 @@ export class HabitacionesPage implements OnDestroy {
   }
 
   async saveRoomPhoto(): Promise<void> {
-    const room = this.editingRoom();
+    const room = this.targetRoom();
     if (!this.isAdmin() || !room || !this.selectedPhotoFile || this.savingPhoto()) {
       return;
     }
@@ -348,7 +384,7 @@ export class HabitacionesPage implements OnDestroy {
 
     this.downloadingPhotos.set(true);
     try {
-      const room = this.editingRoom();
+      const room = this.targetRoom();
       const zip = new JSZip();
       const folder = zip.folder(`habitacion-${this.sanitizeFileName(room?.numero ?? 'habitacion')}`);
       if (!folder) {
@@ -533,7 +569,7 @@ export class HabitacionesPage implements OnDestroy {
       return;
     }
 
-    const numeroTexto = this.roomNumber.trim();
+    const numeroTexto = String(this.roomNumber ?? '').trim();
     const numero = Number(numeroTexto);
     if (!Number.isInteger(numero) || numero < 1) {
       this.roomFormError.set('Ingresa un número de habitación entero mayor que cero.');
@@ -552,7 +588,8 @@ export class HabitacionesPage implements OnDestroy {
       return;
     }
 
-    const size = this.roomSize.trim() === '' ? null : Number(this.roomSize);
+    const sizeTexto = String(this.roomSize ?? '').trim();
+    const size = sizeTexto === '' ? null : Number(sizeTexto);
     if (size !== null && (!Number.isFinite(size) || size <= 0)) {
       this.roomFormError.set('El tamaño debe ser un número mayor que cero.');
       return;
@@ -597,7 +634,7 @@ export class HabitacionesPage implements OnDestroy {
   }
 
   async assignInventoryToRoom(): Promise<void> {
-    const roomId = this.editingRoomId();
+    const roomId = this.targetRoomId();
     const insumoId = this.selectedInventorySupplyId();
     const cantidad = this.inventoryQuantity();
     if (roomId === null || insumoId === null || cantidad === null) {
@@ -788,11 +825,16 @@ export class HabitacionesPage implements OnDestroy {
   selectNewRoomTypology(event: Event): void {
     const selectedId = Number((event.target as HTMLSelectElement).value);
     this.newRoomTypologyId.set(Number.isFinite(selectedId) ? selectedId : null);
+    this.applyNewRoomDefaults(this.tipologias().find((item) => item.id === selectedId)?.capacidad);
     this.newRoomError.set('');
   }
 
   async createHabitacion(): Promise<void> {
-    if (!this.isAdmin()) {
+    if (!this.isAdmin() || this.creatingRoom()) {
+      return;
+    }
+    if (this.wizardRoomId() !== null) {
+      this.goToNewRoomStep(2);
       return;
     }
 
@@ -819,22 +861,56 @@ export class HabitacionesPage implements OnDestroy {
       return;
     }
 
-    const { tamanoM2, disposicionMuebles } = this.getRoomDefaults(tipologia.capacidad);
+    const sizeTexto = String(this.newRoomSize ?? '').trim();
+    const tamanoM2 = sizeTexto === '' ? null : Number(sizeTexto);
+    if (tamanoM2 !== null && (!Number.isFinite(tamanoM2) || tamanoM2 <= 0)) {
+      this.newRoomError.set('El tamaño debe ser un número mayor que cero.');
+      return;
+    }
+
     const nuevaHabitacion: Habitacion = {
       id: this.sedeService.createHabitacionId(),
       numero: String(numero),
       tipo: tipologia.nombre,
       tipologiaId: tipologia.id,
       tamanoM2,
-      disposicionMuebles,
+      disposicionMuebles: this.newRoomFurniture.trim(),
+      descripcion: this.newRoomDescription.trim(),
       estado: 'libre',
     };
 
-    await this.sedeService.updateSelectedSede({
-      nombre: sedeActual.nombre,
-      habitaciones: [...this.habitaciones(), nuevaHabitacion],
-    });
-    this.closeNewRoomForm();
+    this.creatingRoom.set(true);
+    try {
+      await this.sedeService.updateSelectedSede({
+        nombre: sedeActual.nombre,
+        habitaciones: [...this.habitaciones(), nuevaHabitacion],
+      });
+    } catch (error) {
+      this.newRoomError.set(getApiErrorMessage(error, 'No se pudo crear la habitación.'));
+      return;
+    } finally {
+      this.creatingRoom.set(false);
+    }
+
+    const creada = this.habitaciones().find((habitacion) => habitacion.numero === String(numero));
+    if (!creada) {
+      this.closeNewRoomForm();
+      return;
+    }
+    this.wizardRoomId.set(creada.id);
+    this.newRoomError.set('');
+    this.newRoomStep.set(2);
+  }
+
+  private applyNewRoomDefaults(capacidad: number | undefined): void {
+    if (capacidad === undefined) {
+      this.newRoomSize = '';
+      this.newRoomFurniture = '';
+      return;
+    }
+    const { tamanoM2, disposicionMuebles } = this.getRoomDefaults(capacidad);
+    this.newRoomSize = tamanoM2;
+    this.newRoomFurniture = disposicionMuebles;
   }
 
   private getNextRoomNumber(currentNumbers: number[]): number {

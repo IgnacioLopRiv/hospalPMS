@@ -379,3 +379,11 @@
   .room-detail-modal .room-detail-save-actions button { flex: 1; }
   .room-detail-modal .btn-delete-room, .room-detail-modal .btn-add-inventory { justify-content: center; }
 }
+
+.room-detail-modal .new-room-steps {
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  padding: 0.9rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
