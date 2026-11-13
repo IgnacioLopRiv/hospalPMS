@@ -396,8 +396,8 @@
   </div>
 
   @if (transaccionSeleccionada(); as trx) {
-    <div class="detail-backdrop" (click)="closeDetalle()">
-      <section class="detail-modal" role="dialog" aria-modal="true" aria-labelledby="detail-title" (click)="$event.stopPropagation()">
+    <div class="detail-backdrop" appEscapeClose (escapeClose)="closeDetalle()" (click)="closeDetalle()">
+      <section class="detail-modal app-modal" role="dialog" aria-modal="true" aria-labelledby="detail-title" (click)="$event.stopPropagation()">
         <header class="detail-header">
           <div>
             <h2 id="detail-title">Detalle de transacción</h2>
@@ -405,9 +405,6 @@
           </div>
           <div class="detail-header-side">
             <span class="pay-status" [ngClass]="'status-' + trx.estadoPago.toLowerCase()">{{ estadoPagoLabel(trx.estadoPago) }}</span>
-            <button type="button" class="btn-close" (click)="closeDetalle()" aria-label="Cerrar detalle">
-              <ion-icon name="close-outline"></ion-icon>
-            </button>
           </div>
         </header>
 
@@ -465,7 +462,7 @@
 
         <footer class="detail-footer">
           <span>Estado de la reserva: <strong>{{ trx.estadoReserva }}</strong></span>
-          <button type="button" class="btn-action-primary" (click)="closeDetalle()">Cerrar</button>
+          <button type="button" class="modal-btn modal-btn--secondary" (click)="closeDetalle()">Cancelar</button>
         </footer>
       </section>
     </div>

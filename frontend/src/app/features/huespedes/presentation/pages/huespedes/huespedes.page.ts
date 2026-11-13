@@ -1,3 +1,4 @@
+import { EscapeCloseDirective } from '../../../../../shared/presentation/modal-portal/escape-close.directive';
 import { ChangeDetectorRef, Component, DOCUMENT, ElementRef, OnDestroy, OnInit, Renderer2, ViewChild, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -39,7 +40,7 @@ import { CountryPickerComponent } from '../../../../../shared/presentation/count
   templateUrl: './huespedes.page.html',
   styleUrls: ['./huespedes.page.scss'],
   standalone: true,
-  imports: [
+  imports: [EscapeCloseDirective, 
     CommonModule,
     FormsModule,
     IonIcon,

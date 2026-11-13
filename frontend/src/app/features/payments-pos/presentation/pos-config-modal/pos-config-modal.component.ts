@@ -1,3 +1,4 @@
+import { EscapeCloseDirective } from '../../../../shared/presentation/modal-portal/escape-close.directive';
 import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -35,7 +36,7 @@ type FieldValue = string | boolean;
   templateUrl: './pos-config-modal.component.html',
   styleUrls: ['./pos-config-modal.component.scss'],
   standalone: true,
-  imports: [CommonModule, IonModal, IonIcon, PosProviderPickerComponent],
+  imports: [EscapeCloseDirective, CommonModule, IonModal, IonIcon, PosProviderPickerComponent],
 })
 export class PosConfigModalComponent {
   private readonly repository = inject(PosRepository);

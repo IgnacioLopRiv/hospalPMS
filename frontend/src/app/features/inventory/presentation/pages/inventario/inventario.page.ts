@@ -1,3 +1,4 @@
+import { EscapeCloseDirective } from '../../../../../shared/presentation/modal-portal/escape-close.directive';
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -37,7 +38,7 @@ interface InsumoConStock extends InsumoInventario {
   templateUrl: './inventario.page.html',
   styleUrls: ['./inventario.page.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, IonIcon, IonPopover, ModalPortalDirective],
+  imports: [EscapeCloseDirective, CommonModule, FormsModule, IonIcon, IonPopover, ModalPortalDirective],
 })
 export class InventarioPage {
   private readonly sedeService = inject(SedeService);

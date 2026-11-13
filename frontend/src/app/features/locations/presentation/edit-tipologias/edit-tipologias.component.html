@@ -5,7 +5,7 @@
   (didDismiss)="dismiss()"
 >
   <ng-template>
-    <div class="banner">
+    <div class="banner app-modal" appEscapeClose (escapeClose)="dismiss()">
 
       <!-- ── Header ── -->
       <header class="banner-header">
@@ -19,15 +19,6 @@
             </span>
           }
         </div>
-        <button
-          type="button"
-          class="close-btn"
-          id="close-tipologias-btn"
-          (click)="dismiss()"
-          aria-label="Cerrar panel de tipologías"
-        >
-          <ion-icon name="close-outline"></ion-icon>
-        </button>
       </header>
 
       <!-- ── Body ── -->
@@ -191,8 +182,8 @@
             }
 
             <div class="form-actions">
-              <button type="button" class="form-cancel-btn" (click)="cancelForm()">Cancelar</button>
-              <button type="button" class="form-submit-btn" (click)="saveForm()">
+              <button type="button" class="modal-btn modal-btn--secondary" (click)="cancelForm()">Cancelar</button>
+              <button type="button" class="modal-btn modal-btn--primary" (click)="saveForm()">
                 {{ formMode() === 'add' ? 'Agregar tipología' : 'Guardar cambios' }}
               </button>
             </div>
@@ -306,11 +297,11 @@
 
       <!-- ── Footer ── -->
       <footer class="banner-actions">
-        <button type="button" class="footer-close-btn" (click)="dismiss()">Cerrar</button>
+        <button type="button" class="modal-btn modal-btn--secondary" (click)="dismiss()">Cancelar</button>
         @if (isAdmin()) {
           <button
             type="button"
-            class="add-btn"
+            class="modal-btn modal-btn--primary"
             id="add-tipologia-btn"
             (click)="openAdd()"
             aria-label="Agregar nueva tipología"

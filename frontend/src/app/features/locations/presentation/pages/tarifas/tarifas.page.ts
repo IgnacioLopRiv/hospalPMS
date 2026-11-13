@@ -1,3 +1,4 @@
+import { EscapeCloseDirective } from '../../../../../shared/presentation/modal-portal/escape-close.directive';
 import { Component, computed, DestroyRef, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -67,7 +68,7 @@ function isValidPeriod(period: TarifaPeriodo): boolean {
   templateUrl: './tarifas.page.html',
   styleUrls: ['./tarifas.page.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, IonIcon, ModalPortalDirective],
+  imports: [EscapeCloseDirective, CommonModule, FormsModule, IonIcon, ModalPortalDirective],
 })
 export class TarifasPage {
   private readonly sedeService = inject(SedeService);

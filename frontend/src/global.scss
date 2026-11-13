@@ -1431,3 +1431,62 @@ ion-popover.inventory-actions-popover .actions-dropdown button:hover {
 ion-popover.inventory-actions-popover .actions-dropdown .delete-action {
   color: #b91c1c;
 }
+/* ==========================================================================
+   Modales unificados (referencia: modal "Nueva tarifa")
+   - .app-modal          → contenedor del modal (borde azul superior)
+   - .modal-btn          → botones de pie de modal, mismo tamaño y fuente
+     .modal-btn--primary   (Guardar, Continuar, Siguiente…)
+     .modal-btn--secondary (Cancelar, Atrás, Anterior…)
+     .modal-btn--danger    (Eliminar…)
+   ========================================================================== */
+.app-modal {
+  border-top: 3px solid #1e50d8 !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
+button.modal-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.45rem !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 40px !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0.55rem 1rem !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  color: #64748b !important;
+  font-family: inherit !important;
+  font-size: 0.84rem !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  box-shadow: none !important;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+
+  ion-icon { font-size: 1rem; }
+
+  &:hover:not(:disabled) { background: #f1f5f9 !important; color: #0f172a !important; }
+  &:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  &.modal-btn--primary {
+    border-color: #1e50d8 !important;
+    background: #1e50d8 !important;
+    color: #ffffff !important;
+    &:hover:not(:disabled) { background: #1740b0 !important; color: #ffffff !important; }
+  }
+
+  &.modal-btn--danger {
+    border-color: #dc2626 !important;
+    background: #dc2626 !important;
+    color: #ffffff !important;
+    &:hover:not(:disabled) { background: #b91c1c !important; color: #ffffff !important; }
+  }
+}

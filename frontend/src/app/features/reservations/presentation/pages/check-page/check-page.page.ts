@@ -1,3 +1,4 @@
+import { EscapeCloseDirective } from '../../../../../shared/presentation/modal-portal/escape-close.directive';
 import { Component, EventEmitter, inject, Input, OnDestroy, OnInit, Output, Renderer2 } from '@angular/core';
 import { CommonModule, DOCUMENT } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
@@ -156,7 +157,7 @@ export interface CheckItemPlaceholder {
   templateUrl: './check-page.page.html',
   styleUrls: ['./check-page.page.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, IonIcon, CountryPickerComponent, ModalPortalDirective, PosCobroEstadoComponent],
+  imports: [EscapeCloseDirective, CommonModule, FormsModule, IonIcon, CountryPickerComponent, ModalPortalDirective, PosCobroEstadoComponent],
 })
 export class CheckPagePage implements OnInit, OnDestroy {
   private readonly sedeService = inject(SedeService);

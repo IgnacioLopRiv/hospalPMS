@@ -5,7 +5,7 @@
   (didDismiss)="dismiss()"
 >
   <ng-template>
-    <div class="modal-container banner">
+    <div class="modal-container banner app-modal" appEscapeClose (escapeClose)="dismiss()">
 
       <!-- ── Header ── -->
       <header class="modal-header banner-header">
@@ -29,15 +29,6 @@
             <ion-icon name="add-outline"></ion-icon>
             <span>Nuevo usuario</span>
           </button>
-          <button
-            type="button"
-            class="btn-close-modal close-btn"
-            id="close-perfiles-btn"
-            (click)="dismiss()"
-            aria-label="Cerrar panel de perfiles"
-          >
-            <ion-icon name="close-outline"></ion-icon>
-          </button>
         </div>
       </header>
 
@@ -60,15 +51,6 @@
                 <h3>{{ formMode() === 'add' ? 'Nuevo usuario' : 'Editar usuario' }}</h3>
                 <p>{{ formMode() === 'add' ? 'Ingresa los datos para registrar un nuevo perfil en el sistema.' : 'Modifica la información y accesos de este perfil.' }}</p>
               </div>
-              <button
-                type="button"
-                class="form-close-btn"
-                (click)="cancelForm()"
-                aria-label="Cerrar formulario"
-                title="Cerrar formulario"
-              >
-                <ion-icon name="close-outline"></ion-icon>
-              </button>
             </header>
 
             <div class="form-grid">
@@ -93,11 +75,18 @@
                   <input
                     type="email"
                     required
+                    autocomplete="email"
                     placeholder="correo@ejemplo.com"
                     [value]="form().email"
                     (input)="patchForm('email', $any($event.target).value)"
+                    (focus)="emailFieldFocused.set(true)"
+                    (blur)="emailFieldFocused.set(false); emailTouched.set(true)"
                   />
                 </div>
+                @if (emailTouched() && !emailFieldFocused() && form().email && !isValidEmail(form().email)) {
+                  <small class="entry-field-error" role="alert">Ingresa un email válido, por ejemplo
+                    nombre&#64;dominio.com.</small>
+                }
               </label>
 
               <label class="form-field">
@@ -153,8 +142,8 @@
             }
 
             <div class="form-actions">
-              <button type="button" class="btn-cancel" (click)="cancelForm()">Cancelar</button>
-              <button type="button" class="btn-submit" [disabled]="saving()" (click)="saveForm()">
+              <button type="button" class="modal-btn modal-btn--secondary" (click)="cancelForm()">Cancelar</button>
+              <button type="button" class="modal-btn modal-btn--primary" [disabled]="saving() || !isValidEmail(form().email)" (click)="saveForm()">
                 <ion-icon [name]="formMode() === 'add' ? 'add-outline' : 'checkmark-outline'"></ion-icon>
                 <span>{{ formMode() === 'add' ? 'Agregar usuario' : 'Guardar cambios' }}</span>
               </button>
@@ -324,6 +313,10 @@
         </ng-template>
 
       </div>
+
+      <footer class="perfiles-modal-footer">
+        <button type="button" class="modal-btn modal-btn--secondary" (click)="dismiss()">Cancelar</button>
+      </footer>
     </div>
   </ng-template>
 </ion-modal>

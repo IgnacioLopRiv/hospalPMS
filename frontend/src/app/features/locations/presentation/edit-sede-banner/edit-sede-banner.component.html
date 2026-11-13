@@ -1,10 +1,9 @@
 <ion-modal class="edit-sede-banner" [isOpen]="isOpen()" [backdropDismiss]="false" (willPresent)="loadDraft()"
   (didDismiss)="dismiss()">
   <ng-template>
-    <div class="banner">
+    <div class="banner app-modal" appEscapeClose (escapeClose)="dismiss()">
       <header class="banner-header">
         <h2>Editar sede</h2>
-        <ion-button fill="clear" (click)="dismiss()">Cerrar</ion-button>
       </header>
 
       <div class="banner-body">
@@ -87,8 +86,8 @@
       </div>
 
       <footer class="banner-actions">
-        <ion-button fill="outline" (click)="dismiss()">Cancelar</ion-button>
-        <ion-button (click)="save()">Guardar cambios</ion-button>
+        <button type="button" class="modal-btn modal-btn--secondary" (click)="dismiss()">Cancelar</button>
+        <button type="button" class="modal-btn modal-btn--primary" (click)="save()">Guardar cambios</button>
       </footer>
     </div>
   </ng-template>

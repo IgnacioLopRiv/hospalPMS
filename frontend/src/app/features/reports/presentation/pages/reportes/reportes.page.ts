@@ -1,3 +1,4 @@
+import { EscapeCloseDirective } from '../../../../../shared/presentation/modal-portal/escape-close.directive';
 import { Component, computed, effect, HostListener, inject, signal, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -78,7 +79,7 @@ const MONTHS_SHORT = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 's
   templateUrl: './reportes.page.html',
   styleUrls: ['./reportes.page.scss'],
   standalone: true,
-  imports: [IonContent, CommonModule, FormsModule, IonIcon]
+  imports: [EscapeCloseDirective, IonContent, CommonModule, FormsModule, IonIcon]
 })
 export class ReportesPage {
   private readonly sedeService = inject(SedeService);

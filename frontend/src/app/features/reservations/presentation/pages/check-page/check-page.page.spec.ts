@@ -260,9 +260,10 @@ describe('CheckPagePage', () => {
   it('shows a designed confirmation and keeps the form open when cancelled', () => {
     component.openNewEntryForm();
     component.entryForm.nombre = 'Ana';
+    component.entryStep = 2;
     fixture.detectChanges();
 
-    const closeButton = fixture.nativeElement.querySelector('.entry-modal-close-button') as HTMLButtonElement;
+    const closeButton = fixture.nativeElement.querySelector('.entry-footer-cancel') as HTMLButtonElement;
     closeButton.click();
     fixture.detectChanges();
 
@@ -280,9 +281,10 @@ describe('CheckPagePage', () => {
   it('closes the modal and discards its data after confirmation', () => {
     component.openNewEntryForm();
     component.entryForm.nombre = 'Ana';
+    component.entryStep = 2;
     fixture.detectChanges();
 
-    const closeButton = fixture.nativeElement.querySelector('.entry-modal-close-button') as HTMLButtonElement;
+    const closeButton = fixture.nativeElement.querySelector('.entry-footer-cancel') as HTMLButtonElement;
     closeButton.click();
     fixture.detectChanges();
     const discardButton = fixture.nativeElement.querySelector('.entry-close-discard-button') as HTMLButtonElement;

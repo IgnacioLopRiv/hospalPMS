@@ -723,3 +723,14 @@ ion-modal.edit-perfiles-banner {
     flex-shrink: 0;
   }
 }
+
+.perfiles-modal-footer {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+}

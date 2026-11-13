@@ -1,3 +1,4 @@
+import { EscapeCloseDirective } from '../../../../shared/presentation/modal-portal/escape-close.directive';
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -40,7 +41,7 @@ interface UserForm {
   templateUrl: './edit-perfiles.component.html',
   styleUrls: ['./edit-perfiles.component.scss'],
   standalone: true,
-  imports: [
+  imports: [EscapeCloseDirective, 
     CommonModule,
     FormsModule,
     IonModal,
@@ -67,6 +68,8 @@ export class EditPerfilesComponent {
   readonly deleteConfirmId = signal<number | null>(null);
   readonly successMessage = signal('');
   readonly saving = signal(false);
+  readonly emailTouched = signal(false);
+  readonly emailFieldFocused = signal(false);
 
   readonly form = signal<UserForm>({
     name: '',
@@ -121,6 +124,7 @@ export class EditPerfilesComponent {
     this.editingId.set(null);
     this.formMode.set('add');
     this.errorMessage.set('');
+    this.emailTouched.set(false);
     this.deleteConfirmId.set(null);
   }
 
@@ -136,6 +140,7 @@ export class EditPerfilesComponent {
     this.editingId.set(user.id);
     this.formMode.set('edit');
     this.errorMessage.set('');
+    this.emailTouched.set(false);
     this.deleteConfirmId.set(null);
   }
 
@@ -143,6 +148,8 @@ export class EditPerfilesComponent {
     this.formMode.set(null);
     this.editingId.set(null);
     this.errorMessage.set('');
+    this.emailTouched.set(false);
+    this.emailFieldFocused.set(false);
   }
 
   async saveForm(): Promise<void> {
@@ -161,7 +168,7 @@ export class EditPerfilesComponent {
       return;
     }
     if (!this.isValidEmail(email)) {
-      this.errorMessage.set('El formato del correo no es válido.');
+      this.errorMessage.set('Ingresa un email válido, por ejemplo nombre@dominio.com.');
       return;
     }
     if (this.formMode() === 'add' && !password) {
@@ -274,7 +281,8 @@ export class EditPerfilesComponent {
     setTimeout(() => this.successMessage.set(''), 3000);
   }
 
-  private isValidEmail(email: string): boolean {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  /** Misma validación de formato de correo que en Huéspedes. */
+  isValidEmail(value: string): boolean {
+    return /^[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?(?:\.[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?)+$/i.test(value.trim());
   }
 }

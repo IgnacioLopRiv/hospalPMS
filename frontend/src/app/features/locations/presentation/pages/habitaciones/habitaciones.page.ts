@@ -1,3 +1,4 @@
+import { EscapeCloseDirective } from '../../../../../shared/presentation/modal-portal/escape-close.directive';
 import { Component, computed, inject, signal, OnDestroy, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -56,7 +57,7 @@ interface ArticuloInventarioHabitacion {
   templateUrl: './habitaciones.page.html',
   styleUrls: ['./habitaciones.page.scss', './habitaciones-modal.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, IonIcon, EditTipologiasComponent, ModalPortalDirective],
+  imports: [EscapeCloseDirective, CommonModule, FormsModule, IonIcon, EditTipologiasComponent, ModalPortalDirective],
 })
 export class HabitacionesPage implements OnDestroy {
   private photoNoticeTimeout: ReturnType<typeof setTimeout> | null = null;

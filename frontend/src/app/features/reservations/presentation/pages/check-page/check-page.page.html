@@ -31,8 +31,8 @@
   }
 
   @if (showNewEntryForm) {
-  <div class="entry-modal-backdrop" appModalPortal>
-    <section class="entry-modal" [class.receipt-mode]="paymentReceipt" role="dialog" aria-modal="true" aria-labelledby="entry-modal-title" (click)="$event.stopPropagation()">
+  <div class="entry-modal-backdrop" appModalPortal appEscapeClose (escapeClose)="confirmCloseNewEntryForm()">
+    <section class="entry-modal app-modal" [class.receipt-mode]="paymentReceipt" role="dialog" aria-modal="true" aria-labelledby="entry-modal-title" (click)="$event.stopPropagation()">
       @if (paymentReceipt; as receipt) {
       <ng-container *ngTemplateOutlet="paymentReceiptTpl; context: { $implicit: receipt, titleId: 'entry-modal-title', kind: 'entry' }"></ng-container>
       } @else {
@@ -41,14 +41,6 @@
           <h2 id="entry-modal-title">Nuevo ingreso</h2>
           <p>{{ entryStep === 1 ? 'Ingresa los datos del huésped para continuar.' : entryStep === 2 ? 'Completa las fechas y los detalles de la estadía.' : entryStep === 3 ? 'Selecciona una habitación disponible para estas fechas y cantidad de personas.' : 'Selecciona el pago del abono o el pago completo para confirmar la reserva.' }}</p>
         </div>
-        <button
-          type="button"
-          class="entry-modal-close-button"
-          aria-label="Cerrar y descartar la reserva"
-          title="Cerrar"
-          (click)="confirmCloseNewEntryForm()">
-          <ion-icon name="close-outline"></ion-icon>
-        </button>
       </header>
 
       <form class="entry-form" #entryFormRef="ngForm" (ngSubmit)="registerEntry()">
@@ -460,45 +452,48 @@
         </div>
         <footer class="entry-form-actions">
           @if (entryStep === 1) {
-          <button type="button" class="entry-cancel-button" (click)="closeNewEntryForm()">Cancelar</button>
+          <button type="button" class="modal-btn modal-btn--secondary entry-cancel-button" (click)="closeNewEntryForm()">Cancelar</button>
           <button
             type="button"
-            class="entry-submit-button"
+            class="modal-btn modal-btn--primary"
             [disabled]="!isGuestStepValid(entryFormRef)"
             (click)="goToReservationDetailsStep(entryFormRef)">
             Siguiente
           </button>
           } @else if (entryStep === 2) {
-          <button type="button" class="entry-cancel-button" (click)="returnToGuestStep()">Atrás</button>
+          <button type="button" class="modal-btn modal-btn--secondary entry-footer-cancel" (click)="confirmCloseNewEntryForm()">Cancelar</button>
+          <button type="button" class="modal-btn modal-btn--secondary" (click)="returnToGuestStep()">Atrás</button>
           <button
             type="button"
-            class="entry-submit-button"
+            class="modal-btn modal-btn--primary"
             [disabled]="!isReservationDetailsValid(entryFormRef)"
             (click)="goToRoomSelectionStep(entryFormRef)">
             Buscar habitación
           </button>
           } @else if (entryStep === 3) {
-          <button type="button" class="entry-cancel-button" (click)="returnToReservationDetailsStep()">Atrás</button>
+          <button type="button" class="modal-btn modal-btn--secondary entry-footer-cancel" (click)="confirmCloseNewEntryForm()">Cancelar</button>
+          <button type="button" class="modal-btn modal-btn--secondary" (click)="returnToReservationDetailsStep()">Atrás</button>
           <button
             type="button"
-            class="entry-submit-button"
+            class="modal-btn modal-btn--primary"
             [disabled]="!isEntryStepValid(entryFormRef)"
             (click)="goToPaymentStep(entryFormRef)">
             Continuar al pago
           </button>
           }
           @if (entryStep === 4) {
-          <button type="button" class="entry-cancel-button" [disabled]="posCobro.enCurso()" (click)="returnToRoomSelectionStep()">Atrás</button>
-          <button type="submit" class="entry-submit-button" [disabled]="!isPaymentStepValid()">{{ entrySubmitLabel }}</button>
+          <button type="button" class="modal-btn modal-btn--secondary entry-footer-cancel" [disabled]="posCobro.enCurso()" (click)="confirmCloseNewEntryForm()">Cancelar</button>
+          <button type="button" class="modal-btn modal-btn--secondary" [disabled]="posCobro.enCurso()" (click)="returnToRoomSelectionStep()">Atrás</button>
+          <button type="submit" class="modal-btn modal-btn--primary" [disabled]="!isPaymentStepValid()">{{ entrySubmitLabel }}</button>
           }
         </footer>
       </form>
       }
     </section>
     @if (showCloseConfirmation) {
-    <div class="entry-close-confirm-backdrop" (click)="cancelCloseNewEntryForm()">
+    <div class="entry-close-confirm-backdrop" appEscapeClose (escapeClose)="cancelCloseNewEntryForm()" (click)="cancelCloseNewEntryForm()">
       <section
-        class="entry-close-confirm-dialog"
+        class="entry-close-confirm-dialog app-modal"
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="entry-close-confirm-title"
@@ -510,8 +505,8 @@
         <h2 id="entry-close-confirm-title">¿Cerrar y descartar la reserva?</h2>
         <p id="entry-close-confirm-message">Se perderá toda la información que ingresaste para esta reserva. ¿Quieres continuar?</p>
         <footer class="entry-close-confirm-actions">
-          <button type="button" class="entry-close-keep-button" (click)="cancelCloseNewEntryForm()">Seguir editando</button>
-          <button type="button" class="entry-close-discard-button" (click)="discardNewEntryForm()">Cerrar y descartar</button>
+          <button type="button" class="modal-btn modal-btn--secondary entry-close-keep-button" (click)="cancelCloseNewEntryForm()">Seguir editando</button>
+          <button type="button" class="modal-btn modal-btn--danger entry-close-discard-button" (click)="discardNewEntryForm()">Cerrar y descartar</button>
         </footer>
       </section>
     </div>
@@ -520,14 +515,13 @@
   }
 
   @if (roomDetails; as room) {
-  <div class="room-selection-detail-backdrop" (click)="closeRoomDetails()">
-    <section class="room-selection-detail-modal" role="dialog" aria-modal="true" aria-labelledby="room-selection-detail-title" (click)="$event.stopPropagation()">
+  <div class="room-selection-detail-backdrop" appEscapeClose (escapeClose)="closeRoomDetails()" (click)="closeRoomDetails()">
+    <section class="room-selection-detail-modal app-modal" role="dialog" aria-modal="true" aria-labelledby="room-selection-detail-title" (click)="$event.stopPropagation()">
       <header class="room-selection-detail-header">
         <div>
           <span>Detalle de habitación disponible</span>
           <h2 id="room-selection-detail-title">Habitación {{ room.numero }}</h2>
         </div>
-        <button type="button" class="room-selection-detail-close" aria-label="Cerrar detalles" (click)="closeRoomDetails()">×</button>
       </header>
       <nav class="room-selection-detail-tabs" aria-label="Detalles de habitación">
         <button type="button" [class.active]="roomDetailsTab === 'details'" (click)="roomDetailsTab = 'details'">Detalles</button>
@@ -570,8 +564,8 @@
         }
       </div>
       <footer class="room-selection-detail-actions">
-        <button type="button" class="entry-cancel-button" (click)="closeRoomDetails()">Volver</button>
-        <button type="button" class="entry-submit-button" (click)="selectRoom(room.id); closeRoomDetails()">Seleccionar habitación</button>
+        <button type="button" class="modal-btn modal-btn--secondary" (click)="closeRoomDetails()">Cancelar</button>
+        <button type="button" class="modal-btn modal-btn--primary" (click)="selectRoom(room.id); closeRoomDetails()">Seleccionar habitación</button>
       </footer>
     </section>
   </div>
@@ -840,18 +834,15 @@
   </section>
 
   @if (checkInPaymentItem; as item) {
-  <div class="checkin-payment-backdrop" (click)="closeCheckInPayment()">
+  <div class="checkin-payment-backdrop" appEscapeClose (escapeClose)="closeCheckInPayment()" (click)="closeCheckInPayment()">
     <section
-      class="checkin-payment-modal"
+      class="checkin-payment-modal app-modal"
       role="dialog"
       aria-modal="true"
       aria-labelledby="checkin-payment-title"
       (click)="$event.stopPropagation()">
       <header>
         <div class="checkin-payment-icon"><ion-icon name="cash-outline"></ion-icon></div>
-        <button type="button" class="checkin-payment-close" aria-label="Cerrar cobro" (click)="closeCheckInPayment()">
-          <ion-icon name="close-outline"></ion-icon>
-        </button>
       </header>
       <h2 id="checkin-payment-title">Procesar check-in</h2>
       <p class="checkin-payment-guest">{{ item.guestName }} · Habitación {{ item.roomNumber }}</p>
@@ -912,10 +903,10 @@
       <p class="entry-error" role="alert">{{ checkInPaymentError }}</p>
       }
       <footer class="checkin-payment-actions">
-        <button type="button" class="entry-cancel-button" [disabled]="posCobro.enCurso()" (click)="closeCheckInPayment()">Cancelar</button>
+        <button type="button" class="modal-btn modal-btn--secondary" [disabled]="posCobro.enCurso()" (click)="closeCheckInPayment()">Cancelar</button>
         <button
           type="button"
-          class="entry-submit-button"
+          class="modal-btn modal-btn--primary entry-submit-button"
           [disabled]="(item.outstandingBalance > 0 && !checkInPaymentMethod) || posCobro.enCurso()"
           (click)="confirmCheckInPayment()">
           {{ posCobro.enCurso() ? 'Cobrando en el terminal…' : item.outstandingBalance > 0 ? (isCardMethod(checkInPaymentMethod) ? 'Cobrar en el terminal y procesar check-in' : 'Cobrar saldo y procesar check-in') : 'Procesar check-in' }}
@@ -926,9 +917,9 @@
   }
 
   @if (checkInReceipt; as receipt) {
-  <div class="checkin-payment-backdrop" (click)="closeCheckInReceipt()">
+  <div class="checkin-payment-backdrop" appEscapeClose (escapeClose)="closeCheckInReceipt()" (click)="closeCheckInReceipt()">
     <section
-      class="checkin-payment-modal receipt-mode"
+      class="checkin-payment-modal receipt-mode app-modal"
       role="dialog"
       aria-modal="true"
       aria-labelledby="checkin-receipt-title"
@@ -976,6 +967,6 @@
     @if (receipt.note) {
     <p class="payment-receipt-note">{{ receipt.note }}</p>
     }
-    <button type="button" class="payment-receipt-button" (click)="kind === 'checkin' ? closeCheckInReceipt() : closeReceipt()">Finalizar</button>
+    <button type="button" class="modal-btn modal-btn--primary payment-receipt-button" (click)="kind === 'checkin' ? closeCheckInReceipt() : closeReceipt()">Finalizar</button>
   </div>
 </ng-template>

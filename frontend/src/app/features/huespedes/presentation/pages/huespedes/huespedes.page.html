@@ -32,8 +32,8 @@
   }
 
   @if (showNewGuestForm && !showReservationAssignment) {
-  <div class="entry-modal-backdrop">
-    <section class="entry-modal" role="dialog" aria-modal="true" aria-labelledby="guest-modal-title"
+  <div class="entry-modal-backdrop" appEscapeClose (escapeClose)="closeNewGuestForm()">
+    <section class="entry-modal app-modal" role="dialog" aria-modal="true" aria-labelledby="guest-modal-title"
       (click)="$event.stopPropagation()">
       <header class="entry-modal-header">
         <div>
@@ -126,8 +126,8 @@
           }
         </div>
         <footer class="entry-form-actions">
-          <button type="button" class="entry-cancel-button" (click)="closeNewGuestForm()">Cancelar</button>
-          <button type="submit" class="entry-submit-button"
+          <button type="button" class="modal-btn modal-btn--secondary" (click)="closeNewGuestForm()">Cancelar</button>
+          <button type="submit" class="modal-btn modal-btn--primary"
             [disabled]="guestFormRef.invalid || !isValidEmail(guestForm.email) || !isPhoneFormatValid || (guestForm.documentType === 'rut' && !isValidRut(guestForm.documento))">
             Registrar huésped
           </button>
@@ -377,7 +377,7 @@
   @if (guestDetail; as detail) {
   <dialog #guestDetailDialog class="entry-modal-backdrop guest-edit-dialog"
     (cancel)="onGuestDetailDialogCancel($event)">
-    <section class="entry-modal guest-detail-modal" role="dialog" aria-modal="true"
+    <section class="entry-modal app-modal guest-detail-modal" role="dialog" aria-modal="true"
       aria-labelledby="guest-detail-title">
       <header class="entry-modal-header">
         <div class="guest-detail-heading">
@@ -474,13 +474,13 @@
       </div>
 
       <footer class="entry-form-actions">
-        <button type="button" class="guest-detail-delete-button" (click)="fromGuestDetail('delete')">
+        <button type="button" class="modal-btn modal-btn--danger guest-detail-delete-button" (click)="fromGuestDetail('delete')">
           <ion-icon name="trash-outline"></ion-icon>
           Eliminar huésped
         </button>
-        <button type="button" class="entry-cancel-button" (click)="closeGuestDetail()">Cerrar</button>
-        <button type="button" (click)="fromGuestDetail('edit')">Modificar huésped</button>
-        <button type="button" class="entry-submit-button" (click)="fromGuestDetail('assign')">Asignar reserva</button>
+        <button type="button" class="modal-btn modal-btn--secondary" (click)="closeGuestDetail()">Cancelar</button>
+        <button type="button" class="modal-btn modal-btn--secondary" (click)="fromGuestDetail('edit')">Modificar huésped</button>
+        <button type="button" class="modal-btn modal-btn--primary" (click)="fromGuestDetail('assign')">Asignar reserva</button>
       </footer>
     </section>
   </dialog>
@@ -489,7 +489,7 @@
   @if (editingGuestId !== null) {
   <dialog #guestEditDialog class="entry-modal-backdrop guest-edit-dialog"
     (cancel)="onGuestEditDialogCancel($event)">
-    <section class="entry-modal guest-edit-modal" role="dialog" aria-modal="true"
+    <section class="entry-modal app-modal guest-edit-modal" role="dialog" aria-modal="true"
       aria-labelledby="edit-guest-title">
       <header class="entry-modal-header">
         <div>
@@ -530,8 +530,8 @@
           }
         </div>
         <footer class="entry-form-actions">
-          <button type="button" class="entry-cancel-button" (click)="closeGuestEditor()">Cancelar</button>
-          <button type="submit" class="entry-submit-button" [disabled]="editGuestRef.invalid">Guardar cambios</button>
+          <button type="button" class="modal-btn modal-btn--secondary" (click)="closeGuestEditor()">Cancelar</button>
+          <button type="submit" class="modal-btn modal-btn--primary" [disabled]="editGuestRef.invalid">Guardar cambios</button>
         </footer>
       </form>
     </section>
@@ -541,7 +541,7 @@
   @if (editingReservationId !== null) {
   <dialog #reservationEditDialog class="entry-modal-backdrop guest-edit-dialog"
     (cancel)="onReservationEditDialogCancel($event)">
-    <section class="entry-modal guest-edit-modal" role="dialog" aria-modal="true"
+    <section class="entry-modal app-modal guest-edit-modal" role="dialog" aria-modal="true"
       aria-labelledby="edit-reservation-title">
       <header class="entry-modal-header">
         <div>
@@ -594,10 +594,10 @@
           }
         </div>
         <footer class="entry-form-actions">
-          <button type="button" class="guest-delete-confirm-button" (click)="cancelReservation()">Cancelar
+          <button type="button" class="modal-btn modal-btn--danger" (click)="cancelReservation()">Cancelar
             reserva</button>
-          <button type="button" class="entry-cancel-button" (click)="closeReservationEditor()">Cancelar</button>
-          <button type="submit" class="entry-submit-button"
+          <button type="button" class="modal-btn modal-btn--secondary" (click)="closeReservationEditor()">Cancelar</button>
+          <button type="submit" class="modal-btn modal-btn--primary"
             [disabled]="editReservationRef.invalid || !isReservationRoomAvailable">
             Guardar cambios
           </button>
@@ -610,7 +610,7 @@
   @if (deletingGuestId !== null) {
   <dialog #guestDeleteDialog class="entry-modal-backdrop guest-edit-dialog"
     (cancel)="onGuestDeleteDialogCancel($event)">
-    <section class="entry-modal guest-delete-modal" role="alertdialog" aria-modal="true"
+    <section class="entry-modal app-modal guest-delete-modal" role="alertdialog" aria-modal="true"
       aria-labelledby="delete-guest-title">
       <header class="entry-modal-header">
         <div>
@@ -625,8 +625,8 @@
       </div>
       }
       <footer class="entry-form-actions">
-        <button type="button" class="entry-cancel-button" (click)="cancelGuestDeletion()">Cancelar</button>
-        <button type="button" class="guest-delete-confirm-button" (click)="deleteGuest()">Eliminar</button>
+        <button type="button" class="modal-btn modal-btn--secondary" (click)="cancelGuestDeletion()">Cancelar</button>
+        <button type="button" class="modal-btn modal-btn--danger" (click)="deleteGuest()">Eliminar</button>
       </footer>
     </section>
   </dialog>

@@ -186,9 +186,9 @@
   </app-edit-tipologias>
 
   @if (isAdmin() && newRoomFormOpen()) {
-    <div class="new-room-modal-backdrop" appModalPortal>
+    <div class="new-room-modal-backdrop" appModalPortal appEscapeClose (escapeClose)="closeNewRoomForm()">
       <section
-        class="new-room-modal"
+        class="new-room-modal app-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="new-room-title"
@@ -199,9 +199,6 @@
               <h2 id="new-room-title">Nueva habitación</h2>
               <p>Completa la tipología y el número de habitación.</p>
             </div>
-            <button type="button" class="btn-close-form" aria-label="Cerrar" (click)="closeNewRoomForm()">
-              <ion-icon name="close-outline"></ion-icon>
-            </button>
           </header>
 
           <div class="new-room-modal-body">
@@ -242,8 +239,8 @@
           </div>
 
           <footer class="new-room-modal-actions">
-            <button type="button" class="btn-cancel-new-room" (click)="closeNewRoomForm()">Cancelar</button>
-            <button type="submit" class="btn-save-new-room" [disabled]="tipologias().length === 0">
+            <button type="button" class="modal-btn modal-btn--secondary" (click)="closeNewRoomForm()">Cancelar</button>
+            <button type="submit" class="modal-btn modal-btn--primary" [disabled]="tipologias().length === 0">
               Crear habitación
             </button>
           </footer>
@@ -253,9 +250,9 @@
   }
 
   @if (isAdmin() && editingRoom(); as room) {
-    <div class="room-detail-modal-backdrop" appModalPortal>
+    <div class="room-detail-modal-backdrop" appModalPortal appEscapeClose (escapeClose)="closeRoomEditor()">
       <section
-        class="room-detail-modal"
+        class="room-detail-modal app-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="room-detail-title"
@@ -265,9 +262,6 @@
             <span class="room-detail-eyebrow">Administración de habitación</span>
             <h2 id="room-detail-title">Habitación {{ room.numero }}</h2>
           </div>
-          <button type="button" class="btn-close-form" aria-label="Cerrar" (click)="closeRoomEditor()">
-            <ion-icon name="close-outline"></ion-icon>
-          </button>
         </header>
 
         <nav class="room-detail-tabs" aria-label="Secciones de la habitación">
@@ -580,8 +574,8 @@
             @if (confirmRoomDelete()) {
               <div class="room-delete-confirmation" role="alert">
                 <span>¿Eliminar la habitación {{ room.numero }} y su inventario?</span>
-                <button type="button" class="btn-confirm-delete" (click)="deleteRoom()">Sí, eliminar</button>
-                <button type="button" class="btn-cancel-delete" (click)="confirmRoomDelete.set(false)">No</button>
+                <button type="button" class="modal-btn modal-btn--danger" (click)="deleteRoom()">Sí, eliminar</button>
+                <button type="button" class="modal-btn modal-btn--secondary" (click)="confirmRoomDelete.set(false)">No</button>
               </div>
             } @else {
               <button type="button" class="btn-delete-room" (click)="requestRoomDelete()">
@@ -598,8 +592,8 @@
                 {{ updatingMaintenance() ? 'Actualizando…' : room.estado === 'mantenimiento' ? 'Finalizar mantenimiento' : 'Pasar a mantenimiento' }}
               </button>
               <div class="room-detail-save-actions">
-                <button type="button" class="btn-cancel-new-room" (click)="closeRoomEditor()">Cancelar</button>
-                <button type="submit" class="btn-save-new-room">Guardar cambios</button>
+                <button type="button" class="modal-btn modal-btn--secondary" (click)="closeRoomEditor()">Cancelar</button>
+                <button type="submit" class="modal-btn modal-btn--primary">Guardar cambios</button>
               </div>
             }
           </footer>
@@ -608,9 +602,9 @@
     </div>
   }
   @if (isAdmin() && maintenanceFormOpen() && editingRoom(); as room) {
-    <div class="room-detail-modal-backdrop maintenance-modal-backdrop" appModalPortal>
+    <div class="room-detail-modal-backdrop maintenance-modal-backdrop" appModalPortal appEscapeClose (escapeClose)="closeMaintenanceForm()">
       <section
-        class="room-detail-modal maintenance-form-modal"
+        class="room-detail-modal maintenance-form-modal app-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="maintenance-form-title"
@@ -620,9 +614,6 @@
             <span class="room-detail-eyebrow maintenance-eyebrow">Pasar a mantenimiento</span>
             <h2 id="maintenance-form-title">Habitación {{ room.numero }}</h2>
           </div>
-          <button type="button" class="btn-close-form" aria-label="Cerrar" (click)="closeMaintenanceForm()">
-            <ion-icon name="close-outline"></ion-icon>
-          </button>
         </header>
 
         <form (ngSubmit)="submitMaintenance()">
@@ -672,8 +663,8 @@
 
           <footer class="room-detail-modal-actions">
             <div class="room-detail-save-actions">
-              <button type="button" class="btn-cancel-new-room" [disabled]="updatingMaintenance()" (click)="closeMaintenanceForm()">Cancelar</button>
-              <button type="submit" class="btn-confirm-maintenance" [disabled]="updatingMaintenance()">
+              <button type="button" class="modal-btn modal-btn--secondary" [disabled]="updatingMaintenance()" (click)="closeMaintenanceForm()">Cancelar</button>
+              <button type="submit" class="modal-btn modal-btn--primary" [disabled]="updatingMaintenance()">
                 <ion-icon name="construct-outline"></ion-icon>
                 {{ updatingMaintenance() ? 'Guardando…' : 'Iniciar mantenimiento' }}
               </button>
@@ -685,9 +676,9 @@
   }
 
   @if (maintenanceHistoryOpen()) {
-    <div class="room-detail-modal-backdrop" appModalPortal (click)="closeMaintenanceHistory()">
+    <div class="room-detail-modal-backdrop" appModalPortal appEscapeClose (escapeClose)="closeMaintenanceHistory()" (click)="closeMaintenanceHistory()">
       <section
-        class="room-detail-modal maintenance-history-modal"
+        class="room-detail-modal maintenance-history-modal app-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="maintenance-history-title"
@@ -697,9 +688,6 @@
             <span class="room-detail-eyebrow">Registro de mantenimientos</span>
             <h2 id="maintenance-history-title">Historial de mantenimientos</h2>
           </div>
-          <button type="button" class="btn-close-form" aria-label="Cerrar" (click)="closeMaintenanceHistory()">
-            <ion-icon name="close-outline"></ion-icon>
-          </button>
         </header>
 
         <nav class="room-detail-tabs" aria-label="Filtrar mantenimientos">
@@ -775,6 +763,12 @@
             </div>
           }
         </div>
+
+        <footer class="room-detail-modal-actions">
+          <div class="room-detail-save-actions">
+            <button type="button" class="modal-btn modal-btn--secondary" (click)="closeMaintenanceHistory()">Cancelar</button>
+          </div>
+        </footer>
       </section>
     </div>
   }

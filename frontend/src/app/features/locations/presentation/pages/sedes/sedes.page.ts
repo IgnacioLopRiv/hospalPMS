@@ -1,3 +1,4 @@
+import { EscapeCloseDirective } from '../../../../../shared/presentation/modal-portal/escape-close.directive';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -46,7 +47,7 @@ const DEFAULT_PHONE_COUNTRY = 'cl';
   selector: 'app-sedes',
   templateUrl: './sedes.page.html',
   styleUrls: ['./sedes.page.scss'],
-  imports: [IonContent, IonIcon, FormsModule, CountryPickerComponent],
+  imports: [EscapeCloseDirective, IonContent, IonIcon, FormsModule, CountryPickerComponent],
 })
 export class SedesPage {
   private readonly router = inject(Router);

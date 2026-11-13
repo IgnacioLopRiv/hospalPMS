@@ -1,3 +1,4 @@
+import { EscapeCloseDirective } from '../../../../shared/presentation/modal-portal/escape-close.directive';
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -51,7 +52,7 @@ const MAX_CHIPS = 4;
   templateUrl: './edit-tipologias.component.html',
   styleUrls: ['./edit-tipologias.component.scss'],
   standalone: true,
-  imports: [
+  imports: [EscapeCloseDirective, 
     CommonModule,
     FormsModule,
     IonModal,

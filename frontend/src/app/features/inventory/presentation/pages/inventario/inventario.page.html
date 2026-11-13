@@ -150,11 +150,10 @@
 }
 
 @if (insumoModalAbierto()) {
-  <div class="modal-backdrop" appModalPortal (click)="closeInsumoModal()">
-    <section class="inventory-modal" role="dialog" aria-modal="true" aria-labelledby="new-item-title" (click)="$event.stopPropagation()">
+  <div class="modal-backdrop" appModalPortal appEscapeClose (escapeClose)="closeInsumoModal()" (click)="closeInsumoModal()">
+    <section class="inventory-modal app-modal" role="dialog" aria-modal="true" aria-labelledby="new-item-title" (click)="$event.stopPropagation()">
       <header class="modal-header">
         <div><span class="modal-icon"><ion-icon name="cube-outline"></ion-icon></span><div><h2 id="new-item-title">{{ editingInsumoId() === null ? 'Agregar insumo' : 'Editar insumo' }}</h2><p>{{ editingInsumoId() === null ? 'Registra los datos y el stock inicial.' : 'Actualiza la información del insumo.' }}</p></div></div>
-        <button type="button" class="icon-button" aria-label="Cerrar" (click)="closeInsumoModal()"><ion-icon name="close-outline"></ion-icon></button>
       </header>
       <form (ngSubmit)="saveInsumo()">
         <div class="modal-body">
@@ -169,8 +168,8 @@
           @if (errorFormulario()) { <p class="form-error" role="alert">{{ errorFormulario() }}</p> }
         </div>
         <footer class="modal-actions">
-          <button type="button" class="secondary-button" (click)="closeInsumoModal()">Cancelar</button>
-          <button type="submit" class="primary-button">
+          <button type="button" class="modal-btn modal-btn--secondary" (click)="closeInsumoModal()">Cancelar</button>
+          <button type="submit" class="modal-btn modal-btn--primary">
             <ion-icon [name]="editingInsumoId() === null ? 'add-outline' : 'create-outline'"></ion-icon>
             {{ editingInsumoId() === null ? 'Guardar insumo' : 'Guardar cambios' }}
           </button>

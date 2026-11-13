@@ -234,7 +234,7 @@
   <dialog #reservationDialog class="entry-modal-backdrop guest-edit-dialog"
     (cancel)="onReservationDialogCancel($event)">
     @if (reservationModalMode() === 'detail') {
-    <section class="entry-modal reservation-detail-modal" role="dialog" aria-modal="true"
+    <section class="entry-modal app-modal reservation-detail-modal" role="dialog" aria-modal="true"
       aria-labelledby="reservation-detail-title">
       <header class="entry-modal-header">
         <div>
@@ -306,21 +306,21 @@
 
       <footer class="entry-form-actions">
         @if (canCancelReservation(detail.reservation.estado_reserva)) {
-        <button type="button" class="reservation-cancel-button" (click)="cancelReservation()">
+        <button type="button" class="modal-btn modal-btn--danger" (click)="cancelReservation()">
           <ion-icon name="close-circle-outline"></ion-icon>
           Cancelar reserva
         </button>
         }
-        <button type="button" class="entry-cancel-button" (click)="closeReservationModal()">Cerrar</button>
+        <button type="button" class="modal-btn modal-btn--secondary" (click)="closeReservationModal()">Cancelar</button>
         @if (canCancelReservation(detail.reservation.estado_reserva)) {
-        <button type="button" class="entry-submit-button" (click)="startReservationEdit()">
+        <button type="button" class="modal-btn modal-btn--primary" (click)="startReservationEdit()">
           Modificar reserva
         </button>
         }
       </footer>
     </section>
     } @else {
-    <section class="entry-modal reservation-edit-modal" role="dialog" aria-modal="true"
+    <section class="entry-modal app-modal reservation-edit-modal" role="dialog" aria-modal="true"
       aria-labelledby="reservation-edit-title">
       <header class="entry-modal-header">
         <div>
@@ -375,8 +375,8 @@
           }
         </div>
         <footer class="entry-form-actions">
-          <button type="button" class="entry-cancel-button" (click)="backToReservationDetail()">Volver</button>
-          <button type="submit" class="entry-submit-button"
+          <button type="button" class="modal-btn modal-btn--secondary" (click)="backToReservationDetail()">Volver</button>
+          <button type="submit" class="modal-btn modal-btn--primary"
             [disabled]="editReservationRef.invalid || !isReservationRoomAvailable">
             Guardar cambios
           </button>

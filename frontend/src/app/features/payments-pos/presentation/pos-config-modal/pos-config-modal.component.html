@@ -1,7 +1,7 @@
 <ion-modal class="pos-config-modal" [isOpen]="isOpen()" [backdropDismiss]="false"
   (willPresent)="onWillPresent()" (didDismiss)="dismiss()">
   <ng-template>
-    <div class="modal-container">
+    <div class="modal-container app-modal" appEscapeClose (escapeClose)="dismiss()">
 
       <header class="modal-header">
         <div class="modal-header-title">
@@ -13,9 +13,6 @@
             <p>Conecta un terminal para cobrar las reservas con tarjeta</p>
           </div>
         </div>
-        <button type="button" class="btn-close-modal" (click)="dismiss()" aria-label="Cerrar configuración de POS">
-          <ion-icon name="close-outline"></ion-icon>
-        </button>
       </header>
 
       <div class="modal-body">
@@ -193,8 +190,8 @@
       }
 
       <footer class="modal-actions">
-        <button type="button" class="btn-outline" (click)="dismiss()">Cerrar</button>
-        <button type="button" class="btn-primary" (click)="save()" [disabled]="saving() || loading() || !proveedor()">
+        <button type="button" class="modal-btn modal-btn--secondary" (click)="dismiss()">Cancelar</button>
+        <button type="button" class="modal-btn modal-btn--primary" (click)="save()" [disabled]="saving() || loading() || !proveedor()">
           {{ saving() ? 'Guardando…' : 'Guardar' }}
         </button>
       </footer>

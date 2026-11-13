@@ -176,9 +176,9 @@
 </div>
 
 @if (configOpen()) {
-  <div class="config-modal-backdrop" appModalPortal (click)="closeConfig()">
+  <div class="config-modal-backdrop" appModalPortal appEscapeClose (escapeClose)="closeConfig()" (click)="closeConfig()">
     <section
-      class="config-modal"
+      class="config-modal app-modal"
       role="dialog"
       aria-modal="true"
       aria-labelledby="config-modal-title"
@@ -189,9 +189,6 @@
           <h2 id="config-modal-title">{{ editingTarifaId() ? 'Configurar tarifa' : 'Crear tarifa' }}</h2>
           <p>{{ rateStep() === 1 ? 'Paso 1 de 2 · Define el nombre y los periodos.' : 'Paso 2 de 2 · Asigna los precios por tipología.' }}</p>
         </div>
-        <button type="button" class="btn-close-modal" (click)="closeConfig()" aria-label="Cerrar">
-          <ion-icon name="close-outline"></ion-icon>
-        </button>
       </header>
 
       <div class="config-modal-body">
@@ -401,13 +398,13 @@
       </div>
 
       <footer class="config-modal-footer">
-        <button type="button" class="btn-cancel" (click)="closeConfig()">Cancelar</button>
+        <button type="button" class="modal-btn modal-btn--secondary" (click)="closeConfig()">Cancelar</button>
         <div class="wizard-actions">
           @if (rateStep() === 2) {
-            <button type="button" class="btn-previous-step" (click)="backToPeriods()">Anterior</button>
+            <button type="button" class="modal-btn modal-btn--secondary" (click)="backToPeriods()">Anterior</button>
             <button
               type="button"
-              class="btn-save"
+              class="modal-btn modal-btn--primary"
               (click)="saveTarifa()"
               [disabled]="!canSaveTarifa()"
               id="btn-save-config">
@@ -417,7 +414,7 @@
           } @else {
             <button
               type="button"
-              class="btn-save"
+              class="modal-btn modal-btn--primary"
               (click)="continueToPrices()"
               [disabled]="!hasValidNameAndPeriods()">
               Continuar

@@ -78,17 +78,14 @@
   </div>
 
   @if (editingSede() !== null) {
-  <div class="entry-modal-backdrop" (click)="closeForm()">
-    <section class="entry-modal sede-form-modal" role="dialog" aria-modal="true" aria-labelledby="sede-modal-title"
+  <div class="entry-modal-backdrop" appEscapeClose (escapeClose)="closeForm()" (click)="closeForm()">
+    <section class="entry-modal app-modal sede-form-modal" role="dialog" aria-modal="true" aria-labelledby="sede-modal-title"
       (click)="$event.stopPropagation()">
       <header class="entry-modal-header">
         <div>
           <h2 id="sede-modal-title">{{ editingSede() === 'new' ? 'Nueva sede' : 'Editar sede' }}</h2>
           <p>{{ editingSede() === 'new' ? 'Ingresa los datos del establecimiento.' : 'Modifica los datos del establecimiento.' }}</p>
         </div>
-        <button type="button" class="entry-modal-close-button" aria-label="Cerrar" (click)="closeForm()">
-          <ion-icon name="close-outline"></ion-icon>
-        </button>
       </header>
 
       <form class="entry-form" #sedeFormRef="ngForm" (ngSubmit)="saveSede()">
@@ -147,8 +144,8 @@
           }
         </div>
         <footer class="entry-form-actions">
-          <button type="button" class="entry-cancel-button" (click)="closeForm()">Cancelar</button>
-          <button type="submit" class="entry-submit-button"
+          <button type="button" class="modal-btn modal-btn--secondary" (click)="closeForm()">Cancelar</button>
+          <button type="submit" class="modal-btn modal-btn--primary"
             [disabled]="saving() || sedeFormRef.invalid || !isEmailValid || !isPhoneValid">
             {{ saving() ? 'Guardando...' : (editingSede() === 'new' ? 'Crear sede' : 'Guardar cambios') }}
           </button>

@@ -1,3 +1,4 @@
+import { EscapeCloseDirective } from '../../../../shared/presentation/modal-portal/escape-close.directive';
 import { Component, inject, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -17,7 +18,7 @@ import { AuthUser, UserRole } from '../../../auth/domain/auth.roles';
   templateUrl: './components.component.html',
   styleUrls: ['./components.component.scss'],
   standalone: true,
-  imports: [
+  imports: [EscapeCloseDirective, 
     CommonModule,
     FormsModule,
     IonModal,

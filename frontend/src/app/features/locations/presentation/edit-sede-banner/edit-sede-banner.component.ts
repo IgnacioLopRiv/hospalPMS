@@ -1,3 +1,4 @@
+import { EscapeCloseDirective } from '../../../../shared/presentation/modal-portal/escape-close.directive';
 import { Component, effect, inject, input, output, signal } from '@angular/core';
 import {
   IonButton,
@@ -17,7 +18,7 @@ import {
   selector: 'app-edit-sede-banner',
   templateUrl: './edit-sede-banner.component.html',
   styleUrls: ['./edit-sede-banner.component.scss'],
-  imports: [
+  imports: [EscapeCloseDirective, 
     IonModal,
     IonButton,
     IonItem,
