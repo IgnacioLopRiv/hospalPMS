@@ -34,6 +34,7 @@ import {
   maxPhoneDigits,
   PHONE_FORMAT_ERROR,
 } from '../../../../../shared/domain/phone-format';
+import { parsePhoneNumberFromString } from 'libphonenumber-js/max';
 import { CountryPickerComponent } from '../../../../../shared/presentation/country-picker/country-picker.component';
 
 @Component({
@@ -72,6 +73,9 @@ export class HuespedesPage implements OnInit, OnDestroy {
   documentFieldFocused = false;
   emailFieldFocused = false;
   phoneFieldFocused = false;
+  editEmailFieldFocused = false;
+  editPhoneFieldFocused = false;
+  editPhoneCountry = 'cl';
   readonly phoneFormatError = PHONE_FORMAT_ERROR;
   guestForm = this.createEmptyGuestForm();
   readonly countries = COUNTRY_OPTIONS;
@@ -280,11 +284,15 @@ export class HuespedesPage implements OnInit, OnDestroy {
       return;
     }
     this.editingGuestId = guestId;
+    const phone = this.splitPhone(guest.telefono ?? '');
+    this.editPhoneCountry = phone.country;
+    this.editEmailFieldFocused = false;
+    this.editPhoneFieldFocused = false;
     this.editGuestForm = {
       documento: guest.documento ?? '',
       nombre: guest.nombre,
       apellido: guest.apellido,
-      telefono: guest.telefono,
+      telefono: phone.number,
       email: guest.email,
       nacionalidad: guest.nacionalidad,
       es_recurrente: guest.es_recurrente,
@@ -298,8 +306,27 @@ export class HuespedesPage implements OnInit, OnDestroy {
 
   async saveGuestChanges(): Promise<void> {
     if (this.editingGuestId === null) return;
+    this.guestError = '';
+    if (!this.isValidEmail(this.editGuestForm.email)) {
+      this.guestError = 'Ingresa un email válido, por ejemplo nombre@dominio.com.';
+      return;
+    }
+    if (!this.isEditPhoneFormatValid) {
+      this.guestError = PHONE_FORMAT_ERROR;
+      return;
+    }
+    const original = this.hostalService.getGuests().find((item) => item.id_huesped === this.editingGuestId);
     try {
-      const guest = await this.hostalService.updateGuest(this.editingGuestId, this.editGuestForm);
+      const guest = await this.hostalService.updateGuest(this.editingGuestId, {
+        ...this.editGuestForm,
+        // El documento (RUT/pasaporte) no se puede modificar.
+        documento: original?.documento ?? this.editGuestForm.documento,
+        nombre: this.editGuestForm.nombre.trim(),
+        apellido: this.editGuestForm.apellido.trim(),
+        telefono: `${this.editPhoneCountryOption.callingCode} ${this.editGuestForm.telefono.trim()}`,
+        email: this.editGuestForm.email.trim(),
+        nacionalidad: this.editGuestForm.nacionalidad.trim(),
+      });
       this.guestSuccessMessage = `Datos actualizados para ${guest.nombre} ${guest.apellido}.`;
       this.closeGuestEditor();
     } catch (error) {
@@ -595,6 +622,50 @@ export class HuespedesPage implements OnInit, OnDestroy {
 
   get phoneCountry(): (typeof COUNTRY_OPTIONS)[number] {
     return COUNTRY_OPTIONS.find((country) => country.code === this.guestForm.phoneCountry) ?? COUNTRY_OPTIONS[0];
+  }
+
+  handleEditPhoneInput(event: Event): void {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement)) return;
+    this.editGuestForm.telefono = limitPhoneDigits(this.editPhoneCountry, input.value);
+    input.value = this.editGuestForm.telefono;
+  }
+
+  onEditPhoneCountryChange(code: string): void {
+    this.editPhoneCountry = code;
+    this.editGuestForm.telefono = limitPhoneDigits(code, this.editGuestForm.telefono);
+  }
+
+  get editPhoneMaxLength(): number {
+    return maxPhoneDigits(this.editPhoneCountry) + 1;
+  }
+
+  get isEditPhoneFormatValid(): boolean {
+    return isValidPhoneFormat(this.editPhoneCountry, this.editGuestForm.telefono);
+  }
+
+  get editPhoneCountryOption(): (typeof COUNTRY_OPTIONS)[number] {
+    return COUNTRY_OPTIONS.find((country) => country.code === this.editPhoneCountry) ?? COUNTRY_OPTIONS[0];
+  }
+
+  /** Separa un teléfono guardado ("+56 912345678") en país y número nacional. */
+  private splitPhone(value: string): { country: string; number: string } {
+    const trimmed = value.trim();
+    const parsed = parsePhoneNumberFromString(trimmed.startsWith('+') ? trimmed : `+${trimmed}`);
+    if (parsed?.country) {
+      const code = parsed.country.toLowerCase();
+      if (COUNTRY_OPTIONS.some((country) => country.code === code)) {
+        return { country: code, number: String(parsed.nationalNumber) };
+      }
+    }
+    const [prefix = '', ...rest] = trimmed.split(/\s+/);
+    const match = prefix.startsWith('+')
+      ? COUNTRY_OPTIONS.find((country) => country.callingCode === prefix)
+      : undefined;
+    if (match) {
+      return { country: match.code, number: rest.join('').replace(/\D/g, '') };
+    }
+    return { country: 'cl', number: trimmed.replace(/\D/g, '') };
   }
 
   isValidEmail(value: string): boolean {

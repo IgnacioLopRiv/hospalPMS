@@ -92,9 +92,30 @@ body.entry-modal-open .app-main-viewport .ion-page {
 *::-webkit-scrollbar-track,
 *::-webkit-scrollbar-corner { background: transparent; }
 
+/* ion-content scrollea dentro de su shadow DOM, donde las reglas anteriores no llegan
+   (Reportes, Sedes, login...). Se replica el mismo estilo vía ::part(scroll). */
+ion-content::part(scroll) {
+  /* Reserva siempre el espacio de la barra: aparezca o no, el contenido no se desplaza
+     y la barra nunca queda encima de nada. */
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #9ca3af transparent;
+}
+ion-content::part(scroll)::-webkit-scrollbar { width: 6px; height: 6px; }
+ion-content::part(scroll)::-webkit-scrollbar-thumb { background: #9ca3af; }
+ion-content::part(scroll)::-webkit-scrollbar-track,
+ion-content::part(scroll)::-webkit-scrollbar-corner { background: transparent; }
+
 .app-main-viewport .ion-page {
   overflow-y: auto;
+  scrollbar-gutter: stable;
   overscroll-behavior-y: contain;
+}
+
+/* Las páginas con ion-content (Reportes, Sedes) scrollean dentro de él, que ya reserva
+   su propio espacio; sin esto quedaría el hueco duplicado. */
+.app-main-viewport .ion-page:has(> ion-content) {
+  scrollbar-gutter: auto;
 }
 
 /* Ocultar flechas de incremento y decremento (spin-button) en inputs tipo number */
