@@ -21,6 +21,7 @@ import {
   ellipsisVerticalOutline,
   informationCircleOutline,
   checkmarkCircleOutline,
+  checkmarkOutline,
   swapHorizontalOutline,
   closeOutline,
   cashOutline,
@@ -104,6 +105,29 @@ interface ReservationQuote {
   guestName: string;
 }
 
+/** Comprobante que se muestra tras cobrar una reserva nueva o el saldo del check-in. */
+export interface PaymentReceipt {
+  subtitle: string;
+  guestName: string;
+  roomNumber: string;
+  typologyName: string;
+  arrivalDate: string;
+  arrivalTime: string;
+  departureDate: string;
+  departureTime: string;
+  nights: number;
+  personCount: number;
+  total: number;
+  /** Lo pagado antes de este cobro (abono de la reserva). */
+  previouslyPaid?: number;
+  paid: number;
+  pending: number;
+  methodLabel: string;
+  reference: string;
+  paidAt: Date;
+  note?: string;
+}
+
 export interface CheckItemPlaceholder {
   id: number;
   guestName: string;
@@ -146,8 +170,11 @@ export class CheckPagePage implements OnInit, OnDestroy {
   /** Terminal POS activo de la sede; sin él, débito y crédito quedan deshabilitados. */
   posDisponible: PosDisponible | null = null;
   posLoading = false;
-  /** Reserva ya creada esperando el cobro con tarjeta (permite reintentar sin duplicarla). */
-  pendingPaymentReservation: { id: number; guestName: string; roomNumber: string } | null = null;
+  /** Comprobante del pago recién aprobado; mientras exista se muestra en lugar del formulario. */
+  paymentReceipt: PaymentReceipt | null = null;
+  /** Comprobante del saldo cobrado al hacer check-in. */
+  checkInReceipt: PaymentReceipt | null = null;
+  private receiptMessage = '';
   /** Reserva cuyo saldo ya se cobró en el POS, por si el check-in falla después. */
   private checkInPaidByPos: number | null = null;
   private tarifasConfig: { sedeId: number; porcentajeAbono: number; tarifas: Tarifa[] } | null = null;
@@ -265,6 +292,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
       ellipsisVerticalOutline,
       informationCircleOutline,
       checkmarkCircleOutline,
+      checkmarkOutline,
       swapHorizontalOutline,
       closeOutline,
       cashOutline,
@@ -286,7 +314,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
     this.paymentOption = 'deposit';
     this.paymentMethod = '';
     this.reservationQuote = null;
-    this.pendingPaymentReservation = null;
+    this.paymentReceipt = null;
     this.posCobro.reset();
     void this.loadPosDisponible();
     if (guestDraft) {
@@ -328,13 +356,9 @@ export class CheckPagePage implements OnInit, OnDestroy {
   closeNewEntryForm(): void {
     // No se puede cerrar mientras el terminal procesa el cobro.
     if (this.posCobro.enCurso()) return;
-    const pending = this.pendingPaymentReservation;
-    if (pending) {
-      this.entrySuccessMessage = `La reserva de ${pending.guestName} en la habitación ${pending.roomNumber} quedó creada sin pago. Puedes cobrarla en el check-in.`;
-      this.pendingPaymentReservation = null;
-      if (this.modalOnly) {
-        this.entryRegistered.emit(this.entrySuccessMessage);
-      }
+    if (this.paymentReceipt) {
+      this.closeReceipt();
+      return;
     }
     this.posCobro.reset();
     this.showNewEntryForm = false;
@@ -350,6 +374,10 @@ export class CheckPagePage implements OnInit, OnDestroy {
 
   confirmCloseNewEntryForm(): void {
     if (this.posCobro.enCurso()) return;
+    if (this.paymentReceipt) {
+      this.closeReceipt();
+      return;
+    }
     this.showCloseConfirmation = true;
   }
 
@@ -537,8 +565,8 @@ export class CheckPagePage implements OnInit, OnDestroy {
 
   get entrySubmitLabel(): string {
     if (this.posCobro.enCurso()) return 'Cobrando en el terminal…';
-    if (this.pendingPaymentReservation) {
-      return isCardMethod(this.paymentMethod) ? 'Reintentar cobro en el terminal' : 'Registrar pago';
+    if (this.posCobro.etapa() === 'fallido' && isCardMethod(this.paymentMethod)) {
+      return 'Reintentar cobro en el terminal';
     }
     return isCardMethod(this.paymentMethod)
       ? 'Cobrar en el terminal y guardar reserva'
@@ -574,43 +602,60 @@ export class CheckPagePage implements OnInit, OnDestroy {
     return tx.metodoPago === 'TARJETA_DEBITO' ? 'debito' : tx.metodoPago === 'TARJETA_CREDITO' ? 'credito' : method;
   }
 
-  private finishEntry(message: string): void {
-    this.entrySuccessMessage = message;
-    this.pendingPaymentReservation = null;
+  /** Cierra el comprobante y termina el ingreso. */
+  closeReceipt(): void {
+    this.entrySuccessMessage = this.receiptMessage;
+    this.paymentReceipt = null;
     this.posCobro.reset();
     this.showNewEntryForm = false;
+    this.showCloseConfirmation = false;
     this.setPageScrollLocked(false);
     if (this.modalOnly) {
       this.entryRegistered.emit(this.entrySuccessMessage);
     }
   }
 
-  /** Cobra la reserva ya creada: reintento con tarjeta o cambio a efectivo/transferencia. */
-  private async payPendingReservation(): Promise<void> {
-    const pending = this.pendingPaymentReservation;
-    if (!pending || this.paymentMethod === '') return;
-    const amount = this.paymentAmount;
-    if (isCardMethod(this.paymentMethod)) {
-      const used = await this.chargeWithPos(
-        pending.id, amount, this.paymentOption === 'full' ? 'PAGO_FINAL' : 'ABONO', this.paymentMethod,
-      );
-      if (!used) {
-        this.entryError = 'La reserva quedó creada sin pago. Reintenta el cobro, elige otro medio de pago o cierra para cobrar en el check-in.';
-        return;
-      }
-      this.hostalService.applyPosPayment(pending.id, amount, used);
-      this.finishEntry(`Reserva confirmada para ${pending.guestName} en la habitación ${pending.roomNumber}. Se cobraron ${amount.toLocaleString('es-CL')} CLP con ${PAYMENT_METHOD_LABELS[used]}.`);
-      return;
+  private showReceipt(reservationId: number, guestName: string, roomNumber: string, method: PaymentMethod): void {
+    const quote = this.reservationQuote!;
+    const paid = this.paymentAmount;
+    const reference = this.posCobro.transaccion()?.externalReference;
+    this.receiptMessage = `Reserva confirmada para ${guestName} en la habitación ${roomNumber}. Se registró un pago de ${paid.toLocaleString('es-CL')} CLP por ${PAYMENT_METHOD_LABELS[method]}.`;
+    const pending = Math.max(0, quote.total - paid);
+    this.paymentReceipt = {
+      subtitle: 'La reserva quedó confirmada',
+      note: pending > 0 ? 'El saldo se cobra en el check-in.' : undefined,
+      guestName,
+      roomNumber,
+      typologyName: quote.typologyName,
+      arrivalDate: this.entryForm.arrivalDate,
+      arrivalTime: this.entryForm.arrivalTime,
+      departureDate: this.entryForm.departureDate,
+      departureTime: this.entryForm.departureTime || '12:00',
+      nights: quote.nights,
+      personCount: this.entryForm.personCount,
+      total: quote.total,
+      paid,
+      pending,
+      methodLabel: PAYMENT_METHOD_LABELS[method],
+      reference: reference || `Reserva #${reservationId}`,
+      paidAt: new Date(),
+    };
+    this.entryError = '';
+  }
+
+  /** El cobro no se completó: se elimina la reserva para que no quede guardada sin pago. */
+  private async discardUnpaidReservation(reservationId: number, guest: Huesped): Promise<void> {
+    if (this.guestMode === 'new') {
+      // El huésped sí quedó registrado: el reintento lo reutiliza en vez de duplicarlo.
+      this.availableGuests.splice(0, this.availableGuests.length, ...this.hostalService.getGuests());
+      this.guestMode = 'existing';
+      this.selectedGuestId = String(guest.id_huesped);
     }
     try {
-      await this.hostalService.recordReservationPayment(pending.id, {
-        amount,
-        method: this.paymentMethod,
-        paidInFull: this.paymentOption === 'full',
-      });
-      this.finishEntry(`Reserva confirmada para ${pending.guestName} en la habitación ${pending.roomNumber}. Se registró un pago de ${amount.toLocaleString('es-CL')} CLP por ${PAYMENT_METHOD_LABELS[this.paymentMethod]}.`);
+      await this.hostalService.deleteReservation(reservationId);
+      this.entryError = 'El pago no se procesó, por lo que la reserva no se guardó. Reintenta el cobro o elige otro medio de pago.';
     } catch (error) {
-      this.entryError = getApiErrorMessage(error, 'No se pudo registrar el pago.');
+      this.entryError = `El pago no se procesó y no se pudo descartar la reserva: ${getApiErrorMessage(error, 'error desconocido.')} Revísala en el calendario antes de reintentar.`;
     }
   }
 
@@ -732,10 +777,6 @@ export class CheckPagePage implements OnInit, OnDestroy {
       return;
     }
     const paymentMethod = this.paymentMethod;
-    if (this.pendingPaymentReservation) {
-      await this.payPendingReservation();
-      return;
-    }
     if (this.guestMode === 'new' && !this.isValidEmail(this.entryForm.email)) {
       this.entryError = 'Ingresa un email válido, por ejemplo nombre@dominio.com.';
       return;
@@ -778,13 +819,21 @@ export class CheckPagePage implements OnInit, OnDestroy {
       const roomAssigned = this.availableRooms.find((room) => room.id_habitacion === registered.reservation.id_habitacion);
       const roomNum = roomAssigned?.numero_habitacion ?? '';
       const guestName = `${registered.guest.nombre} ${registered.guest.apellido}`;
+      const reservationId = registered.reservation.id_reserva;
+      let usedMethod: PaymentMethod = paymentMethod;
       if (isCardMethod(paymentMethod)) {
-        // La reserva ya existe; el pago lo registra el cobro POS al aprobarse.
-        this.pendingPaymentReservation = { id: registered.reservation.id_reserva, guestName, roomNumber: roomNum };
-        await this.payPendingReservation();
-        return;
+        // El cobro POS necesita la reserva; si no se aprueba, se elimina.
+        const used = await this.chargeWithPos(
+          reservationId, this.paymentAmount, this.paymentOption === 'full' ? 'PAGO_FINAL' : 'ABONO', paymentMethod,
+        );
+        if (!used) {
+          await this.discardUnpaidReservation(reservationId, registered.guest);
+          return;
+        }
+        this.hostalService.applyPosPayment(reservationId, this.paymentAmount, used);
+        usedMethod = used;
       }
-      this.finishEntry(`Reserva confirmada para ${guestName} en la habitación ${roomNum}. Se registró un pago de ${this.paymentAmount.toLocaleString('es-CL')} CLP por ${PAYMENT_METHOD_LABELS[paymentMethod]}.`);
+      this.showReceipt(reservationId, guestName, roomNum, usedMethod);
     } catch (error) {
       if (error instanceof EntryReservationError) {
         this.availableGuests.splice(0, this.availableGuests.length, ...this.hostalService.getGuests());
@@ -818,6 +867,10 @@ export class CheckPagePage implements OnInit, OnDestroy {
     this.checkInPaymentError = '';
   }
 
+  closeCheckInReceipt(): void {
+    this.checkInReceipt = null;
+  }
+
   async confirmCheckInPayment(): Promise<void> {
     const item = this.checkInPaymentItem;
     if (!item) return;
@@ -840,8 +893,29 @@ export class CheckPagePage implements OnInit, OnDestroy {
     }
 
     try {
-      await this.hostalService.processCheckIn(item.id, method || undefined);
+      const reserva = await this.hostalService.processCheckIn(item.id, method || undefined);
       await this.sedeService.marcarOcupada(item.roomNumber, item.guestName);
+      if (item.outstandingBalance > 0 && method) {
+        this.checkInReceipt = {
+          subtitle: `Check-in completado · Habitación ${item.roomNumber} ocupada`,
+          guestName: item.guestName,
+          roomNumber: item.roomNumber,
+          typologyName: item.roomType,
+          arrivalDate: reserva.fecha_llegada,
+          arrivalTime: reserva.hora_llegada ?? '',
+          departureDate: reserva.fecha_salida,
+          departureTime: reserva.hora_salida ?? '',
+          nights: item.nights,
+          personCount: reserva.cantidad_personas ?? 1,
+          total: item.totalAmount,
+          previouslyPaid: item.amountPaid,
+          paid: item.outstandingBalance,
+          pending: 0,
+          methodLabel: PAYMENT_METHOD_LABELS[method],
+          reference: (isCardMethod(method) ? this.posCobro.transaccion()?.externalReference : null) || `Reserva #${item.id}`,
+          paidAt: new Date(),
+        };
+      }
       this.entrySuccessMessage = item.outstandingBalance > 0
         ? `Check-in completado para ${item.guestName}. Se cobraron ${item.outstandingBalance.toLocaleString('es-CL')} CLP con ${method ? PAYMENT_METHOD_LABELS[method] : ''}. La habitación ${item.roomNumber} ahora está OCUPADA.`
         : `Check-in completado para ${item.guestName}. ${item.hasPaymentRecord ? 'El pago de la reserva ya estaba completo.' : 'No había saldo pendiente registrado.'} La habitación ${item.roomNumber} ahora está OCUPADA.`;

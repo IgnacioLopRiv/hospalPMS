@@ -524,6 +524,13 @@ export class HostalService {
     this.refreshView();
   }
 
+  /** Elimina una reserva recién creada cuyo cobro no se completó. */
+  async deleteReservation(reservationId: number): Promise<void> {
+    await firstValueFrom(this.reservasRepository.remove(reservationId, this.sedeId));
+    this.reservations = this.getReservations().filter((item) => item.id_reserva !== reservationId);
+    this.refreshView();
+  }
+
   async processCheckIn(
     reservationId: number,
     paymentMethod?: MetodoPagoReserva

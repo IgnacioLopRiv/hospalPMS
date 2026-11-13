@@ -98,6 +98,8 @@ export interface TransaccionPos {
   metodoPago: 'TARJETA_DEBITO' | 'TARJETA_CREDITO' | null;
   mensaje: string | null;
   pagoId: number | null;
+  /** Referencia enviada al proveedor (p. ej. HOSPAL-R18-T8). */
+  externalReference?: string | null;
   /** True cuando ya no cambiará de estado. */
   final: boolean;
   /** 'local': este navegador debe ejecutar el cobro con el agente del proveedor. */
