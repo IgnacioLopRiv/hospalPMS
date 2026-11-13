@@ -4,6 +4,9 @@
     <div class="modal-container app-modal" appEscapeClose (escapeClose)="dismiss()">
       <header class="modal-header">
         <h2>Editar perfil</h2>
+        <button type="button" class="modal-close-x" aria-label="Cerrar" (click)="dismiss()">
+          <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+        </button>
       </header>
 
       <div class="modal-body">

@@ -86,6 +86,9 @@
           <h2 id="sede-modal-title">{{ editingSede() === 'new' ? 'Nueva sede' : 'Editar sede' }}</h2>
           <p>{{ editingSede() === 'new' ? 'Ingresa los datos del establecimiento.' : 'Modifica los datos del establecimiento.' }}</p>
         </div>
+        <button type="button" class="modal-close-x" aria-label="Cerrar" (click)="closeForm()">
+          <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+        </button>
       </header>
 
       <form class="entry-form" #sedeFormRef="ngForm" (ngSubmit)="saveSede()">

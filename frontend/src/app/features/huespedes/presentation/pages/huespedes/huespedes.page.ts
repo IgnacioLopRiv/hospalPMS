@@ -19,7 +19,8 @@ import {
   createOutline,
   trashOutline,
   listOutline,
-  gridOutline
+  gridOutline,
+  closeOutline,
 } from 'ionicons/icons';
 
 import { HostalService } from '../../../application/hostal.service';
@@ -102,6 +103,7 @@ export class HuespedesPage implements OnInit, OnDestroy {
 
   constructor() {
     addIcons({
+      closeOutline,
       peopleOutline,
       checkmarkCircleOutline,
       bedOutline,

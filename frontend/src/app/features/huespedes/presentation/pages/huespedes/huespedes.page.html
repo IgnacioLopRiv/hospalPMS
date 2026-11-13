@@ -40,6 +40,9 @@
           <h2 id="guest-modal-title">Nuevo huésped</h2>
           <p>Registra los datos personales del nuevo huésped.</p>
         </div>
+        <button type="button" class="modal-close-x" aria-label="Cerrar" (click)="closeNewGuestForm()">
+          <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+        </button>
       </header>
 
       <form class="entry-form" #guestFormRef="ngForm" (ngSubmit)="registerGuest()">
@@ -400,6 +403,9 @@
             </p>
           </div>
         </div>
+        <button type="button" class="modal-close-x" aria-label="Cerrar" (click)="closeGuestDetail()">
+          <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+        </button>
       </header>
 
       <div class="entry-modal-body">
@@ -473,12 +479,11 @@
         }
       </div>
 
-      <footer class="entry-form-actions">
-        <button type="button" class="modal-btn modal-btn--danger guest-detail-delete-button" (click)="fromGuestDetail('delete')">
+      <footer class="entry-form-actions guest-detail-actions">
+        <button type="button" class="guest-detail-delete-button" (click)="fromGuestDetail('delete')">
           <ion-icon name="trash-outline"></ion-icon>
           Eliminar huésped
         </button>
-        <button type="button" class="modal-btn modal-btn--secondary" (click)="closeGuestDetail()">Cancelar</button>
         <button type="button" class="modal-btn modal-btn--secondary" (click)="fromGuestDetail('edit')">Modificar huésped</button>
         <button type="button" class="modal-btn modal-btn--primary" (click)="fromGuestDetail('assign')">Asignar reserva</button>
       </footer>
@@ -496,6 +501,9 @@
           <h2 id="edit-guest-title">Modificar huésped</h2>
           <p>Actualiza los datos personales del huésped.</p>
         </div>
+        <button type="button" class="modal-close-x" aria-label="Cerrar" (click)="closeGuestEditor()">
+          <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+        </button>
       </header>
       <form class="entry-form" #editGuestRef="ngForm" (ngSubmit)="saveGuestChanges()">
         <div class="entry-modal-body">
@@ -548,6 +556,9 @@
           <h2 id="edit-reservation-title">Modificar reserva</h2>
           <p>Actualiza las fechas, el horario, la cantidad de personas o la habitación.</p>
         </div>
+        <button type="button" class="modal-close-x" aria-label="Cerrar" (click)="closeReservationEditor()">
+          <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+        </button>
       </header>
       <form class="entry-form" #editReservationRef="ngForm" (ngSubmit)="saveReservationChanges()">
         <div class="entry-modal-body">
@@ -618,6 +629,9 @@
           <p>¿Confirmas que quieres eliminar este huésped y todas sus reservas asignadas? Esta acción no se puede
             deshacer.</p>
         </div>
+        <button type="button" class="modal-close-x" aria-label="Cerrar" (click)="cancelGuestDeletion()">
+          <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+        </button>
       </header>
       @if (guestError) {
       <div class="entry-modal-body">

@@ -41,6 +41,9 @@
           <h2 id="entry-modal-title">Nuevo ingreso</h2>
           <p>{{ entryStep === 1 ? 'Ingresa los datos del huésped para continuar.' : entryStep === 2 ? 'Completa las fechas y los detalles de la estadía.' : entryStep === 3 ? 'Selecciona una habitación disponible para estas fechas y cantidad de personas.' : 'Selecciona el pago del abono o el pago completo para confirmar la reserva.' }}</p>
         </div>
+        <button type="button" class="modal-close-x" aria-label="Cerrar" (click)="confirmCloseNewEntryForm()">
+          <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+        </button>
       </header>
 
       <form class="entry-form" #entryFormRef="ngForm" (ngSubmit)="registerEntry()">
@@ -522,6 +525,9 @@
           <span>Detalle de habitación disponible</span>
           <h2 id="room-selection-detail-title">Habitación {{ room.numero }}</h2>
         </div>
+        <button type="button" class="modal-close-x" aria-label="Cerrar" (click)="closeRoomDetails()">
+          <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+        </button>
       </header>
       <nav class="room-selection-detail-tabs" aria-label="Detalles de habitación">
         <button type="button" [class.active]="roomDetailsTab === 'details'" (click)="roomDetailsTab = 'details'">Detalles</button>
@@ -843,6 +849,9 @@
       (click)="$event.stopPropagation()">
       <header>
         <div class="checkin-payment-icon"><ion-icon name="cash-outline"></ion-icon></div>
+        <button type="button" class="modal-close-x modal-close-x--floating" aria-label="Cerrar" (click)="closeCheckInPayment()">
+          <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+        </button>
       </header>
       <h2 id="checkin-payment-title">Procesar check-in</h2>
       <p class="checkin-payment-guest">{{ item.guestName }} · Habitación {{ item.roomNumber }}</p>

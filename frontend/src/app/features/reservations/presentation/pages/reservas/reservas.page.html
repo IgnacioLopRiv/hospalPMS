@@ -247,6 +247,9 @@
         <span class="reservation-status" [ngClass]="'status-' + reservationStatusClass(detail.reservation.estado_reserva)">
           {{ detail.reservation.estado_reserva }}
         </span>
+        <button type="button" class="modal-close-x" aria-label="Cerrar" (click)="closeReservationModal()">
+          <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+        </button>
       </header>
 
       <div class="entry-modal-body">
@@ -311,7 +314,7 @@
           Cancelar reserva
         </button>
         }
-        <button type="button" class="modal-btn modal-btn--secondary" (click)="closeReservationModal()">Cancelar</button>
+        <button type="button" class="modal-btn modal-btn--secondary" (click)="closeReservationModal()">Cerrar</button>
         @if (canCancelReservation(detail.reservation.estado_reserva)) {
         <button type="button" class="modal-btn modal-btn--primary" (click)="startReservationEdit()">
           Modificar reserva
@@ -327,6 +330,9 @@
           <h2 id="reservation-edit-title">Modificar reserva</h2>
           <p>{{ detail.guestName }} · actualiza las fechas, el horario, la cantidad de personas o la habitación.</p>
         </div>
+        <button type="button" class="modal-close-x" aria-label="Cerrar" (click)="closeReservationModal()">
+          <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+        </button>
       </header>
       <form class="entry-form" #editReservationRef="ngForm" (ngSubmit)="saveReservationChanges()">
         <div class="entry-modal-body">

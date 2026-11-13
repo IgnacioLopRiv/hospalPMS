@@ -154,6 +154,9 @@
     <section class="inventory-modal app-modal" role="dialog" aria-modal="true" aria-labelledby="new-item-title" (click)="$event.stopPropagation()">
       <header class="modal-header">
         <div><span class="modal-icon"><ion-icon name="cube-outline"></ion-icon></span><div><h2 id="new-item-title">{{ editingInsumoId() === null ? 'Agregar insumo' : 'Editar insumo' }}</h2><p>{{ editingInsumoId() === null ? 'Registra los datos y el stock inicial.' : 'Actualiza la información del insumo.' }}</p></div></div>
+        <button type="button" class="modal-close-x" aria-label="Cerrar" (click)="closeInsumoModal()">
+          <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+        </button>
       </header>
       <form (ngSubmit)="saveInsumo()">
         <div class="modal-body">

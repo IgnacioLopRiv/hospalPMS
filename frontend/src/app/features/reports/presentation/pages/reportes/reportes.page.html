@@ -406,6 +406,9 @@
           <div class="detail-header-side">
             <span class="pay-status" [ngClass]="'status-' + trx.estadoPago.toLowerCase()">{{ estadoPagoLabel(trx.estadoPago) }}</span>
           </div>
+          <button type="button" class="modal-close-x" aria-label="Cerrar" (click)="closeDetalle()">
+            <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+          </button>
         </header>
 
         <div class="detail-body">
@@ -462,7 +465,7 @@
 
         <footer class="detail-footer">
           <span>Estado de la reserva: <strong>{{ trx.estadoReserva }}</strong></span>
-          <button type="button" class="modal-btn modal-btn--secondary" (click)="closeDetalle()">Cancelar</button>
+          <button type="button" class="modal-btn modal-btn--secondary" (click)="closeDetalle()">Cerrar</button>
         </footer>
       </section>
     </div>

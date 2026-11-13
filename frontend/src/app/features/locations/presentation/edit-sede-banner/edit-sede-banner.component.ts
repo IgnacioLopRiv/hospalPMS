@@ -8,7 +8,10 @@ import {
   IonSelect,
   IonSelectOption,
   IonTextarea,
+  IonIcon,
 } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { closeOutline } from 'ionicons/icons';
 import {
   Habitacion,
   SedeService,
@@ -26,6 +29,7 @@ import {
     IonSelect,
     IonSelectOption,
     IonTextarea,
+    IonIcon,
   ],
 })
 export class EditSedeBannerComponent {
@@ -43,6 +47,7 @@ export class EditSedeBannerComponent {
   readonly errorMessage = signal('');
 
   constructor() {
+    addIcons({ closeOutline });
     effect(() => {
       if (this.isOpen()) {
         this.loadDraft();

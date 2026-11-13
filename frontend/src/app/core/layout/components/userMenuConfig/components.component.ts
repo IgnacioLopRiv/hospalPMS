@@ -9,7 +9,10 @@ import {
   IonModal,
   IonSelect,
   IonSelectOption,
+  IonIcon,
 } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { closeOutline } from 'ionicons/icons';
 import { AuthService } from '../../../auth/application/auth.service';
 import { AuthUser, UserRole } from '../../../auth/domain/auth.roles';
 
@@ -27,9 +30,14 @@ import { AuthUser, UserRole } from '../../../auth/domain/auth.roles';
     IonInput,
     IonSelect,
     IonSelectOption,
+    IonIcon,
   ],
 })
 export class UserMenuConfigComponent {
+  constructor() {
+    addIcons({ closeOutline });
+  }
+
   private readonly auth = inject(AuthService);
 
   readonly isOpen = input(false);

@@ -189,6 +189,9 @@
           <h2 id="config-modal-title">{{ editingTarifaId() ? 'Configurar tarifa' : 'Crear tarifa' }}</h2>
           <p>{{ rateStep() === 1 ? 'Paso 1 de 2 · Define el nombre y los periodos.' : 'Paso 2 de 2 · Asigna los precios por tipología.' }}</p>
         </div>
+        <button type="button" class="modal-close-x" aria-label="Cerrar" (click)="closeConfig()">
+          <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+        </button>
       </header>
 
       <div class="config-modal-body">

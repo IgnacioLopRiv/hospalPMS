@@ -200,6 +200,9 @@
               {{ targetRoom() ? 'Habitación ' + targetRoom()!.numero : 'Datos de la habitación' }}
             </h2>
           </div>
+          <button type="button" class="modal-close-x" aria-label="Cerrar" (click)="closeNewRoomForm()">
+            <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+          </button>
         </header>
 
         <nav class="entry-step-indicator new-room-steps" aria-label="Progreso de la nueva habitación">
@@ -335,6 +338,9 @@
             <span class="room-detail-eyebrow">Administración de habitación</span>
             <h2 id="room-detail-title">Habitación {{ room.numero }}</h2>
           </div>
+          <button type="button" class="modal-close-x" aria-label="Cerrar" (click)="closeRoomEditor()">
+            <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+          </button>
         </header>
 
         <nav class="room-detail-tabs" aria-label="Secciones de la habitación">
@@ -477,6 +483,9 @@
             <span class="room-detail-eyebrow maintenance-eyebrow">Pasar a mantenimiento</span>
             <h2 id="maintenance-form-title">Habitación {{ room.numero }}</h2>
           </div>
+          <button type="button" class="modal-close-x" aria-label="Cerrar" (click)="closeMaintenanceForm()">
+            <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+          </button>
         </header>
 
         <form (ngSubmit)="submitMaintenance()">
@@ -551,6 +560,9 @@
             <span class="room-detail-eyebrow">Registro de mantenimientos</span>
             <h2 id="maintenance-history-title">Historial de mantenimientos</h2>
           </div>
+          <button type="button" class="modal-close-x" aria-label="Cerrar" (click)="closeMaintenanceHistory()">
+            <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+          </button>
         </header>
 
         <nav class="room-detail-tabs" aria-label="Filtrar mantenimientos">
@@ -629,7 +641,7 @@
 
         <footer class="room-detail-modal-actions">
           <div class="room-detail-save-actions">
-            <button type="button" class="modal-btn modal-btn--secondary" (click)="closeMaintenanceHistory()">Cancelar</button>
+            <button type="button" class="modal-btn modal-btn--secondary" (click)="closeMaintenanceHistory()">Cerrar</button>
           </div>
         </footer>
       </section>

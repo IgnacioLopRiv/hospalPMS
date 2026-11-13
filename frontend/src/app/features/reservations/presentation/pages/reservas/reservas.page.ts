@@ -29,6 +29,7 @@ import {
   logoWhatsapp,
   peopleOutline,
   timeOutline,
+  closeOutline,
 } from 'ionicons/icons';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HostalService, ReservationCalendarEntry } from '../../../../huespedes/application/hostal.service';
@@ -271,6 +272,7 @@ export class ReservasPage implements OnInit, OnDestroy {
 
   constructor() {
     addIcons({
+      closeOutline,
       bedOutline,
       calendarOutline,
       chevronBackOutline,
