@@ -32,7 +32,10 @@
 
   @if (showNewEntryForm) {
   <div class="entry-modal-backdrop" appModalPortal>
-    <section class="entry-modal" role="dialog" aria-modal="true" aria-labelledby="entry-modal-title" (click)="$event.stopPropagation()">
+    <section class="entry-modal" [class.receipt-mode]="paymentReceipt" role="dialog" aria-modal="true" aria-labelledby="entry-modal-title" (click)="$event.stopPropagation()">
+      @if (paymentReceipt; as receipt) {
+      <ng-container *ngTemplateOutlet="paymentReceiptTpl; context: { $implicit: receipt, titleId: 'entry-modal-title', kind: 'entry' }"></ng-container>
+      } @else {
       <header class="entry-modal-header">
         <div>
           <h2 id="entry-modal-title">Nuevo ingreso</h2>
@@ -447,9 +450,6 @@
             }
           </div>
 
-          @if (pendingPaymentReservation) {
-          <p class="pos-payment-hint pending">La reserva ya quedó creada. Falta registrar el pago.</p>
-          }
           <app-pos-cobro-estado></app-pos-cobro-estado>
         </section>
         }
@@ -488,15 +488,12 @@
           </button>
           }
           @if (entryStep === 4) {
-          @if (pendingPaymentReservation) {
-          <button type="button" class="entry-cancel-button" [disabled]="posCobro.enCurso()" (click)="closeNewEntryForm()">Cobrar después</button>
-          } @else {
           <button type="button" class="entry-cancel-button" [disabled]="posCobro.enCurso()" (click)="returnToRoomSelectionStep()">Atrás</button>
-          }
           <button type="submit" class="entry-submit-button" [disabled]="!isPaymentStepValid()">{{ entrySubmitLabel }}</button>
           }
         </footer>
       </form>
+      }
     </section>
     @if (showCloseConfirmation) {
     <div class="entry-close-confirm-backdrop" (click)="cancelCloseNewEntryForm()">
@@ -927,5 +924,58 @@
     </section>
   </div>
   }
+
+  @if (checkInReceipt; as receipt) {
+  <div class="checkin-payment-backdrop" (click)="closeCheckInReceipt()">
+    <section
+      class="checkin-payment-modal receipt-mode"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="checkin-receipt-title"
+      (click)="$event.stopPropagation()">
+      <ng-container *ngTemplateOutlet="paymentReceiptTpl; context: { $implicit: receipt, titleId: 'checkin-receipt-title', kind: 'checkin' }"></ng-container>
+    </section>
+  </div>
+  }
   }
 </div>
+
+<!-- Comprobante de pago: reserva nueva y cobro del saldo en el check-in. -->
+<ng-template #paymentReceiptTpl let-receipt let-titleId="titleId" let-kind="kind">
+  <div class="payment-receipt" role="status" aria-live="polite">
+    <div class="payment-receipt-badge" aria-hidden="true">
+      <ion-icon name="checkmark-outline"></ion-icon>
+    </div>
+    <h2 [id]="titleId">Pago exitoso</h2>
+    <p class="payment-receipt-subtitle">{{ receipt.subtitle }}</p>
+    <strong class="payment-receipt-amount">{{ receipt.paid | currency:'CLP':'symbol-narrow':'1.0-0' }}</strong>
+
+    <dl class="payment-receipt-list">
+      <div><dt>Huésped</dt><dd>{{ receipt.guestName }}</dd></div>
+      <div><dt>Habitación</dt><dd>{{ receipt.roomNumber }}@if (receipt.typologyName) { · {{ receipt.typologyName }} }</dd></div>
+      <div><dt>Llegada</dt><dd>{{ receipt.arrivalDate | date:'dd/MM/yyyy' }} · {{ receipt.arrivalTime }}</dd></div>
+      <div><dt>Salida</dt><dd>{{ receipt.departureDate | date:'dd/MM/yyyy' }} · {{ receipt.departureTime }}</dd></div>
+      <div><dt>Estadía</dt><dd>{{ receipt.nights }} {{ receipt.nights === 1 ? 'noche' : 'noches' }} · {{ receipt.personCount }} {{ receipt.personCount === 1 ? 'persona' : 'personas' }}</dd></div>
+    </dl>
+
+    <dl class="payment-receipt-list">
+      <div><dt>Referencia</dt><dd class="mono">{{ receipt.reference }}</dd></div>
+      <div><dt>Fecha</dt><dd>{{ receipt.paidAt | date:'dd/MM/yyyy, HH:mm' }}</dd></div>
+      <div><dt>Medio de pago</dt><dd>{{ receipt.methodLabel }}</dd></div>
+      <div><dt>Total estadía</dt><dd>{{ receipt.total | currency:'CLP':'symbol-narrow':'1.0-0' }}</dd></div>
+      @if (receipt.previouslyPaid) {
+      <div><dt>Abonado antes</dt><dd>{{ receipt.previouslyPaid | currency:'CLP':'symbol-narrow':'1.0-0' }}</dd></div>
+      }
+      <div><dt>Pagado ahora</dt><dd class="paid">{{ receipt.paid | currency:'CLP':'symbol-narrow':'1.0-0' }}</dd></div>
+      <div class="payment-receipt-total">
+        <dt>Saldo pendiente</dt>
+        <dd [class.settled]="receipt.pending === 0">{{ receipt.pending === 0 ? 'Pagado completo' : (receipt.pending | currency:'CLP':'symbol-narrow':'1.0-0') }}</dd>
+      </div>
+    </dl>
+
+    @if (receipt.note) {
+    <p class="payment-receipt-note">{{ receipt.note }}</p>
+    }
+    <button type="button" class="payment-receipt-button" (click)="kind === 'checkin' ? closeCheckInReceipt() : closeReceipt()">Finalizar</button>
+  </div>
+</ng-template>

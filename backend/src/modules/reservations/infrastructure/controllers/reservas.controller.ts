@@ -395,6 +395,23 @@ export class ReservasController {
       throw new NotFoundException(`No existe la reserva ${id} en esta sede.`);
     try {
       await this.prisma.$transaction(async (transaction) => {
+        // Un cobro con tarjeta aprobado o aún en el terminal no se puede perder.
+        const cobroVigente = await transaction.transaccionPos.findFirst({
+          where: {
+            reservaId: id,
+            OR: [
+              { estado: { in: ['APROBADA', 'PENDIENTE', 'EN_TERMINAL'] } },
+              { pagoId: { not: null } },
+            ],
+          },
+          select: { id: true },
+        });
+        if (cobroVigente) {
+          throw new ConflictException(
+            'La reserva tiene un cobro con tarjeta aprobado o en curso; no se puede eliminar.',
+          );
+        }
+        await transaction.transaccionPos.deleteMany({ where: { reservaId: id } });
         await transaction.pago.deleteMany({ where: { reservaId: id } });
         await transaction.documentoFacturacion.deleteMany({
           where: { reservaId: id },
