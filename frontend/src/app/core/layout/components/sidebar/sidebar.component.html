@@ -64,3 +64,24 @@
     </a>
   </div>
 </aside>
+
+@if (isLogoutDialogOpen) {
+<dialog #logoutDialog class="entry-modal-backdrop guest-edit-dialog" (cancel)="onLogoutDialogCancel($event)">
+  <section class="entry-modal app-modal logout-modal" role="alertdialog" aria-modal="true"
+    aria-labelledby="logout-title">
+    <header class="entry-modal-header">
+      <div>
+        <h2 id="logout-title">Cerrar sesión</h2>
+        <p>¿Estás seguro de que deseas cerrar tu sesión?</p>
+      </div>
+      <button type="button" class="modal-close-x" aria-label="Cerrar" (click)="cancelLogout()">
+        <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+      </button>
+    </header>
+    <footer class="entry-form-actions">
+      <button type="button" class="modal-btn modal-btn--secondary" (click)="cancelLogout()">Cancelar</button>
+      <button type="button" class="modal-btn modal-btn--danger" (click)="confirmLogoutAction()">Salir</button>
+    </footer>
+  </section>
+</dialog>
+}

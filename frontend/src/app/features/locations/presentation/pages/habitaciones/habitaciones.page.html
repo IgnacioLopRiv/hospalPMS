@@ -389,18 +389,44 @@
                   [(ngModel)]="roomNumber"
                   (ngModelChange)="roomFormError.set('')">
               </label>
-              <label class="room-detail-field">
+              <div class="room-detail-field typology-picker-field">
                 <span>Tipología</span>
-                <select
-                  name="editRoomTypology"
-                  [value]="roomTypologyId ?? ''"
-                  (change)="setRoomTypology($event)">
-                  <option value="" disabled>Selecciona una tipología</option>
-                  @for (tipologia of tipologias(); track tipologia.id) {
-                    <option [value]="tipologia.id">{{ tipologia.nombre }} ({{ tipologia.capacidad }}p)</option>
+                <button
+                  type="button"
+                  class="typology-picker-trigger"
+                  [class.is-open]="typologyPickerOpen"
+                  [attr.aria-expanded]="typologyPickerOpen"
+                  aria-haspopup="listbox"
+                  (click)="typologyPickerOpen = !typologyPickerOpen"
+                  (keydown.escape)="closeTypologyPicker($event)">
+                  @if (selectedRoomTypology(); as tipologia) {
+                    <span class="typology-dot" [style.background]="tipologia.color || '#64748b'" aria-hidden="true"></span>
+                    <span class="typology-name">{{ tipologia.nombre }}</span>
+                    <span class="typology-capacity"><ion-icon name="person-outline" aria-hidden="true"></ion-icon>{{ tipologia.capacidad }}</span>
+                  } @else {
+                    <span class="typology-placeholder">Selecciona una tipología</span>
                   }
-                </select>
-              </label>
+                  <ion-icon class="typology-chevron" name="chevron-down-outline" aria-hidden="true"></ion-icon>
+                </button>
+                @if (typologyPickerOpen) {
+                  <div class="typology-options" role="listbox" aria-label="Tipologías">
+                    @for (tipologia of tipologias(); track tipologia.id) {
+                      <button
+                        type="button"
+                        class="typology-option"
+                        role="option"
+                        [class.selected]="tipologia.id === roomTypologyId"
+                        [attr.aria-selected]="tipologia.id === roomTypologyId"
+                        (click)="selectRoomTypology(tipologia.id)"
+                        (keydown.escape)="closeTypologyPicker($event)">
+                        <span class="typology-dot" [style.background]="tipologia.color || '#64748b'" aria-hidden="true"></span>
+                        <span class="typology-name">{{ tipologia.nombre }}</span>
+                        <span class="typology-capacity"><ion-icon name="person-outline" aria-hidden="true"></ion-icon>{{ tipologia.capacidad }}</span>
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
               <label class="room-detail-field">
                 <span>Tamaño (m²)</span>
                 <input

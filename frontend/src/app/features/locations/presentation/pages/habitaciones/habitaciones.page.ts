@@ -11,6 +11,7 @@ import {
   checkmarkCircleOutline,
   closeOutline,
   personOutline,
+  chevronDownOutline,
   timeOutline,
   waterOutline,
   refreshOutline,
@@ -193,6 +194,7 @@ export class HabitacionesPage implements OnDestroy {
       closeOutline,
       checkmarkCircleOutline,
       personOutline,
+      chevronDownOutline,
       timeOutline,
       waterOutline,
       refreshOutline,
@@ -273,6 +275,7 @@ export class HabitacionesPage implements OnDestroy {
   }
 
   openRoomEditor(room: Habitacion): void {
+    this.typologyPickerOpen = false;
     if (!this.isAdmin()) {
       return;
     }
@@ -556,10 +559,23 @@ export class HabitacionesPage implements OnDestroy {
     }
   }
 
-  setRoomTypology(event: Event): void {
-    const id = Number((event.target as HTMLSelectElement).value);
-    this.roomTypologyId = Number.isFinite(id) ? id : null;
+  typologyPickerOpen = false;
+
+  selectedRoomTypology(): SedeTipologia | undefined {
+    return this.tipologias().find((item) => item.id === this.roomTypologyId);
+  }
+
+  selectRoomTypology(id: number): void {
+    this.roomTypologyId = id;
+    this.typologyPickerOpen = false;
     this.roomFormError.set('');
+  }
+
+  closeTypologyPicker(event: Event): void {
+    if (!this.typologyPickerOpen) return;
+    event.stopPropagation();
+    event.preventDefault();
+    this.typologyPickerOpen = false;
   }
 
   async saveRoomChanges(): Promise<void> {

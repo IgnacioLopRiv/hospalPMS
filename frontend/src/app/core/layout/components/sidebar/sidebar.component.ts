@@ -1,7 +1,7 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { AlertController, IonIcon } from '@ionic/angular/standalone';
+import { IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
   businessOutline,
@@ -13,6 +13,7 @@ import {
   cashOutline,
   logOutOutline,
   cubeOutline,
+  closeOutline,
 } from 'ionicons/icons';
 
 import { AuthService } from '../../../auth/application/auth.service';
@@ -35,7 +36,10 @@ export class SidebarComponent {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
   private readonly sedeService = inject(SedeService);
-  private readonly alertController = inject(AlertController);
+  private readonly changeDetector = inject(ChangeDetectorRef);
+
+  @ViewChild('logoutDialog') logoutDialog?: ElementRef<HTMLDialogElement>;
+  isLogoutDialogOpen = false;
 
   readonly currentUser = this.auth.currentUser;
   readonly canViewReports = this.auth.canViewReports;
@@ -54,6 +58,7 @@ export class SidebarComponent {
       cashOutline,
       logOutOutline,
       cubeOutline,
+      closeOutline,
     });
   }
 
@@ -73,25 +78,31 @@ export class SidebarComponent {
     return user ? ROLE_LABELS[user.role] ?? 'Personal' : '';
   }
 
-  async confirmLogout(): Promise<void> {
-    const alert = await this.alertController.create({
-      header: 'Confirmar salida',
-      message: '¿Estás seguro de que deseas salir?',
-      cssClass: 'logout-confirmation-alert',
-      buttons: [
-        {
-          text: 'Cancelar',
-          role: 'cancel',
-        },
-        {
-          text: 'Salir',
-          role: 'destructive',
-          handler: () => this.logout(),
-        },
-      ],
-    });
+  confirmLogout(): void {
+    this.isLogoutDialogOpen = true;
+    this.changeDetector.detectChanges();
+    const dialog = this.logoutDialog?.nativeElement;
+    if (dialog && !dialog.open) {
+      dialog.showModal();
+    }
+  }
 
-    await alert.present();
+  cancelLogout(): void {
+    const dialog = this.logoutDialog?.nativeElement;
+    if (dialog?.open) {
+      dialog.close();
+    }
+    this.isLogoutDialogOpen = false;
+  }
+
+  onLogoutDialogCancel(event: Event): void {
+    event.preventDefault();
+    this.cancelLogout();
+  }
+
+  confirmLogoutAction(): void {
+    this.cancelLogout();
+    this.logout();
   }
 
   private logout(): void {

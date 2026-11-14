@@ -234,7 +234,7 @@
   <section class="cards-grid">
     <div class="guest-card" [ngClass]="'status-' + guest.status" *ngFor="let guest of filteredGuests"
       role="button" tabindex="0" [attr.aria-label]="'Ver detalle de ' + guest.guestName"
-      (click)="openGuestDetail(guest.id_huesped)"
+      (click)="$any($event.currentTarget).blur(); openGuestDetail(guest.id_huesped)"
       (keydown.enter)="openGuestDetail(guest.id_huesped)"
       (keydown.space)="$event.preventDefault(); openGuestDetail(guest.id_huesped)">
       <div class="guest-status-line" aria-hidden="true"></div>
@@ -314,7 +314,7 @@
       <tbody>
         @for (guest of filteredGuests; track guest.id_huesped; let rowIndex = $index) {
         <tr class="guest-list-row" tabindex="0" [attr.aria-label]="'Ver detalle de ' + guest.guestName"
-          (click)="openGuestDetail(guest.id_huesped)" (keydown.enter)="openGuestDetail(guest.id_huesped)">
+          (click)="$any($event.currentTarget).blur(); openGuestDetail(guest.id_huesped)" (keydown.enter)="openGuestDetail(guest.id_huesped)">
           <td>
             <div class="list-guest-name">
               <span class="list-avatar color-{{ guest.cardColor }}">{{ guest.initials }}</span>
