@@ -454,7 +454,7 @@ export class HostalService {
 
   async updateReservation(
     reservationId: number,
-    changes: Pick<Reserva, 'id_habitacion' | 'fecha_llegada' | 'fecha_salida' | 'hora_llegada' | 'cantidad_personas'> & { hora_salida?: string }
+    changes: Pick<Reserva, 'id_habitacion' | 'fecha_llegada' | 'fecha_salida' | 'hora_llegada' | 'cantidad_personas'> & { hora_salida?: string; precio_total?: number; pago_completo?: boolean }
   ): Promise<Reserva> {
     const reservations = this.getReservations();
     const existingReservation = reservations.find((reservation) => reservation.id_reserva === reservationId);
@@ -606,6 +606,42 @@ export class HostalService {
       };
     });
     this.refreshView();
+  }
+
+  /**
+   * Extiende la salida de una estadía en curso y actualiza su total. Con efectivo o transferencia
+   * el pago de la diferencia se registra en la misma operación; con tarjeta el terminal POS ya lo
+   * registró, así que solo se refleja el monto pagado.
+   */
+  async extendStay(
+    reservationId: number,
+    extension: { newDeparture: string; newTotal: number; amount: number; method?: MetodoPagoReserva; roomId?: number },
+  ): Promise<Reserva> {
+    const reservations = this.getReservations();
+    const reservation = reservations.find((item) => item.id_reserva === reservationId);
+    if (!reservation) {
+      throw new Error('La reserva ya no existe. Actualiza la lista e inténtalo otra vez.');
+    }
+    if (!['HOSPEDADO', 'CHECK-OUT HOY'].includes(reservation.estado_reserva)) {
+      throw new Error('Solo se puede extender una estadía en curso.');
+    }
+    if (extension.newDeparture <= reservation.fecha_salida) {
+      throw new Error('La nueva salida debe ser posterior a la salida actual.');
+    }
+    if (extension.amount > 0 && !extension.method) {
+      throw new Error('Selecciona el medio de pago de la extensión.');
+    }
+    const paid = (reservation.monto_pagado ?? 0) + Math.max(0, extension.amount);
+    return this.persistReservationUpdate(reservations, {
+      ...reservation,
+      fecha_salida: extension.newDeparture,
+      ...(extension.roomId ? { id_habitacion: extension.roomId } : {}),
+      estado_reserva: 'HOSPEDADO',
+      precio_total: extension.newTotal,
+      monto_pagado: paid,
+      ...(extension.amount > 0 ? { metodo_pago: extension.method } : {}),
+      pago_completo: paid >= extension.newTotal,
+    });
   }
 
   /** Registra un pago en efectivo o transferencia sobre una reserva ya creada. */

@@ -1,4 +1,5 @@
 <div class="huespedes-page-container">
+  @if (!modalOnly) {
   <!-- Encabezado de la página -->
   <header class="page-header-standard">
     <div class="header-left-group">
@@ -140,6 +141,8 @@
   </div>
   }
 
+  }
+
   @if (showReservationAssignment) {
   <app-check-page
     [modalOnly]="true"
@@ -150,6 +153,8 @@
     (entryRegistered)="completeReservationAssignment($event)">
   </app-check-page>
   }
+
+  @if (!modalOnly) {
 
   <!-- Tarjetas KPI -->
   <section class="kpi-grid">
@@ -377,6 +382,7 @@
   </section>
   }
 
+  }
   @if (guestDetail; as detail) {
   <dialog #guestDetailDialog class="entry-modal-backdrop guest-edit-dialog"
     (cancel)="onGuestDetailDialogCancel($event)">

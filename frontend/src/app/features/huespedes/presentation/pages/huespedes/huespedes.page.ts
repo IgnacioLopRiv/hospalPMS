@@ -1,5 +1,5 @@
 import { EscapeCloseDirective } from '../../../../../shared/presentation/modal-portal/escape-close.directive';
-import { ChangeDetectorRef, Component, DOCUMENT, ElementRef, OnDestroy, OnInit, Renderer2, ViewChild, effect, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DOCUMENT, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, Renderer2, ViewChild, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonIcon } from '@ionic/angular/standalone';
@@ -36,6 +36,12 @@ import {
 } from '../../../../../shared/domain/phone-format';
 import { parsePhoneNumberFromString } from 'libphonenumber-js/max';
 import { CountryPickerComponent } from '../../../../../shared/presentation/country-picker/country-picker.component';
+
+export interface HuespedModalAction {
+  accion: 'detalle' | 'editar-huesped' | 'editar-reserva';
+  huesped: number;
+  reserva: number;
+}
 
 @Component({
   selector: 'app-huespedes',
@@ -103,6 +109,16 @@ export class HuespedesPage implements OnInit, OnDestroy {
 
   private readonly sedeService = inject(SedeService);
   private readonly hostalService = inject(HostalService);
+  /**
+   * Modo embebido: solo se renderizan los modales (sin la página de fondo). Lo usa Recepción
+   * para abrir la ficha / edición del huésped o de la reserva sobre su propia página.
+   */
+  @Input() modalOnly = false;
+  /** Modal a abrir en modo embebido. */
+  @Input() modalAction: HuespedModalAction | null = null;
+  /** Se emite (con el mensaje de éxito, si lo hubo) cuando se cierra el último modal. */
+  @Output() modalClosed = new EventEmitter<string>();
+  private pendingModalAction: HuespedModalAction | null = null;
   readonly sede = this.sedeService.selectedSede;
 
   constructor() {
@@ -128,16 +144,42 @@ export class HuespedesPage implements OnInit, OnDestroy {
     // React to sede changes — refresh guest data when the user switches sede
     effect(() => {
       const sede = this.sedeService.selectedSede();
-      if (sede) {
+      if (sede && !this.modalOnly) {
         this.hostalService.onSedeChanged();
       }
     });
   }
 
   ngOnInit() {
+    if (this.modalOnly) this.pendingModalAction = this.modalAction;
     this.hostalService.guestsView$.subscribe((data) => {
       this.guests = data;
       this.applyFilters();
+      this.openPendingModalAction();
+    });
+  }
+
+  /** Abre el modal pedido en modo embebido cuando los datos ya están cargados. */
+  private openPendingModalAction(): void {
+    const link = this.pendingModalAction;
+    if (!link || !this.hostalService.getGuests().some((guest) => guest.id_huesped === link.huesped)) return;
+    this.pendingModalAction = null;
+    // Espera a que la vista exista (los <dialog> se resuelven con ViewChild).
+    setTimeout(() => {
+      if (link.accion === 'editar-huesped') this.openGuestEditor(link.huesped);
+      else if (link.accion === 'editar-reserva') this.openReservationEditor(link.reserva);
+      else this.openGuestDetail(link.huesped);
+    });
+  }
+
+  /** En modo embebido, avisa al contenedor cuando ya no queda ningún modal abierto. */
+  private returnIfDone(): void {
+    if (!this.modalOnly) return;
+    // Diferido: al pasar de un modal a otro (detalle → editar) el siguiente ya estará abierto.
+    setTimeout(() => {
+      if (this.guestDetail || this.editingGuestId !== null || this.editingReservationId !== null
+        || this.deletingGuestId !== null || this.showReservationAssignment) return;
+      this.modalClosed.emit(this.guestSuccessMessage);
     });
   }
 
@@ -227,6 +269,7 @@ export class HuespedesPage implements OnInit, OnDestroy {
     }
     this.guestDetail = null;
     this.setPageScrollLocked(false);
+    this.returnIfDone();
   }
 
   onGuestDetailDialogCancel(event: Event): void {
@@ -339,6 +382,7 @@ export class HuespedesPage implements OnInit, OnDestroy {
     this.editingGuestId = null;
     this.guestError = '';
     this.setPageScrollLocked(false);
+    this.returnIfDone();
   }
 
   requestGuestDeletion(guestId: number): void {
@@ -370,6 +414,7 @@ export class HuespedesPage implements OnInit, OnDestroy {
     this.deletingGuestId = null;
     this.guestError = '';
     this.setPageScrollLocked(false);
+    this.returnIfDone();
   }
 
   openReservationEditor(reservationId: number | undefined): void {
@@ -446,6 +491,7 @@ export class HuespedesPage implements OnInit, OnDestroy {
     this.editingReservationId = null;
     this.reservationError = '';
     this.setPageScrollLocked(false);
+    this.returnIfDone();
   }
 
   openNewGuestForm(): void {
@@ -553,6 +599,7 @@ export class HuespedesPage implements OnInit, OnDestroy {
     } else {
       this.setPageScrollLocked(true);
     }
+    this.returnIfDone();
   }
 
   completeReservationAssignment(message: string): void {

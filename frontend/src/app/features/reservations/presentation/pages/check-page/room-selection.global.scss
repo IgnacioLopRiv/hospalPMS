@@ -1017,3 +1017,145 @@ $text-muted: #64748b;
     padding: 1.5rem 1rem 1.25rem;
   }
 }
+
+/* ── Extender estadía ─────────────────────────────────────────────────────── */
+.extend-stay-dates {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+
+  > div {
+    display: grid;
+    gap: 0.2rem;
+    padding: 0.7rem 0.75rem;
+    border: 1px solid $border-color;
+    border-radius: 10px;
+    background: #f8fafc;
+
+    small {
+      color: $text-muted;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    strong {
+      color: $text-dark;
+      font-size: 0.92rem;
+    }
+
+    &:last-child {
+      border-color: #bfdbfe;
+      background: #eff6ff;
+
+      strong { color: $blue-primary; }
+    }
+
+    &.pending strong { color: $text-muted; }
+  }
+}
+
+.extend-stay-options {
+  button {
+    flex: 1 1 90px;
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  }
+
+  .extend-stay-custom {
+    display: flex;
+    flex: 1 1 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    color: $text-muted;
+    font-size: 0.82rem;
+    font-weight: 600;
+
+    input {
+      height: 40px;
+      padding: 0 0.6rem;
+      border: 1px solid $border-color;
+      border-radius: 8px;
+      color: $text-dark;
+      font: inherit;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .extend-stay-dates {
+    grid-template-columns: 1fr;
+  }
+}
+
+// El modal de extensión muestra fechas y opciones en fila: necesita más ancho.
+.checkin-payment-modal.extend-stay-modal {
+  width: min(640px, 100%);
+
+  .extend-stay-options button {
+    flex: 1 1 110px;
+  }
+
+  .extend-stay-options .extend-stay-custom {
+    justify-content: flex-start;
+  }
+}
+
+.extend-stay-room {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid $border-color;
+  border-radius: 10px;
+  background: #f8fafc;
+
+  .extend-stay-keep {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    color: $text-dark;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+
+    input {
+      width: 16px;
+      height: 16px;
+      accent-color: $blue-primary;
+    }
+  }
+
+  .extend-stay-room-select {
+    display: grid;
+    gap: 0.3rem;
+    color: $text-muted;
+    font-size: 0.8rem;
+    font-weight: 600;
+
+    select {
+      height: 40px;
+      padding: 0 0.6rem;
+      border: 1px solid $border-color;
+      border-radius: 8px;
+      background: #fff;
+      color: $text-dark;
+      font: inherit;
+      font-weight: 400;
+    }
+  }
+
+  .extend-stay-room-hint,
+  .entry-error {
+    margin: 0;
+    font-size: 0.78rem;
+  }
+
+  .extend-stay-room-hint {
+    color: $text-muted;
+  }
+}
