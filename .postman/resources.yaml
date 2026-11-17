@@ -1,0 +1,13 @@
+# Use this workspace to collaborate
+workspace:
+  id: 66d7a74e-0c00-40ab-8fc3-735e50df1db1
+
+localResources:
+  collections:
+    - ../backend/test/postman/hospal-rendimiento.postman_collection.json
+  environments:
+    - ../backend/test/postman/hospal-local.postman_environment.json
+
+cloudResources:
+  collections:
+    ../postman/collections/HosPal PMS - Rendimiento: 2b21890f-f67a-4e0e-ac78-9ca1c5ce340f

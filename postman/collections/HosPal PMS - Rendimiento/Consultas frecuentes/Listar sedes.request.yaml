@@ -1,0 +1,4 @@
+$kind: http-request
+url: "{{baseUrl}}/sedes"
+method: GET
+order: 1000
