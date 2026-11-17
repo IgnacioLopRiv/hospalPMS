@@ -193,7 +193,14 @@ export class SedeService {
       ...(patch.color !== undefined ? { color: patch.color } : {}),
       ...(patch.caracteristicaIds !== undefined ? { caracteristicaIds: [...patch.caracteristicaIds] } : {}),
     }));
-    const updatedTipologias = (selected.tipologias ?? []).map((t) =>
+
+    // Releer el estado después del await: si se guardan varias tipologías en paralelo
+    // (p. ej. los precios base en Tarifas), `selected` ya no incluye los cambios de las
+    // otras peticiones y, al usarlo, cada respuesta pisaría a las anteriores.
+    const current = this.selectedSede();
+    if (!current || current.id !== selected.id) return;
+
+    const updatedTipologias = (current.tipologias ?? []).map((t) =>
       t.id === id
         ? {
             ...t,
@@ -207,10 +214,10 @@ export class SedeService {
     );
 
     // Si cambió el nombre, sincronizar el texto 'tipo' en las habitaciones asociadas
-    let updatedHabitaciones = selected.habitaciones;
+    let updatedHabitaciones = current.habitaciones;
     if (patch.nombre && oldTipologia && oldTipologia.nombre !== patch.nombre.trim()) {
       const newName = patch.nombre.trim();
-      updatedHabitaciones = selected.habitaciones.map((h) =>
+      updatedHabitaciones = current.habitaciones.map((h) =>
         h.tipologiaId === id || h.tipo === oldTipologia.nombre
           ? { ...h, tipo: newName, tipologiaId: id }
           : h
@@ -218,7 +225,7 @@ export class SedeService {
     }
 
     const updatedSede: Sede = {
-      ...selected,
+      ...current,
       tipologias: updatedTipologias,
       habitaciones: updatedHabitaciones,
     };

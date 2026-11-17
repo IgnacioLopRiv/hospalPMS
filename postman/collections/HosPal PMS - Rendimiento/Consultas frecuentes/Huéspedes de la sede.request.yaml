@@ -1,0 +1,6 @@
+$kind: http-request
+url: "{{baseUrl}}/huespedes?sedeId={{sedeId}}"
+method: GET
+queryParams:
+  sedeId: "{{sedeId}}"
+order: 4000

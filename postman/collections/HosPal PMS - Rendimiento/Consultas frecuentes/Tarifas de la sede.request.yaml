@@ -1,0 +1,4 @@
+$kind: http-request
+url: "{{baseUrl}}/sedes/{{sedeId}}/tarifas"
+method: GET
+order: 5000

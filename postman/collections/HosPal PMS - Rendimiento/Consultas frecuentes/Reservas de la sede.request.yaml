@@ -1,0 +1,6 @@
+$kind: http-request
+url: "{{baseUrl}}/reservas?sedeId={{sedeId}}"
+method: GET
+queryParams:
+  sedeId: "{{sedeId}}"
+order: 3000

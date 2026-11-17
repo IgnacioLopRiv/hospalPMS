@@ -1,0 +1,8 @@
+$kind: http-request
+url: "{{baseUrl}}/reportes/pdf?sedeId={{sedeId}}&desde={{pdfDesde}}&hasta={{pdfHasta}}"
+method: GET
+queryParams:
+  sedeId: "{{sedeId}}"
+  desde: "{{pdfDesde}}"
+  hasta: "{{pdfHasta}}"
+order: 2000
