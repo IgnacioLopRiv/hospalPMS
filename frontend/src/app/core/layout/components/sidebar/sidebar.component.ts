@@ -18,6 +18,7 @@ import {
 import { AuthService } from '../../../auth/application/auth.service';
 import { ROLE_LABELS } from '../../../auth/domain/auth.roles';
 import { SedeService } from '../../../../features/locations/application/sede.service';
+import { closeDialogAnimated } from '../../../../shared/presentation/animations/modal-leave';
 
 @Component({
   selector: 'app-sidebar',
@@ -88,7 +89,7 @@ export class SidebarComponent {
   cancelLogout(): void {
     const dialog = this.logoutDialog?.nativeElement;
     if (dialog?.open) {
-      dialog.close();
+      closeDialogAnimated(dialog);
     }
     this.isLogoutDialogOpen = false;
   }

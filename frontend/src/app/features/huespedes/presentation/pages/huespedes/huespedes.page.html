@@ -33,7 +33,7 @@
   }
 
   @if (showNewGuestForm && !showReservationAssignment) {
-  <div class="entry-modal-backdrop" appEscapeClose (escapeClose)="closeNewGuestForm()">
+  <div class="entry-modal-backdrop" animate.leave="hospal-modal-leaving" appEscapeClose (escapeClose)="closeNewGuestForm()">
     <section class="entry-modal app-modal" role="dialog" aria-modal="true" aria-labelledby="guest-modal-title"
       (click)="$event.stopPropagation()">
       <header class="entry-modal-header">

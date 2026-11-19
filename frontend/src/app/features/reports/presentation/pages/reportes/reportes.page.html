@@ -396,7 +396,7 @@
   </div>
 
   @if (transaccionSeleccionada(); as trx) {
-    <div class="detail-backdrop" appEscapeClose (escapeClose)="closeDetalle()" (click)="closeDetalle()">
+    <div class="detail-backdrop" animate.leave="hospal-modal-leaving" appEscapeClose (escapeClose)="closeDetalle()" (click)="closeDetalle()">
       <section class="detail-modal app-modal" role="dialog" aria-modal="true" aria-labelledby="detail-title" (click)="$event.stopPropagation()">
         <header class="detail-header">
           <div>

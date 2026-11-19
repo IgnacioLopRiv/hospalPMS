@@ -657,6 +657,8 @@ dialog.entry-modal-backdrop.guest-edit-dialog::backdrop {
 :root {
   --hospal-modal-enter-duration: 280ms;
   --hospal-modal-enter-easing: cubic-bezier(0.22, 1, 0.36, 1);
+  --hospal-modal-leave-duration: 180ms;
+  --hospal-modal-leave-easing: cubic-bezier(0.4, 0, 1, 1);
 }
 
 @keyframes hospal-modal-backdrop-enter {
@@ -676,6 +678,7 @@ dialog.entry-modal-backdrop.guest-edit-dialog[open]::backdrop,
 .room-selection-detail-backdrop,
 .checkin-payment-backdrop,
 .config-modal-backdrop,
+.check-dialog-backdrop,
 .detail-backdrop,
 .modal-backdrop,
 .new-room-modal-backdrop,
@@ -689,6 +692,7 @@ dialog.entry-modal-backdrop.guest-edit-dialog[open]::backdrop,
 .room-selection-detail-modal,
 .checkin-payment-modal,
 .config-modal,
+.check-dialog,
 .detail-modal,
 .inventory-modal,
 .new-room-modal,
@@ -703,12 +707,91 @@ dialog.entry-modal-backdrop.guest-edit-dialog[open]::backdrop,
   .room-selection-detail-modal,
   .checkin-payment-modal,
   .config-modal,
+  .check-dialog,
   .detail-modal,
   .inventory-modal,
   .new-room-modal,
   .room-detail-modal {
     animation-name: hospal-modal-backdrop-enter;
     animation-duration: 120ms;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Cierre (igual que "Gestionar perfiles": fade + scale 0.96 + leve bajada).
+   La clase la ponen `animate.leave`, ModalPortalDirective y closeDialogAnimated
+   (app/shared/presentation/animations/modal-leave.ts). El elemento raíz se
+   desvanece entero y el panel solo se encoge, así la opacidad no se multiplica.
+   !important: debe ganar a las animaciones de entrada de cada componente.
+   -------------------------------------------------------------------------- */
+
+@keyframes hospal-modal-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes hospal-modal-panel-leave {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(0, 12px, 0) scale(0.96); }
+}
+
+.hospal-modal-leaving {
+  animation: hospal-modal-fade-out var(--hospal-modal-leave-duration) var(--hospal-modal-leave-easing) forwards !important;
+  pointer-events: none !important;
+}
+
+.hospal-modal-leaving :is(
+  .app-modal,
+  .entry-modal,
+  .entry-close-confirm-dialog,
+  .room-selection-detail-modal,
+  .checkin-payment-modal,
+  .config-modal,
+  .check-dialog,
+  .detail-modal,
+  .inventory-modal,
+  .new-room-modal,
+  .room-detail-modal
+) {
+  animation: hospal-modal-panel-leave var(--hospal-modal-leave-duration) var(--hospal-modal-leave-easing) forwards !important;
+  backface-visibility: hidden;
+}
+
+/* Fondos anidados (p. ej. dentro de .check-modal-portal): que no repitan la entrada. */
+.hospal-modal-leaving :is(
+  .entry-modal-backdrop,
+  .entry-close-confirm-backdrop,
+  .room-selection-detail-backdrop,
+  .checkin-payment-backdrop,
+  .config-modal-backdrop,
+  .check-dialog-backdrop,
+  .detail-backdrop,
+  .modal-backdrop,
+  .new-room-modal-backdrop,
+  .room-detail-modal-backdrop
+) {
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hospal-modal-leaving {
+    animation-duration: 100ms !important;
+  }
+
+  .hospal-modal-leaving :is(
+    .app-modal,
+    .entry-modal,
+    .entry-close-confirm-dialog,
+    .room-selection-detail-modal,
+    .checkin-payment-modal,
+    .config-modal,
+    .check-dialog,
+    .detail-modal,
+    .inventory-modal,
+    .new-room-modal,
+    .room-detail-modal
+  ) {
+    animation: none !important;
   }
 }
 

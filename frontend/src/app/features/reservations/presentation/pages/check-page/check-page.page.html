@@ -494,7 +494,7 @@
       }
     </section>
     @if (showCloseConfirmation) {
-    <div class="entry-close-confirm-backdrop" appEscapeClose (escapeClose)="cancelCloseNewEntryForm()" (click)="cancelCloseNewEntryForm()">
+    <div class="entry-close-confirm-backdrop" animate.leave="hospal-modal-leaving" appEscapeClose (escapeClose)="cancelCloseNewEntryForm()" (click)="cancelCloseNewEntryForm()">
       <section
         class="entry-close-confirm-dialog app-modal"
         role="alertdialog"
@@ -518,7 +518,7 @@
   }
 
   @if (roomDetails; as room) {
-  <div class="room-selection-detail-backdrop" appEscapeClose (escapeClose)="closeRoomDetails()" (click)="closeRoomDetails()">
+  <div class="room-selection-detail-backdrop" animate.leave="hospal-modal-leaving" appEscapeClose (escapeClose)="closeRoomDetails()" (click)="closeRoomDetails()">
     <section class="room-selection-detail-modal app-modal" role="dialog" aria-modal="true" aria-labelledby="room-selection-detail-title" (click)="$event.stopPropagation()">
       <header class="room-selection-detail-header">
         <div>

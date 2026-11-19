@@ -39,6 +39,7 @@ import {
 } from '../../../../../shared/domain/phone-format';
 import { parsePhoneNumberFromString } from 'libphonenumber-js/max';
 import { CountryPickerComponent } from '../../../../../shared/presentation/country-picker/country-picker.component';
+import { closeDialogAnimated } from '../../../../../shared/presentation/animations/modal-leave';
 
 export interface HuespedModalAction {
   accion: 'detalle' | 'editar-huesped' | 'editar-reserva';
@@ -263,7 +264,7 @@ export class HuespedesPage implements OnInit, OnDestroy {
   closeGuestDetail(): void {
     const dialog = this.guestDetailDialog?.nativeElement;
     if (dialog?.open) {
-      dialog.close();
+      closeDialogAnimated(dialog);
       // El <dialog> devuelve el foco a la tarjeta que lo abrió; al cerrar con Escape eso
       // deja visible el anillo de foco. Lo quitamos para que la tarjeta quede limpia.
       setTimeout(() => {
@@ -520,10 +521,10 @@ export class HuespedesPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.closeGuestEditDialog();
-    this.closeReservationEditDialog();
-    this.closeGuestDeleteDialog();
-    if (this.guestDetailDialog?.nativeElement.open) this.guestDetailDialog.nativeElement.close();
+    // Al salir de la página se cierran sin animación (no tiene sentido animar algo que se va).
+    for (const ref of [this.guestEditDialog, this.reservationEditDialog, this.guestDeleteDialog, this.guestDetailDialog]) {
+      if (ref?.nativeElement.open) ref.nativeElement.close();
+    }
     this.setPageScrollLocked(false);
   }
 
@@ -793,7 +794,7 @@ export class HuespedesPage implements OnInit, OnDestroy {
   private closeGuestEditDialog(): void {
     const dialog = this.guestEditDialog?.nativeElement;
     if (dialog?.open) {
-      dialog.close();
+      closeDialogAnimated(dialog);
     }
   }
 
@@ -808,7 +809,7 @@ export class HuespedesPage implements OnInit, OnDestroy {
   private closeReservationEditDialog(): void {
     const dialog = this.reservationEditDialog?.nativeElement;
     if (dialog?.open) {
-      dialog.close();
+      closeDialogAnimated(dialog);
     }
   }
 
@@ -823,7 +824,7 @@ export class HuespedesPage implements OnInit, OnDestroy {
   private closeGuestDeleteDialog(): void {
     const dialog = this.guestDeleteDialog?.nativeElement;
     if (dialog?.open) {
-      dialog.close();
+      closeDialogAnimated(dialog);
     }
   }
 

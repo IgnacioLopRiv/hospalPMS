@@ -1,5 +1,6 @@
 import { AfterViewInit, Directive, ElementRef, OnDestroy, inject } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
+import { playModalLeaveAndRemove } from '../animations/modal-leave';
 
 /**
  * Mueve el fondo de un modal a <body> mientras está abierto.
@@ -19,12 +20,14 @@ export class ModalPortalDirective implements AfterViewInit, OnDestroy {
   private readonly element = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   private readonly document = inject(DOCUMENT);
   private pageObserver?: MutationObserver;
+  private moved = false;
 
   ngAfterViewInit(): void {
     // Fuera de una página de Ionic no hay contención que evitar.
     const page = this.element.closest('ion-router-outlet > .ion-page');
     if (!page) return;
     this.document.body.appendChild(this.element);
+    this.moved = true;
 
     const syncVisibility = () => {
       // style.display en vez de `hidden`, porque los estilos del modal fijan display: flex.
@@ -38,6 +41,13 @@ export class ModalPortalDirective implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.pageObserver?.disconnect();
-    this.element.remove();
+    // Solo se anima el cierre si el modal está a la vista (no al salir de la página).
+    if (!this.moved || this.element.style.display === 'none') {
+      this.element.remove();
+      return;
+    }
+    // Angular ya lo sacó del DOM si era la raíz del @if; se vuelve a poner para animar la salida.
+    if (!this.element.isConnected) this.document.body.appendChild(this.element);
+    playModalLeaveAndRemove(this.element);
   }
 }

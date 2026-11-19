@@ -1,6 +1,7 @@
 import { Component, CUSTOM_ELEMENTS_SCHEMA, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ModalPortalDirective } from './modal-portal.directive';
+import { MODAL_LEAVING_CLASS } from '../animations/modal-leave';
 
 @Component({
   standalone: true,
@@ -31,13 +32,27 @@ class HostOutsideIonicPage {}
 describe('ModalPortalDirective', () => {
   afterEach(() => document.querySelectorAll('body > .test-modal-backdrop').forEach((el) => el.remove()));
 
-  it('moves the modal to <body> while open and removes it when closed', () => {
+  it('moves the modal to <body> while open and removes it after the leave animation', async () => {
     const fixture = TestBed.createComponent(HostInIonicPage);
     fixture.detectChanges();
 
     const modal = document.querySelector('.test-modal-backdrop') as HTMLElement;
     expect(modal.parentElement).toBe(document.body);
     expect(fixture.nativeElement.querySelector('.test-modal-backdrop')).toBeNull();
+
+    fixture.componentInstance.open.set(false);
+    fixture.detectChanges();
+    expect(modal.classList).toContain(MODAL_LEAVING_CLASS);
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    expect(modal.isConnected).toBeFalse();
+  });
+
+  it('removes the modal immediately when its Ionic page is hidden', () => {
+    const fixture = TestBed.createComponent(HostInIonicPage);
+    fixture.detectChanges();
+    const modal = document.querySelector('.test-modal-backdrop') as HTMLElement;
+    modal.style.display = 'none';
 
     fixture.componentInstance.open.set(false);
     fixture.detectChanges();

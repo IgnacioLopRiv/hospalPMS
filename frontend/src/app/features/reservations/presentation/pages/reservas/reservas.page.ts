@@ -33,6 +33,7 @@ import { HostalService, ReservationCalendarEntry } from '../../../../huespedes/a
 import { SedeService } from '../../../../locations/application/sede.service';
 import { Habitacion, Huesped, Reserva } from '../../../../../shared/domain/hostal.model';
 import { toTimelineMinutes } from '../../../domain/stay-schedule';
+import { closeDialogAnimated } from '../../../../../shared/presentation/animations/modal-leave';
 
 const VISIBLE_DAYS = 10;
 const NAVIGATION_DAYS = 7;
@@ -307,7 +308,7 @@ export class ReservasPage implements OnInit, OnDestroy {
 
   closeReservationModal(): void {
     const dialog = this.reservationDialog?.nativeElement;
-    if (dialog?.open) dialog.close();
+    closeDialogAnimated(dialog);
     this.selectedReservationId.set(null);
     this.reservationModalMode.set('detail');
     this.reservationError.set('');
