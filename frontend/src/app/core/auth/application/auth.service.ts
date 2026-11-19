@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
+import { getApiErrorMessage } from '../../../shared/domain/api-error-message';
 import {
   AuthUser,
   Permission,
@@ -194,23 +195,19 @@ export class AuthService {
   /**
    * Elimina un funcionario en el backend. Retorna error si se intenta eliminar la sesión activa.
    */
-  deleteUser(id: number): { ok: boolean; message?: string } {
+  async deleteUser(id: number): Promise<{ ok: boolean; message?: string }> {
     const current = this.currentUser();
     if (current && current.id === id) {
       return { ok: false, message: 'No puedes eliminar al usuario con sesión activa.' };
     }
 
-    this.http.delete(`${this.apiUrl}/${id}`).subscribe({
-      next: () => {
-        this.users.update((list) => list.filter((u) => u.id !== id));
-      },
-      error: (err) => {
-        console.error('Error al eliminar funcionario en el backend:', err);
-      },
-    });
-
-    this.users.update((list) => list.filter((u) => u.id !== id));
-    return { ok: true };
+    try {
+      await firstValueFrom(this.http.delete(`${this.apiUrl}/${id}`));
+      this.users.update((list) => list.filter((u) => u.id !== id));
+      return { ok: true };
+    } catch (error: unknown) {
+      return { ok: false, message: getApiErrorMessage(error, 'No se pudo eliminar el usuario.') };
+    }
   }
 
   // ── Password recovery (backend: POST /auth/recuperar y /auth/restablecer) ─

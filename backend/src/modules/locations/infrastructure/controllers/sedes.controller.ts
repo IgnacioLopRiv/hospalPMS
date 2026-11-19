@@ -197,6 +197,17 @@ export class SedesController {
   @Roles('ADMINISTRADOR')
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number) {
+    const activeReservations = await this.prisma.reserva.count({
+      where: {
+        habitacion: { sedeId: id },
+        estado: { in: ['CONFIRMADA', 'EN_CURSO'] },
+      },
+    });
+    if (activeReservations > 0) {
+      throw new ConflictException(
+        `No se puede eliminar la sede: tiene ${activeReservations} reserva(s) activa(s). Cancélalas o finalízalas primero.`,
+      );
+    }
     try {
       await this.prisma.$transaction(async (transaction) => {
         await transaction.tarifa.deleteMany({ where: { sedeId: id } });

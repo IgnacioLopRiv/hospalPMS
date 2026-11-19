@@ -231,8 +231,8 @@ export class EditPerfilesComponent {
     this.errorMessage.set('');
   }
 
-  confirmDelete(id: number): void {
-    const result = this.auth.deleteUser(id);
+  async confirmDelete(id: number): Promise<void> {
+    const result = await this.auth.deleteUser(id);
     if (!result.ok) {
       this.errorMessage.set(result.message ?? 'No se pudo eliminar el usuario.');
     } else {

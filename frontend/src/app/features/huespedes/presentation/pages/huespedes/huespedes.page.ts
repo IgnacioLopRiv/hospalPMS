@@ -1,6 +1,7 @@
 import { EscapeCloseDirective } from '../../../../../shared/presentation/modal-portal/escape-close.directive';
-import { ChangeDetectorRef, Component, DOCUMENT, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, Renderer2, ViewChild, effect, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DOCUMENT, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, Renderer2, ViewChild, DestroyRef, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
@@ -21,6 +22,8 @@ import {
   listOutline,
   gridOutline,
   closeOutline,
+  logInOutline,
+  logOutOutline,
 } from 'ionicons/icons';
 
 import { HostalService } from '../../../application/hostal.service';
@@ -109,6 +112,7 @@ export class HuespedesPage implements OnInit, OnDestroy {
 
   private readonly sedeService = inject(SedeService);
   private readonly hostalService = inject(HostalService);
+  private readonly destroyRef = inject(DestroyRef);
   /**
    * Modo embebido: solo se renderizan los modales (sin la página de fondo). Lo usa Recepción
    * para abrir la ficha / edición del huésped o de la reserva sobre su propia página.
@@ -138,7 +142,9 @@ export class HuespedesPage implements OnInit, OnDestroy {
       createOutline,
       trashOutline,
       listOutline,
-      gridOutline
+      gridOutline,
+      logInOutline,
+      logOutOutline
     });
 
     // React to sede changes — refresh guest data when the user switches sede
@@ -152,7 +158,7 @@ export class HuespedesPage implements OnInit, OnDestroy {
 
   ngOnInit() {
     if (this.modalOnly) this.pendingModalAction = this.modalAction;
-    this.hostalService.guestsView$.subscribe((data) => {
+    this.hostalService.guestsView$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((data) => {
       this.guests = data;
       this.applyFilters();
       this.openPendingModalAction();

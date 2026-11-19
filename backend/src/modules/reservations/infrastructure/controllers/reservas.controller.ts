@@ -21,6 +21,7 @@ import {
   TipoDocumento,
   TipoOperacion,
 } from '@prisma/client';
+import { Roles } from '../../../auth/auth.decorators';
 import { PrismaService } from '../../../../database/prisma.service';
 import {
   ReservaDto,
@@ -382,6 +383,7 @@ export class ReservasController {
     }
   }
 
+  @Roles('ADMINISTRADOR', 'RECEPCIONISTA')
   @Delete(':id')
   async remove(
     @Param('id', ParseIntPipe) id: number,
@@ -389,10 +391,16 @@ export class ReservasController {
   ) {
     const existing = await this.prisma.reserva.findFirst({
       where: { id, habitacion: { sedeId: query.sedeId } },
-      select: { id: true },
+      select: { id: true, estado: true },
     });
     if (!existing)
       throw new NotFoundException(`No existe la reserva ${id} en esta sede.`);
+    // Una estadía iniciada o cerrada es historial: se conserva siempre.
+    if (existing.estado === 'EN_CURSO' || existing.estado === 'FINALIZADA') {
+      throw new ConflictException(
+        'No se puede eliminar una reserva en curso o finalizada.',
+      );
+    }
     try {
       await this.prisma.$transaction(async (transaction) => {
         // Un cobro con tarjeta aprobado o aún en el terminal no se puede perder.
@@ -411,8 +419,14 @@ export class ReservasController {
             'La reserva tiene un cobro con tarjeta aprobado o en curso; no se puede eliminar.',
           );
         }
+        // Solo se borran reservas sin pagos: con dinero registrado son historial contable.
+        const pagos = await transaction.pago.count({ where: { reservaId: id } });
+        if (pagos > 0) {
+          throw new ConflictException(
+            'La reserva tiene pagos registrados; no se puede eliminar. Cancélala en su lugar.',
+          );
+        }
         await transaction.transaccionPos.deleteMany({ where: { reservaId: id } });
-        await transaction.pago.deleteMany({ where: { reservaId: id } });
         await transaction.documentoFacturacion.deleteMany({
           where: { reservaId: id },
         });
