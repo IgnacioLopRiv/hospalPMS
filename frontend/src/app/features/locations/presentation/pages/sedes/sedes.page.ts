@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import {
   ActionSheetController,
-  AlertController,
   IonContent,
   IonIcon
 } from '@ionic/angular/standalone';
@@ -53,7 +52,6 @@ export class SedesPage {
   private readonly router = inject(Router);
   private readonly sedeService = inject(SedeService);
   private readonly auth = inject(AuthService);
-  private readonly alertCtrl = inject(AlertController);
   private readonly actionSheetCtrl = inject(ActionSheetController);
 
   readonly sedes = this.sedeService.sedes;
@@ -65,6 +63,10 @@ export class SedesPage {
   readonly editingSede = signal<'new' | number | null>(null);
   readonly saving = signal(false);
   readonly formError = signal('');
+  /** Sede pendiente de confirmación de eliminación (null = modal cerrado). */
+  readonly sedeToDelete = signal<Sede | null>(null);
+  readonly deleting = signal(false);
+  readonly deleteError = signal('');
   form: SedeForm = this.emptyForm();
   phoneFieldFocused = false;
   emailFieldFocused = false;
@@ -238,35 +240,34 @@ export class SedesPage {
       return;
     }
 
-    const alert = await this.alertCtrl.create({
-      header: '¿Eliminar sede?',
-      message: `¿Estás seguro de que deseas eliminar <strong>${sede.nombre}</strong>? Esta acción no se puede deshacer.`,
-      cssClass: 'hospal-custom-alert',
-      buttons: [
-        {
-          text: 'Cancelar',
-          role: 'cancel',
-        },
-        {
-          text: 'Eliminar',
-          role: 'destructive',
-          handler: async () => {
-            try {
-              await this.sedeService.deleteSede(sede.id);
-            } catch {
-              const errorAlert = await this.alertCtrl.create({
-                header: 'No se pudo eliminar la sede',
-                message: 'Comprueba que la sede no tenga registros asociados y vuelve a intentarlo.',
-                buttons: ['Aceptar'],
-              });
-              await errorAlert.present();
-            }
-          },
-        },
-      ],
-    });
+    this.deleteError.set('');
+    this.sedeToDelete.set(sede);
+  }
 
-    await alert.present();
+  cancelDeleteSede(): void {
+    if (this.deleting()) {
+      return;
+    }
+    this.sedeToDelete.set(null);
+    this.deleteError.set('');
+  }
+
+  async deleteSedeConfirmed(): Promise<void> {
+    const sede = this.sedeToDelete();
+    if (!sede || this.deleting()) {
+      return;
+    }
+
+    this.deleting.set(true);
+    this.deleteError.set('');
+    try {
+      await this.sedeService.deleteSede(sede.id);
+      this.sedeToDelete.set(null);
+    } catch {
+      this.deleteError.set('No se pudo eliminar la sede. Comprueba que no tenga registros asociados y vuelve a intentarlo.');
+    } finally {
+      this.deleting.set(false);
+    }
   }
 
   private openForm(target: 'new' | number): void {

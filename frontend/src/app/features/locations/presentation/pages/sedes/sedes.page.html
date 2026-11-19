@@ -77,6 +77,34 @@
     </section>
   </div>
 
+  @if (sedeToDelete(); as sede) {
+  <div class="entry-modal-backdrop" appEscapeClose (escapeClose)="cancelDeleteSede()" (click)="cancelDeleteSede()">
+    <section class="entry-modal app-modal sede-delete-modal" role="alertdialog" aria-modal="true"
+      aria-labelledby="sede-delete-title" aria-describedby="sede-delete-message" (click)="$event.stopPropagation()">
+      <header class="entry-modal-header">
+        <div>
+          <h2 id="sede-delete-title">¿Eliminar sede?</h2>
+          <p id="sede-delete-message">
+            ¿Estás seguro de que deseas eliminar <strong>{{ sede.nombre }}</strong>? Esta acción no se puede deshacer.
+          </p>
+        </div>
+        <button type="button" class="modal-close-x" aria-label="Cerrar" (click)="cancelDeleteSede()">
+          <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+        </button>
+      </header>
+      @if (deleteError()) {
+      <p class="entry-error sede-delete-error" role="alert">{{ deleteError() }}</p>
+      }
+      <footer class="entry-form-actions">
+        <button type="button" class="modal-btn modal-btn--secondary" [disabled]="deleting()"
+          (click)="cancelDeleteSede()">Cancelar</button>
+        <button type="button" class="modal-btn modal-btn--danger" [disabled]="deleting()"
+          (click)="deleteSedeConfirmed()">{{ deleting() ? 'Eliminando...' : 'Eliminar' }}</button>
+      </footer>
+    </section>
+  </div>
+  }
+
   @if (editingSede() !== null) {
   <div class="entry-modal-backdrop" appEscapeClose (escapeClose)="closeForm()" (click)="closeForm()">
     <section class="entry-modal app-modal sede-form-modal" role="dialog" aria-modal="true" aria-labelledby="sede-modal-title"
