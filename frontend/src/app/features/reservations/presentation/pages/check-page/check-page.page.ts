@@ -195,6 +195,12 @@ export class CheckPagePage implements OnInit, OnDestroy {
 
   readonly pendingCheckIns: CheckItemPlaceholder[] = [];
   readonly pendingCheckOuts: CheckItemPlaceholder[] = [];
+  /** Reservas confirmadas cuya estadía ya terminó sin check-in: hay que cerrarlas o marcarlas no-show. */
+  readonly expiredReservations: CheckItemPlaceholder[] = [];
+  /** El modal de cobro está registrando una estadía pasada (no un check-in normal). */
+  checkInPastStay = false;
+  /** Bandeja de reservas vencidas desplegada (cerrada por defecto). */
+  expiredOpen = false;
 
   /** Filtro por nombre de huésped o número de habitación. */
   searchQuery = '';
@@ -470,6 +476,17 @@ export class CheckPagePage implements OnInit, OnDestroy {
     // modificando la fecha de salida de la reserva en el apartado de huéspedes.
     const checkOuts = entries.filter((entry) =>
       entry.departureDate <= today && ['HOSPEDADO', 'CHECK-OUT HOY'].includes(entry.status)
+    );
+
+    // Llegada pasada y salida hoy o antes, sin check-in: ya no caben en ninguna columna.
+    const expired = entries.filter((entry) =>
+      ['CONFIRMADA', 'CHECK-IN HOY'].includes(entry.status)
+      && entry.arrivalDate < today && entry.departureDate <= today
+    );
+    this.expiredReservations.splice(
+      0,
+      this.expiredReservations.length,
+      ...expired.map((entry, index) => this.toCheckItem(entry, 'checkin', index, true))
     );
 
     this.pendingCheckIns.splice(
@@ -890,6 +907,19 @@ export class CheckPagePage implements OnInit, OnDestroy {
       this.movementError = `No se puede hacer el check-in: ${blocked}. Debe quedar libre antes de recibir al huésped.`;
       return;
     }
+    this.checkInPastStay = false;
+    this.checkInPaymentItem = item;
+    this.checkInPaymentMethod = '';
+    this.checkInPaymentError = '';
+    this.checkInPaidByPos = null;
+    this.posCobro.reset();
+    if (item.outstandingBalance > 0) void this.loadPosDisponible();
+  }
+
+  /** Registra que el huésped de una reserva vencida sí se hospedó (cierra la estadía con sus fechas). */
+  registrarEstadiaPasada(item: CheckItemPlaceholder): void {
+    this.movementError = '';
+    this.checkInPastStay = true;
     this.checkInPaymentItem = item;
     this.checkInPaymentMethod = '';
     this.checkInPaymentError = '';
@@ -929,6 +959,21 @@ export class CheckPagePage implements OnInit, OnDestroy {
       }
       method = used;
       this.checkInPaidByPos = item.id;
+    }
+
+    if (this.checkInPastStay) {
+      try {
+        await this.hostalService.registerPastStay(item.id, method || undefined);
+        this.entrySuccessMessage = `Estadía de ${item.guestName} (Hab. ${item.roomNumber}, ${item.dateRange}) registrada como finalizada.`
+          + (item.outstandingBalance > 0 && method ? ` Se registraron ${item.outstandingBalance.toLocaleString('es-CL')} CLP con ${PAYMENT_METHOD_LABELS[method]}.` : '');
+        this.movementError = '';
+        this.checkInPaidByPos = null;
+        this.posCobro.reset();
+        this.closeCheckInPayment();
+      } catch (error) {
+        this.checkInPaymentError = getApiErrorMessage(error, 'No se pudo registrar la estadía.');
+      }
+      return;
     }
 
     try {

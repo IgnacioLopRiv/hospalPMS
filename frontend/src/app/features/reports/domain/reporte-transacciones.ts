@@ -313,7 +313,12 @@ function buildTransaccion(
 export function calcularKpis(transacciones: TransaccionTarifa[], inicio: string, fin: string, totalHabitaciones: number): KpisPeriodo {
   const enPeriodo = transacciones.filter((trx) => trx.llegada >= inicio && trx.llegada <= fin);
   const validas = enPeriodo.filter((trx) => trx.estadoReserva !== 'CANCELADA');
-  const ingresos = validas.reduce((sum, trx) => sum + trx.total, 0);
+  const ingresosReservas = validas.reduce((sum, trx) => sum + trx.total, 0);
+  // Lo abonado en reservas canceladas / no-show no se devuelve: sigue siendo ingreso.
+  const retenido = enPeriodo
+    .filter((trx) => trx.estadoReserva === 'CANCELADA')
+    .reduce((sum, trx) => sum + trx.pagado, 0);
+  const ingresos = ingresosReservas + retenido;
   const nochesVendidas = validas.reduce((sum, trx) => sum + trx.noches, 0);
   const nochesOcupadas = transacciones
     .filter((trx) => trx.estadoReserva !== 'CANCELADA' && trx.llegada <= fin && trx.salida > inicio)
@@ -325,14 +330,14 @@ export function calcularKpis(transacciones: TransaccionTarifa[], inicio: string,
     reservasValidas: validas.length,
     canceladas,
     ingresos,
-    cobrado: validas.reduce((sum, trx) => sum + trx.pagado, 0),
+    cobrado: validas.reduce((sum, trx) => sum + trx.pagado, 0) + retenido,
     pendiente: validas.reduce((sum, trx) => sum + trx.saldo, 0),
     nochesVendidas,
     nochesOcupadas,
     capacidad,
     ocupacion: capacidad ? Math.min(100, (nochesOcupadas / capacidad) * 100) : 0,
     tasaCancelacion: enPeriodo.length ? (canceladas / enPeriodo.length) * 100 : 0,
-    tarifaPromedio: nochesVendidas ? ingresos / nochesVendidas : 0,
+    tarifaPromedio: nochesVendidas ? ingresosReservas / nochesVendidas : 0,
   };
 }
 
@@ -392,7 +397,8 @@ export function rankingTarifas(transacciones: TransaccionTarifa[]): RankingItem[
 
 export function rankingMetodosPago(transacciones: TransaccionTarifa[]): RankingItem[] {
   const ranking = new Map<string, RankingItem>();
-  const validas = transacciones.filter((trx) => trx.estadoReserva !== 'CANCELADA');
+  // Incluye canceladas con abono: ese dinero se cobró y se conserva.
+  const validas = transacciones.filter((trx) => trx.estadoReserva !== 'CANCELADA' || trx.pagado > 0);
   for (const trx of validas) {
     const key = trx.metodoPago ?? 'sin-registro';
     const item = ranking.get(key) ?? {

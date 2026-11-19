@@ -238,11 +238,14 @@ export class ReservasController {
         this.validateGuestActive(huesped);
       }
 
+      const stayAlreadyEnded = nextFechaSalida < this.todayKey();
       if (
         targetHabitacionId !== existing.habitacionId ||
-        input.fecha_llegada !== undefined ||
-        input.fecha_salida !== undefined ||
-        input.estado_reserva !== undefined
+        // Una estadía ya terminada no depende del estado actual de la habitación.
+        (!stayAlreadyEnded &&
+          (input.fecha_llegada !== undefined ||
+            input.fecha_salida !== undefined ||
+            input.estado_reserva !== undefined))
       ) {
         this.validateRoomAllowed(habitacion);
       }
@@ -260,7 +263,19 @@ export class ReservasController {
         input.estado_reserva !== undefined
           ? this.toDatabaseState(input.estado_reserva)
           : existing.estado;
-      this.validateStateTransition(existing.estado, nextState);
+      // Estadía vencida sin check-in: se puede cerrar directo (CONFIRMADA → FINALIZADA)
+      // conservando sus fechas, sin depender del estado actual de la habitación.
+      const isPastStayClosure =
+        existing.estado === EstadoReserva.CONFIRMADA &&
+        nextState === EstadoReserva.FINALIZADA;
+      if (isPastStayClosure && nextFechaSalida > this.todayKey()) {
+        throw new BadRequestException(
+          'Solo se puede registrar como finalizada una reserva cuya fecha de salida ya pasó. Haz el check-in normal.',
+        );
+      }
+      if (!isPastStayClosure) {
+        this.validateStateTransition(existing.estado, nextState);
+      }
 
       const defaults = this.sedeTimeDefaults(habitacion.sede);
       const availability: AvailabilityCheck = {
@@ -325,7 +340,11 @@ export class ReservasController {
             previous.estado !== EstadoReserva.CANCELADA
           ) {
             didCancel = true;
-            await this.releaseRoomOnCancel(transaction, saved.habitacionId);
+            // Una reserva vencida (no-show) ya no tiene la habitación: puede estar
+            // ocupada por otro huésped, así que no se toca su estado.
+            if (!stayAlreadyEnded) {
+              await this.releaseRoomOnCancel(transaction, saved.habitacionId);
+            }
           }
 
           createdPaymentId = await this.recordPayment(
@@ -343,7 +362,8 @@ export class ReservasController {
 
           if (
             previous.estado !== EstadoReserva.FINALIZADA &&
-            saved.estado === EstadoReserva.FINALIZADA
+            saved.estado === EstadoReserva.FINALIZADA &&
+            !isPastStayClosure
           ) {
             didCheckout = true;
           }

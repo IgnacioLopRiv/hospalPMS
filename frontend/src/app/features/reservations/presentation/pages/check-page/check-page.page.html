@@ -882,6 +882,40 @@
     </div>
   </section>
 
+  <!-- Reservas vencidas: confirmadas cuya estadía ya terminó sin check-in -->
+  @if (expiredReservations.length) {
+  <section class="expired-tray" aria-labelledby="expired-title">
+    <button type="button" class="expired-tray-header" aria-controls="expired-list"
+      [attr.aria-expanded]="expiredOpen" (click)="expiredOpen = !expiredOpen">
+      <ion-icon name="alert-circle-outline" aria-hidden="true"></ion-icon>
+      <div>
+        <h2 id="expired-title">Reservas vencidas sin check-in ({{ expiredReservations.length }})</h2>
+        <p>La fecha de la estadía ya pasó y siguen como confirmadas. Indica si el huésped llegó o no.</p>
+      </div>
+      <ion-icon class="expired-chevron" [class.open]="expiredOpen" name="chevron-down-outline" aria-hidden="true"></ion-icon>
+    </button>
+    @if (expiredOpen) {
+    <ul class="expired-list" id="expired-list">
+      @for (item of expiredReservations; track item.id) {
+      <li class="expired-row">
+        <div class="expired-info">
+          <strong>{{ item.guestName }}</strong>
+          <span>Hab. {{ item.roomNumber }} · {{ item.dateRange }} · {{ item.nights }} {{ item.nights === 1 ? 'noche' : 'noches' }}</span>
+          @if (item.outstandingBalance > 0) {
+          <small>Saldo pendiente {{ item.outstandingBalance | currency:'CLP':'symbol-narrow':'1.0-0' }}</small>
+          }
+        </div>
+        <div class="expired-actions">
+          <button type="button" class="modal-btn modal-btn--secondary" (click)="askCancelReservation(item)">No llegó</button>
+          <button type="button" class="modal-btn modal-btn--primary" (click)="registrarEstadiaPasada(item)">Sí se hospedó</button>
+        </div>
+      </li>
+      }
+    </ul>
+    }
+  </section>
+  }
+
   @if (cancelTarget; as item) {
   <div class="check-dialog-backdrop" appModalPortal appEscapeClose (escapeClose)="closeCancelReservation()" (click)="closeCancelReservation()">
     <section class="check-dialog app-modal" role="alertdialog" aria-modal="true" aria-labelledby="cancel-title" (click)="$event.stopPropagation()">
@@ -889,7 +923,7 @@
         <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
       </button>
       <h2 id="cancel-title">¿Marcar como no-show?</h2>
-      <p>La reserva de <strong>{{ item.guestName }}</strong> (Hab. {{ item.roomNumber }}) quedará cancelada y la habitación se libera. Esta acción no se puede deshacer desde Recepción.</p>
+      <p>La reserva de <strong>{{ item.guestName }}</strong> (Hab. {{ item.roomNumber }}) quedará cancelada{{ expiredReservations.includes(item) ? ' (la estadía ya pasó, el estado actual de la habitación no cambia)' : ' y la habitación se libera' }}. Esta acción no se puede deshacer desde Recepción.</p>
       @if (cancelError) {
       <p class="entry-error" role="alert">{{ cancelError }}</p>
       }
@@ -920,8 +954,11 @@
           <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
         </button>
       </header>
-      <h2 id="checkin-payment-title">Procesar check-in</h2>
+      <h2 id="checkin-payment-title">{{ checkInPastStay ? 'Registrar estadía pasada' : 'Procesar check-in' }}</h2>
       <p class="checkin-payment-guest">{{ item.guestName }} · Habitación {{ item.roomNumber }}</p>
+      @if (checkInPastStay) {
+      <p class="pos-payment-hint">La reserva queda FINALIZADA con sus fechas originales ({{ item.dateRange }}). No cambia el estado actual de la habitación.</p>
+      }
       @if (item.outstandingBalance > 0) {
       <div class="checkin-payment-amount">
         <span>Saldo pendiente de la reserva</span>
@@ -985,7 +1022,7 @@
           class="modal-btn modal-btn--primary entry-submit-button"
           [disabled]="(item.outstandingBalance > 0 && !checkInPaymentMethod) || posCobro.enCurso()"
           (click)="confirmCheckInPayment()">
-          {{ posCobro.enCurso() ? 'Cobrando en el terminal…' : item.outstandingBalance > 0 ? (isCardMethod(checkInPaymentMethod) ? 'Cobrar en el terminal y procesar check-in' : 'Cobrar saldo y procesar check-in') : 'Procesar check-in' }}
+          {{ posCobro.enCurso() ? 'Cobrando en el terminal…' : checkInPastStay ? (item.outstandingBalance > 0 ? 'Registrar pago y cerrar estadía' : 'Cerrar estadía') : item.outstandingBalance > 0 ? (isCardMethod(checkInPaymentMethod) ? 'Cobrar en el terminal y procesar check-in' : 'Cobrar saldo y procesar check-in') : 'Procesar check-in' }}
         </button>
       </footer>
     </section>

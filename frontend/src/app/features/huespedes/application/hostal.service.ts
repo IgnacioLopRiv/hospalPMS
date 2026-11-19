@@ -561,6 +561,39 @@ export class HostalService {
     });
   }
 
+  /**
+   * Cierra una reserva confirmada cuya estadía ya terminó sin que se registrara el check-in
+   * (el huésped sí se hospedó). Conserva las fechas originales y cobra el saldo pendiente.
+   */
+  async registerPastStay(
+    reservationId: number,
+    paymentMethod?: MetodoPagoReserva
+  ): Promise<Reserva> {
+    const reservations = this.getReservations();
+    const reservation = reservations.find((item) => item.id_reserva === reservationId);
+    if (!reservation) {
+      throw new Error('La reserva ya no existe. Actualiza la lista e inténtalo otra vez.');
+    }
+    if (!['CONFIRMADA', 'CHECK-IN HOY'].includes(reservation.estado_reserva)) {
+      throw new Error('Esta reserva ya no está pendiente de check-in.');
+    }
+
+    const balance = Math.max(0, (reservation.precio_total ?? 0) - (reservation.monto_pagado ?? 0));
+    if (balance > 0 && !paymentMethod) {
+      throw new Error('Selecciona el medio de pago para cobrar el saldo pendiente.');
+    }
+
+    return this.persistReservationUpdate(reservations, {
+      ...reservation,
+      estado_reserva: 'FINALIZADA',
+      ...(balance > 0 ? {
+        monto_pagado: (reservation.monto_pagado ?? 0) + balance,
+        metodo_pago: paymentMethod,
+        pago_completo: true,
+      } : {}),
+    });
+  }
+
   async processCheckOut(reservationId: number): Promise<Reserva> {
     const reservations = this.getReservations();
     const reservation = reservations.find((item) => item.id_reserva === reservationId);

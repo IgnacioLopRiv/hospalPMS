@@ -700,3 +700,102 @@ $orange-border: #fed7aa;
   }
 
 }
+
+// ── Reservas vencidas sin check-in ─────────────────────────────────────────────
+.expired-tray {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid var(--hospal-danger);
+  border-radius: 12px;
+  background: var(--hospal-white);
+}
+
+.expired-tray-header {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  > div {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .expired-chevron {
+    font-size: 20px;
+    color: var(--hospal-text-muted);
+    transition: transform 0.2s ease;
+
+    &.open {
+      transform: rotate(180deg);
+    }
+  }
+
+  ion-icon {
+    flex-shrink: 0;
+    font-size: 22px;
+    color: var(--hospal-danger);
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 16px;
+  }
+
+  p {
+    margin: 2px 0 0;
+    font-size: 13px;
+    color: var(--hospal-text-muted);
+  }
+}
+
+.expired-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.expired-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border: 1px solid var(--hospal-border);
+  border-radius: 10px;
+  background: var(--hospal-surface-muted);
+}
+
+.expired-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+
+  span,
+  small {
+    font-size: 13px;
+    color: var(--hospal-text-muted);
+  }
+
+  small {
+    color: var(--hospal-danger);
+  }
+}
+
+.expired-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

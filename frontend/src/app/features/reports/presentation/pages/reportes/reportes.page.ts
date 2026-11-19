@@ -178,9 +178,9 @@ export class ReportesPage {
     busqueda: this.busqueda(),
   }));
   readonly transaccionesVisibles = computed(() => this.transaccionesFiltradas().slice(0, this.limiteFilas()));
+  // Las canceladas aportan solo lo abonado (no se devuelve).
   readonly totalFiltrado = computed(() => this.transaccionesFiltradas()
-    .filter((trx) => trx.estadoReserva !== 'CANCELADA')
-    .reduce((sum, trx) => sum + trx.total, 0));
+    .reduce((sum, trx) => sum + (trx.estadoReserva === 'CANCELADA' ? trx.pagado : trx.total), 0));
   readonly resumenEstados = computed(() => ESTADOS_PAGO.map((estado) => {
     const items = this.transaccionesFiltradas().filter((trx) => trx.estadoPago === estado);
     return { estado, cantidad: items.length, monto: items.reduce((sum, trx) => sum + trx.total, 0) };
