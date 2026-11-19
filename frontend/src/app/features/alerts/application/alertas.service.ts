@@ -20,6 +20,24 @@ export interface Alerta {
 
 /** Cada cuánto se vuelven a consultar las alertas mientras hay sesión. */
 const REFRESH_MS = 3 * 60 * 1000;
+const VISTAS_KEY = 'hospal.alertas.vistas';
+
+function leerVistas(): Set<string> {
+  try {
+    const raw = localStorage.getItem(VISTAS_KEY);
+    return new Set(raw ? (JSON.parse(raw) as string[]) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function guardarVistas(ids: Set<string>): void {
+  try {
+    localStorage.setItem(VISTAS_KEY, JSON.stringify([...ids]));
+  } catch {
+    /* almacenamiento no disponible */
+  }
+}
 
 /**
  * RF-20: alertas de Recepción (GET /alertas). Se recargan al cambiar de sede y cada 3 minutos.
@@ -31,7 +49,12 @@ export class AlertasService {
   private readonly auth = inject(AuthService);
   private readonly sedeService = inject(SedeService);
 
-  readonly alertas = signal<Alerta[]>([]);
+  /** Todas las alertas que devuelve el backend. */
+  private readonly todas = signal<Alerta[]>([]);
+  /** IDs de alertas marcadas como vistas (persistidas en este navegador). */
+  private readonly vistas = signal<Set<string>>(leerVistas());
+  /** Alertas visibles: excluye las marcadas como vistas. */
+  readonly alertas = computed(() => this.todas().filter((a) => !this.vistas().has(a.id)));
   readonly loading = signal(false);
   readonly error = signal('');
   readonly enabled = this.auth.canUseFrontDesk;
@@ -44,7 +67,7 @@ export class AlertasService {
       if (this.enabled() && sedeId) {
         void this.refresh(sedeId);
       } else {
-        this.alertas.set([]);
+        this.todas.set([]);
       }
     });
 
@@ -61,12 +84,39 @@ export class AlertasService {
           params: { sedeId },
         }),
       );
-      this.alertas.set(rows);
+      this.todas.set(rows);
+      this.podarVistas(rows);
       this.error.set('');
     } catch {
       this.error.set('No se pudieron cargar las alertas.');
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  /** Marca una alerta como vista para que deje de mostrarse. */
+  marcarVista(id: string): void {
+    const next = new Set(this.vistas());
+    next.add(id);
+    this.vistas.set(next);
+    guardarVistas(next);
+  }
+
+  /** Marca todas las alertas visibles como vistas. */
+  marcarTodasVistas(): void {
+    const next = new Set(this.vistas());
+    this.alertas().forEach((a) => next.add(a.id));
+    this.vistas.set(next);
+    guardarVistas(next);
+  }
+
+  /** Olvida IDs vistos que ya no existen en el backend (la alerta se resolvió). */
+  private podarVistas(rows: Alerta[]): void {
+    const vigentes = new Set(rows.map((a) => a.id));
+    const next = new Set([...this.vistas()].filter((id) => vigentes.has(id)));
+    if (next.size !== this.vistas().size) {
+      this.vistas.set(next);
+      guardarVistas(next);
     }
   }
 }

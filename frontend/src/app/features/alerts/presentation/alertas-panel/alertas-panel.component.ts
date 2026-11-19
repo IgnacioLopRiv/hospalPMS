@@ -11,6 +11,8 @@ import {
   peopleOutline,
   refreshOutline,
   checkmarkCircleOutline,
+  checkmarkOutline,
+  checkmarkDoneOutline,
 } from 'ionicons/icons';
 import { Alerta, AlertasService, TipoAlerta } from '../../application/alertas.service';
 
@@ -54,7 +56,14 @@ export class AlertasPanelComponent {
       peopleOutline,
       refreshOutline,
       checkmarkCircleOutline,
+      checkmarkOutline,
+      checkmarkDoneOutline,
     });
+  }
+
+  marcarVista(event: Event, alerta: Alerta): void {
+    event.stopPropagation();
+    this.service.marcarVista(alerta.id);
   }
 
   open(alerta: Alerta): void {

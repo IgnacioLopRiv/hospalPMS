@@ -3,6 +3,11 @@
   <header class="alertas-head">
     <h3>Alertas <span class="total">{{ service.count() }}</span></h3>
     <div class="head-actions">
+      @if (service.count() > 0) {
+        <button type="button" aria-label="Marcar todas como vistas" title="Marcar todas como vistas" (click)="service.marcarTodasVistas()">
+          <ion-icon name="checkmark-done-outline"></ion-icon>
+        </button>
+      }
       <button type="button" aria-label="Actualizar alertas" [disabled]="service.loading()" (click)="service.refresh()">
         <ion-icon name="refresh-outline" [class.spin]="service.loading()"></ion-icon>
       </button>
@@ -18,20 +23,26 @@
     }
 
     @for (alerta of service.alertas(); track alerta.id) {
-      <button
-        type="button"
+      <div
+        role="button"
+        tabindex="0"
         class="alerta"
         [class]="'alerta tipo-' + alerta.tipo"
         [class.alta]="alerta.severidad === 'alta'"
         [title]="meta[alerta.tipo].etiqueta"
         (click)="open(alerta)"
+        (keydown.enter)="open(alerta)"
       >
         <ion-icon [name]="meta[alerta.tipo].icono"></ion-icon>
         <div>
           <strong>{{ alerta.titulo }}</strong>
           <span>{{ alerta.detalle }}</span>
         </div>
-      </button>
+        <button type="button" class="visto-btn" aria-label="Marcar como vista" title="Marcar como vista"
+          (click)="marcarVista($event, alerta)">
+          <ion-icon name="checkmark-outline"></ion-icon>
+        </button>
+      </div>
     } @empty {
       @if (!service.error()) {
         <div class="estado vacio">
