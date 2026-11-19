@@ -1,4 +1,4 @@
-$blue-primary: #1e50d8;
+$blue-primary: var(--hospal-primary);
 
 :host {
   display: block;
@@ -15,7 +15,7 @@ $blue-primary: #1e50d8;
   padding: 1rem 0.8rem;
   box-sizing: border-box;
   background: $blue-primary;
-  color: #ffffff;
+  color: var(--hospal-white);
 
   .nav-menu {
     display: flex;
@@ -41,12 +41,12 @@ $blue-primary: #1e50d8;
 
       &:hover {
         background: rgba(255, 255, 255, 0.12);
-        color: #ffffff;
+        color: var(--hospal-white);
       }
 
       &.active {
         background: rgba(255, 255, 255, 0.2);
-        color: #ffffff;
+        color: var(--hospal-white);
         font-weight: 600;
       }
 
@@ -68,7 +68,7 @@ $blue-primary: #1e50d8;
     gap: 0.6rem;
     padding: 0.25rem 0.5rem 0.45rem;
     min-width: 0;
-    color: #ffffff;
+    color: var(--hospal-white);
     text-align: left;
     font-family: inherit;
 
@@ -82,7 +82,7 @@ $blue-primary: #1e50d8;
       border-radius: 50%;
       background: rgba(255, 255, 255, 0.2);
       border: 1px solid rgba(255, 255, 255, 0.3);
-      color: #ffffff;
+      color: var(--hospal-white);
       font-size: 0.75rem;
       font-weight: 700;
     }
@@ -101,7 +101,7 @@ $blue-primary: #1e50d8;
       }
 
       strong {
-        color: #ffffff;
+        color: var(--hospal-white);
         font-size: 0.8rem;
         font-weight: 600;
       }

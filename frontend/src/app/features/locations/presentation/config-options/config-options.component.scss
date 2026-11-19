@@ -1,6 +1,6 @@
-$blue-primary: #1e50d8;
+$blue-primary: var(--hospal-primary);
 $danger-color: #eb445a;
-$text-dark: #1f2937;
+$text-dark: var(--hospal-text-alt);
 
 :host {
   display: block;
@@ -24,7 +24,7 @@ $text-dark: #1f2937;
   width: min(300px, calc(100vw - 2rem));
   min-width: min(220px, calc(100vw - 2rem));
   box-sizing: border-box;
-  background: #ffffff;
+  background: var(--hospal-white);
   border-radius: 14px;
   border: 1px solid rgba(0, 0, 0, 0.08);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.16), 0 4px 10px rgba(0, 0, 0, 0.05);
@@ -87,7 +87,7 @@ $text-dark: #1f2937;
 
       .action-icon-box {
         background: $blue-primary;
-        color: #ffffff;
+        color: var(--hospal-white);
       }
     }
 
@@ -103,11 +103,11 @@ $text-dark: #1f2937;
 
       &:hover {
         background: rgba(235, 68, 90, 0.08);
-        color: #dc2626;
+        color: var(--hospal-danger);
 
         .action-icon-box {
           background: $danger-color;
-          color: #ffffff;
+          color: var(--hospal-white);
         }
       }
     }

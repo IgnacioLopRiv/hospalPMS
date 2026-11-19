@@ -7,6 +7,7 @@ import {
   EstadoHabitacion,
 } from '../../../shared/domain/hostal.model';
 import { CreateSedeInput, LocationsRepository } from '../domain/locations.repository';
+import { StorageService } from '../../../shared/infrastructure/storage.service';
 export type { Sede, SedeHabitacion as Habitacion, SedeTipologia, EstadoHabitacion } from '../../../shared/domain/hostal.model';
 
 const SELECTED_SEDE_KEY = 'hospal.selectedSede';
@@ -46,6 +47,7 @@ function hueToHex(hue: number): string {
 @Injectable({ providedIn: 'root' })
 export class SedeService {
   private readonly repository = inject(LocationsRepository);
+  private readonly storage = inject(StorageService);
   private nextHabitacionId = 1;
 
   readonly sedes = signal<Sede[]>([]);
@@ -99,11 +101,7 @@ export class SedeService {
 
   clearSede(): void {
     this.selectedSede.set(null);
-    try {
-      localStorage.removeItem(SELECTED_SEDE_KEY);
-    } catch {
-      // Ignorar error de almacenamiento
-    }
+    this.storage.remove(SELECTED_SEDE_KEY);
   }
 
   /**
@@ -491,21 +489,11 @@ export class SedeService {
   }
 
   private readSelectedSedeId(): number | null {
-    try {
-      const raw = localStorage.getItem(SELECTED_SEDE_KEY);
-      if (raw) return Number(JSON.parse(raw)?.id) || null;
-    } catch {
-      return null;
-    }
-    return null;
+    return Number(this.storage.getJson<{ id?: unknown }>(SELECTED_SEDE_KEY)?.id) || null;
   }
 
   private saveSelectedSede(sede: Sede): void {
-    try {
-      localStorage.setItem(SELECTED_SEDE_KEY, JSON.stringify({ id: sede.id }));
-    } catch {
-      // Ignorar error de almacenamiento
-    }
+    this.storage.setJson(SELECTED_SEDE_KEY, { id: sede.id });
   }
 
   private syncNextHabitacionId(): void {

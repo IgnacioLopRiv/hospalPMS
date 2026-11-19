@@ -1,7 +1,7 @@
-$blue-primary: #1e50d8;
-$text-dark: #0f172a;
-$text-muted: #64748b;
-$border: #e2e8f0;
+$blue-primary: var(--hospal-primary);
+$text-dark: var(--hospal-text);
+$text-muted: var(--hospal-text-muted);
+$border: var(--hospal-border);
 
 ion-modal.pos-config-modal {
   --width: min(620px, calc(100% - 2rem));
@@ -29,7 +29,7 @@ ion-modal.pos-config-modal {
   max-height: 88dvh;
   border-radius: 20px;
   overflow: hidden;
-  background: #ffffff;
+  background: var(--hospal-white);
   border: 1px solid $border;
   color: $text-dark;
 }
@@ -57,7 +57,7 @@ ion-modal.pos-config-modal {
     height: 42px;
     flex-shrink: 0;
     border-radius: 12px;
-    background: #eff6ff;
+    background: var(--hospal-primary-50);
     color: $blue-primary;
     font-size: 1.35rem;
   }
@@ -84,16 +84,16 @@ ion-modal.pos-config-modal {
   place-items: center;
   border: 1px solid $border;
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--hospal-white);
   color: $text-muted;
   font-size: 1.25rem;
   cursor: pointer;
   transition: all 0.18s ease;
 
   &:hover {
-    border-color: #fecaca;
-    background: #fef2f2;
-    color: #b91c1c;
+    border-color: var(--hospal-danger-200);
+    background: var(--hospal-danger-50);
+    color: var(--hospal-danger-strong);
   }
 }
 
@@ -122,7 +122,7 @@ ion-modal.pos-config-modal {
 
 .section-title {
   margin: 0;
-  color: #334155;
+  color: var(--hospal-text-secondary);
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -145,14 +145,14 @@ ion-modal.pos-config-modal {
   min-width: 0;
 
   .field-label {
-    color: #334155;
+    color: var(--hospal-text-secondary);
     font-size: 0.76rem;
     font-weight: 600;
   }
 
   .required {
     margin-left: 0.15rem;
-    color: #dc2626;
+    color: var(--hospal-danger);
   }
 
   input:not([type='checkbox']),
@@ -161,9 +161,9 @@ ion-modal.pos-config-modal {
     width: 100%;
     min-height: 42px;
     padding: 0.6rem 0.85rem;
-    border: 1px solid #cbd5e1;
+    border: 1px solid var(--hospal-border-strong);
     border-radius: 10px;
-    background: #f8fafc;
+    background: var(--hospal-surface);
     color: $text-dark;
     color-scheme: light;
     font: inherit;
@@ -173,12 +173,12 @@ ion-modal.pos-config-modal {
     &:focus {
       border-color: #3b82f6;
       outline: none;
-      background: #ffffff;
+      background: var(--hospal-white);
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
     }
 
     &::placeholder {
-      color: #94a3b8;
+      color: var(--hospal-text-subtle);
     }
   }
 
@@ -189,7 +189,7 @@ ion-modal.pos-config-modal {
   }
 
   .field-error {
-    color: #b91c1c;
+    color: var(--hospal-danger-strong);
     font-size: 0.76rem;
   }
 }
@@ -245,32 +245,32 @@ ion-modal.pos-config-modal {
 }
 
 .btn-secondary {
-  border: 1px solid #bfdbfe;
-  background: #eff6ff;
+  border: 1px solid var(--hospal-primary-200);
+  background: var(--hospal-primary-50);
   color: $blue-primary;
 
   &:hover:not(:disabled) {
-    background: #dbeafe;
+    background: var(--hospal-primary-100);
   }
 }
 
 .btn-outline {
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  color: #334155;
+  border: 1px solid var(--hospal-border-strong);
+  background: var(--hospal-white);
+  color: var(--hospal-text-secondary);
 
   &:hover:not(:disabled) {
-    background: #f8fafc;
+    background: var(--hospal-surface);
   }
 }
 
 .btn-primary {
   border: 1px solid $blue-primary;
   background: $blue-primary;
-  color: #ffffff;
+  color: var(--hospal-white);
 
   &:hover:not(:disabled) {
-    background: #1d4ed8;
+    background: var(--hospal-primary-strong);
     box-shadow: 0 3px 10px rgba(30, 80, 216, 0.25);
   }
 }
@@ -294,25 +294,25 @@ ion-modal.pos-config-modal {
 
   &.success {
     border-color: #bbf7d0;
-    background: #f0fdf4;
+    background: var(--hospal-success-50);
     color: #15803d;
   }
 
   &.error {
-    border-color: #fecaca;
-    background: #fef2f2;
-    color: #b91c1c;
+    border-color: var(--hospal-danger-200);
+    background: var(--hospal-danger-50);
+    color: var(--hospal-danger-strong);
   }
 
   &.info {
-    border-color: #bfdbfe;
-    background: #eff6ff;
+    border-color: var(--hospal-primary-200);
+    background: var(--hospal-primary-50);
     color: #1e40af;
   }
 
   &.warning {
     border-color: #fde68a;
-    background: #fffbeb;
+    background: var(--hospal-warning-50);
     color: #b45309;
   }
 }
@@ -344,7 +344,7 @@ ion-modal.pos-config-modal {
   padding: 0.85rem 1rem;
   border: 1px solid $border;
   border-radius: 12px;
-  background: #f8fafc;
+  background: var(--hospal-surface);
   cursor: pointer;
 
   input {
@@ -360,7 +360,7 @@ ion-modal.pos-config-modal {
     height: 22px;
     margin-top: 0.1rem;
     border-radius: 999px;
-    background: #cbd5e1;
+    background: var(--hospal-border-strong);
     transition: background-color 0.15s ease;
 
     &::after {
@@ -371,7 +371,7 @@ ion-modal.pos-config-modal {
       width: 16px;
       height: 16px;
       border-radius: 50%;
-      background: #ffffff;
+      background: var(--hospal-white);
       box-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
       transition: transform 0.15s ease;
     }
@@ -422,7 +422,7 @@ ion-modal.pos-config-modal {
   flex-shrink: 0;
   padding: 1rem 1.5rem;
   border-top: 1px solid $border;
-  background: #ffffff;
+  background: var(--hospal-white);
 }
 
 @media (max-width: 520px) {

@@ -1,7 +1,7 @@
-$blue-primary: #1e50d8;
-$border-color: #e5e9f2;
-$text-dark: #1f2937;
-$text-muted: #64748b;
+$blue-primary: var(--hospal-primary);
+$border-color: var(--hospal-border-soft);
+$text-dark: var(--hospal-text-alt);
+$text-muted: var(--hospal-text-muted);
 
 :host {
   display: block;
@@ -36,7 +36,7 @@ $text-muted: #64748b;
 
     .btn-primary {
       background: $blue-primary;
-      color: #ffffff;
+      color: var(--hospal-white);
       border: none;
       border-radius: 8px;
       padding: 0.65rem 1.3rem;
@@ -56,7 +56,7 @@ $text-muted: #64748b;
   margin-bottom: 1.5rem;
 
   .kpi-card {
-    background: #ffffff;
+    background: var(--hospal-white);
     padding: 1.1rem 1.3rem;
     border-radius: 12px;
     display: flex;
@@ -85,21 +85,21 @@ $text-muted: #64748b;
 
     &.card-blue {
       background: #f0f4ff;
-      border-color: #dbeafe;
-      .kpi-icon, h3 { color: #2563eb; }
+      border-color: var(--hospal-primary-100);
+      .kpi-icon, h3 { color: var(--hospal-primary-bright); }
     }
     &.card-purple {
       background: #faf5ff;
-      border-color: #f3e8ff;
-      .kpi-icon, h3 { color: #7c3aed; }
+      border-color: var(--hospal-purple-100);
+      .kpi-icon, h3 { color: var(--hospal-purple); }
     }
     &.card-green {
-      background: #f0fdf4;
-      border-color: #dcfce7;
-      .kpi-icon, h3 { color: #16a34a; }
+      background: var(--hospal-success-50);
+      border-color: var(--hospal-success-100);
+      .kpi-icon, h3 { color: var(--hospal-success); }
     }
     &.card-orange {
-      background: #fffbeb;
+      background: var(--hospal-warning-50);
       border-color: #fef3c7;
       .kpi-icon, h3 { color: #d97706; }
     }
@@ -122,7 +122,7 @@ $text-muted: #64748b;
     padding-bottom: 0.2rem;
 
     .tab-btn {
-      background: #ffffff;
+      background: var(--hospal-white);
       border: 1px solid $border-color;
       padding: 0.55rem 1rem;
       border-radius: 20px;
@@ -135,21 +135,21 @@ $text-muted: #64748b;
       white-space: nowrap;
 
       .badge {
-        background: #f1f5f9;
+        background: var(--hospal-surface-muted);
         padding: 0.1rem 0.45rem;
         border-radius: 10px;
         font-size: 0.72rem;
       }
 
       &.active {
-        background: #f1f5f9;
-        border-color: #cbd5e1;
+        background: var(--hospal-surface-muted);
+        border-color: var(--hospal-border-strong);
         color: $text-dark;
         font-weight: 600;
 
         .badge {
           background: $blue-primary;
-          color: #ffffff;
+          color: var(--hospal-white);
         }
       }
     }
@@ -161,7 +161,7 @@ $text-muted: #64748b;
     align-self: flex-start;
 
     .search-input {
-      background: #ffffff;
+      background: var(--hospal-white);
       border: 1px solid $border-color;
       border-radius: 8px;
       display: flex;
@@ -195,9 +195,9 @@ $text-muted: #64748b;
   justify-content: center;
   gap: 0.45rem;
   padding: 0.65rem 0.9rem;
-  border: 1px solid #bfdbfe;
+  border: 1px solid var(--hospal-primary-200);
   border-radius: 10px;
-  background: #eff6ff;
+  background: var(--hospal-primary-50);
   color: $blue-primary;
   font: inherit;
   font-size: 0.84rem;
@@ -206,8 +206,8 @@ $text-muted: #64748b;
   transition: background-color 0.18s ease, border-color 0.18s ease;
 
   &:hover {
-    border-color: #93c5fd;
-    background: #dbeafe;
+    border-color: var(--hospal-primary-300);
+    background: var(--hospal-primary-100);
   }
 }
 
@@ -219,7 +219,7 @@ $text-muted: #64748b;
 
   .guest-card {
     position: relative;
-    background: #ffffff;
+    background: var(--hospal-white);
     border-radius: 16px;
     min-width: 0;
     padding: 1.25rem;
@@ -240,33 +240,33 @@ $text-muted: #64748b;
     }
 
     &.status-confirmada {
-      --guest-status-color: #2563eb;
-      --guest-status-background: #eff6ff;
-      --guest-status-border: #dbeafe;
+      --guest-status-color: var(--hospal-primary-bright);
+      --guest-status-background: var(--hospal-primary-50);
+      --guest-status-border: var(--hospal-primary-100);
     }
 
     &.status-checkin_hoy {
-      --guest-status-color: #16a34a;
-      --guest-status-background: #f0fdf4;
-      --guest-status-border: #dcfce7;
+      --guest-status-color: var(--hospal-success);
+      --guest-status-background: var(--hospal-success-50);
+      --guest-status-border: var(--hospal-success-100);
     }
 
     &.status-checkout_hoy {
       --guest-status-color: #d97706;
-      --guest-status-background: #fffbeb;
+      --guest-status-background: var(--hospal-warning-50);
       --guest-status-border: #fef3c7;
     }
 
     &.status-hospedado {
-      --guest-status-color: #7c3aed;
+      --guest-status-color: var(--hospal-purple);
       --guest-status-background: #faf5ff;
-      --guest-status-border: #f3e8ff;
+      --guest-status-border: var(--hospal-purple-100);
     }
 
     &.status-inactivo {
-      --guest-status-color: #64748b;
-      --guest-status-background: #f8fafc;
-      --guest-status-border: #e2e8f0;
+      --guest-status-color: var(--hospal-text-muted);
+      --guest-status-background: var(--hospal-surface);
+      --guest-status-border: var(--hospal-border);
     }
 
     .card-header {
@@ -285,9 +285,9 @@ $text-muted: #64748b;
         font-weight: 700;
         font-size: 0.85rem;
 
-        &.color-purple { background: #f3e8ff; color: #7c3aed; }
+        &.color-purple { background: var(--hospal-purple-100); color: var(--hospal-purple); }
         &.color-orange { background: #ffedd5; color: #ea580c; }
-        &.color-green { background: #dcfce7; color: #16a34a; }
+        &.color-green { background: var(--hospal-success-100); color: var(--hospal-success); }
         &.color-blue { background: #e0f2fe; color: #0284c7; }
       }
 
@@ -423,7 +423,7 @@ p {
   padding: 0.45rem;
   border: 1px solid $border-color;
   border-radius: 6px;
-  background: #ffffff;
+  background: var(--hospal-white);
   color: $text-muted;
   font: inherit;
   font-size: 0.75rem;
@@ -431,7 +431,7 @@ p {
   cursor: pointer;
 
   &:hover:not(:disabled) {
-    background: #f8fafc;
+    background: var(--hospal-surface);
     color: $text-dark;
   }
 
@@ -446,8 +446,8 @@ p {
   align-items: center;
   padding: 0.05rem 0.4rem;
   border-radius: 999px;
-  background: var(--guest-status-color, #2563eb);
-  color: #ffffff;
+  background: var(--guest-status-color, var(--hospal-primary-bright));
+  color: var(--hospal-white);
   font-size: 0.65rem;
   font-weight: 700;
 }
@@ -482,9 +482,9 @@ p {
     border-radius: 10px;
     font-weight: 700;
 
-    &.color-purple { background: #f3e8ff; color: #7c3aed; }
+    &.color-purple { background: var(--hospal-purple-100); color: var(--hospal-purple); }
     &.color-orange { background: #ffedd5; color: #ea580c; }
-    &.color-green { background: #dcfce7; color: #16a34a; }
+    &.color-green { background: var(--hospal-success-100); color: var(--hospal-success); }
     &.color-blue { background: #e0f2fe; color: #0284c7; }
   }
 
@@ -522,14 +522,14 @@ p {
     padding: 0.8rem 0.9rem;
     border: 1px solid $border-color;
     border-radius: 10px;
-    background: #ffffff;
+    background: var(--hospal-white);
 
     & + .guest-reservation-item {
       margin-top: 0.6rem;
     }
 
     &.is-past {
-      background: #f8fafc;
+      background: var(--hospal-surface);
 
       strong { color: $text-muted; }
     }
@@ -566,7 +566,7 @@ p {
     padding: 0.45rem 0.75rem;
     border: 1px solid $border-color;
     border-radius: 8px;
-    background: #ffffff;
+    background: var(--hospal-white);
     color: $text-dark;
     font: inherit;
     font-size: 0.78rem;
@@ -574,7 +574,7 @@ p {
     cursor: pointer;
 
     &:hover {
-      background: #f1f5f9;
+      background: var(--hospal-surface-muted);
     }
   }
 }
@@ -597,7 +597,7 @@ p {
 
 .guest-detail-actions {
   align-items: center;
-  background: #f8fafc;
+  background: var(--hospal-surface);
 }
 
 /* Mismo diseño que "Eliminar habitación" en el modal de habitaciones. */
@@ -610,7 +610,7 @@ p {
   padding: 0.55rem 1rem;
   border: 1px solid #fecdd3;
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--hospal-white);
   color: #be123c;
   font: inherit;
   font-size: 0.84rem;
@@ -626,10 +626,10 @@ p {
 .guest-delete-confirm-button {
   min-height: 40px;
   padding: 0.55rem 0.9rem;
-  border: 1px solid #b91c1c !important;
+  border: 1px solid var(--hospal-danger-strong) !important;
   border-radius: 8px;
-  background: #b91c1c !important;
-  color: #ffffff !important;
+  background: var(--hospal-danger-strong) !important;
+  color: var(--hospal-white) !important;
   font-weight: 600;
   cursor: pointer;
 }

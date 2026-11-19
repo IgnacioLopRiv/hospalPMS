@@ -2,7 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
 import { IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { alertCircleOutline, cardOutline, checkmarkCircleOutline } from 'ionicons/icons';
+import { alertCircleOutline, checkmarkCircleOutline } from 'ionicons/icons';
 import { PosCobroService } from '../../application/pos-cobro.service';
 
 /** Estado en vivo del cobro con tarjeta que se envió al terminal POS. */
@@ -89,6 +89,6 @@ export class PosCobroEstadoComponent {
   readonly cobro = inject(PosCobroService);
 
   constructor() {
-    addIcons({ alertCircleOutline, cardOutline, checkmarkCircleOutline });
+    addIcons({ alertCircleOutline, checkmarkCircleOutline });
   }
 }

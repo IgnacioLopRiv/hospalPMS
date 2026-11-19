@@ -6,11 +6,9 @@ import { IonContent, IonIcon } from '@ionic/angular/standalone';
 import { firstValueFrom } from 'rxjs';
 import { addIcons } from 'ionicons';
 import {
-  alertCircleOutline,
   analyticsOutline,
   barChartOutline,
   bedOutline,
-  businessOutline,
   calendarOutline,
   cashOutline,
   closeCircleOutline,
@@ -21,9 +19,7 @@ import {
   layersOutline,
   pricetagOutline,
   receiptOutline,
-  refreshOutline,
   searchOutline,
-  sparklesOutline,
   trendingDownOutline,
   trendingUpOutline,
   walletOutline,
@@ -196,11 +192,9 @@ export class ReportesPage {
 
   constructor() {
     addIcons({
-      alertCircleOutline,
       analyticsOutline,
       barChartOutline,
       bedOutline,
-      businessOutline,
       calendarOutline,
       cashOutline,
       closeCircleOutline,
@@ -211,9 +205,7 @@ export class ReportesPage {
       layersOutline,
       pricetagOutline,
       receiptOutline,
-      refreshOutline,
       searchOutline,
-      sparklesOutline,
       trendingDownOutline,
       trendingUpOutline,
       walletOutline,

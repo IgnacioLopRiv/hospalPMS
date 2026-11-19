@@ -7,7 +7,6 @@ import {
   settingsOutline,
   businessOutline,
   notificationsOutline,
-  personCircleOutline,
   chevronDownOutline,
 } from 'ionicons/icons';
 
@@ -62,7 +61,6 @@ export class HeaderComponent {
       settingsOutline,
       businessOutline,
       notificationsOutline,
-      personCircleOutline,
       chevronDownOutline,
     });
   }

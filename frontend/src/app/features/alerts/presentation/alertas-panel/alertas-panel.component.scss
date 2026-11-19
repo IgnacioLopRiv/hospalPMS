@@ -16,9 +16,9 @@
   box-sizing: border-box;
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 14px;
-  background: #ffffff;
+  background: var(--hospal-white);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.16), 0 4px 10px rgba(0, 0, 0, 0.05);
-  color: #1f2937;
+  color: var(--hospal-text-alt);
   animation: alertasIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   transform-origin: top right;
 }
@@ -92,10 +92,10 @@
   text-align: left;
   transition: filter 0.15s ease;
 
-  &.tipo-LLEGADA_ATRASADA { --c: #f59e0b; --bg: #fffbeb; }
+  &.tipo-LLEGADA_ATRASADA { --c: #f59e0b; --bg: var(--hospal-warning-50); }
   &.tipo-SALIDA_ATRASADA { --c: #ea580c; --bg: #fff7ed; }
-  &.tipo-SALDO_PENDIENTE { --c: #2563eb; --bg: #eff6ff; }
-  &.tipo-POSIBLE_DUPLICADO { --c: #7c3aed; --bg: #f5f3ff; }
+  &.tipo-SALDO_PENDIENTE { --c: var(--hospal-primary-bright); --bg: var(--hospal-primary-50); }
+  &.tipo-POSIBLE_DUPLICADO { --c: var(--hospal-purple); --bg: #f5f3ff; }
   &.tipo-STOCK_BAJO { --c: #0d9488; --bg: #f0fdfa; }
 
   &:hover {
@@ -135,13 +135,13 @@
 
     &:hover {
       border-color: #d1d5db;
-      background: #ffffff;
-      color: #16a34a;
+      background: var(--hospal-white);
+      color: var(--hospal-success);
     }
   }
 
   &.alta strong {
-    color: #b91c1c;
+    color: var(--hospal-danger-strong);
   }
 
   span {
@@ -156,7 +156,7 @@
   font-size: 0.85rem;
 
   &.error {
-    color: #b91c1c;
+    color: var(--hospal-danger-strong);
   }
 
   &.vacio {
@@ -167,7 +167,7 @@
     color: #6b7280;
 
     ion-icon {
-      color: #16a34a;
+      color: var(--hospal-success);
       font-size: 2rem;
     }
 

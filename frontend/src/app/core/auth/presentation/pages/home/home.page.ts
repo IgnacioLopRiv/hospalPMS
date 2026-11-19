@@ -5,7 +5,6 @@ import { IonContent, IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
   alertCircleOutline,
-  businessOutline,
   chevronForwardOutline,
   lockClosedOutline,
   mailOutline,
@@ -36,7 +35,6 @@ export class HomePage {
 
   constructor() {
     addIcons({
-      businessOutline,
       chevronForwardOutline,
       mailOutline,
       lockClosedOutline,

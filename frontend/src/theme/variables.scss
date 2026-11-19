@@ -1,2 +1,34 @@
-// For information on how to create your own theme, please refer to:
+// Tema de HosPal PMS. Paleta única: usar estos tokens en vez de colores hex.
 // https://ionicframework.com/docs/theming/
+
+:root {
+  --hospal-white: #ffffff;
+  --hospal-primary: #1e50d8;
+  --hospal-primary-strong: #1d4ed8;
+  --hospal-primary-bright: #2563eb;
+  --hospal-primary-50: #eff6ff;
+  --hospal-primary-100: #dbeafe;
+  --hospal-primary-200: #bfdbfe;
+  --hospal-primary-300: #93c5fd;
+  --hospal-text: #0f172a;
+  --hospal-text-alt: #1f2937;
+  --hospal-text-secondary: #334155;
+  --hospal-text-soft: #475569;
+  --hospal-text-muted: #64748b;
+  --hospal-text-subtle: #94a3b8;
+  --hospal-border-strong: #cbd5e1;
+  --hospal-border: #e2e8f0;
+  --hospal-border-soft: #e5e9f2;
+  --hospal-surface-muted: #f1f5f9;
+  --hospal-surface: #f8fafc;
+  --hospal-danger: #dc2626;
+  --hospal-danger-strong: #b91c1c;
+  --hospal-danger-50: #fef2f2;
+  --hospal-danger-200: #fecaca;
+  --hospal-success: #16a34a;
+  --hospal-success-100: #dcfce7;
+  --hospal-success-50: #f0fdf4;
+  --hospal-purple: #7c3aed;
+  --hospal-purple-100: #f3e8ff;
+  --hospal-warning-50: #fffbeb;
+}

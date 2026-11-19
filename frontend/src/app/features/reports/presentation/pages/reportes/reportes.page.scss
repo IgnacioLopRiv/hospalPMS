@@ -1,7 +1,7 @@
-$blue-primary: #1e50d8;
-$border-color: #e5e9f2;
-$text-dark: #1f2937;
-$text-muted: #64748b;
+$blue-primary: var(--hospal-primary);
+$border-color: var(--hospal-border-soft);
+$text-dark: var(--hospal-text-alt);
+$text-muted: var(--hospal-text-muted);
 
 :host {
   display: block;
@@ -45,7 +45,7 @@ ion-content {
   padding: 0.6rem 0.85rem;
   border: 1px solid $border-color;
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--hospal-white);
   color: $text-muted;
   font-size: 0.8rem;
   font-weight: 600;
@@ -67,9 +67,9 @@ ion-content {
   .kpi-data > span, .eyebrow { color: $text-muted; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.02em; }
   .kpi-data strong { font-size: 1.6rem; line-height: 1.1; }
   .kpi-data small { color: $text-muted; font-size: 0.72rem; }
-  &.card-blue { background: #f0f4ff; border-color: #dbeafe; .kpi-icon, strong { color: #2563eb; } .kpi-icon { background: #dbeafe; } }
-  &.card-green { background: #f0fdf4; border-color: #dcfce7; .kpi-icon, strong { color: #16a34a; } .kpi-icon { background: #dcfce7; } }
-  &.card-purple { background: #faf5ff; border-color: #f3e8ff; .kpi-icon, strong { color: #7c3aed; } .kpi-icon { background: #f3e8ff; } }
+  &.card-blue { background: #f0f4ff; border-color: var(--hospal-primary-100); .kpi-icon, strong { color: var(--hospal-primary-bright); } .kpi-icon { background: var(--hospal-primary-100); } }
+  &.card-green { background: var(--hospal-success-50); border-color: var(--hospal-success-100); .kpi-icon, strong { color: var(--hospal-success); } .kpi-icon { background: var(--hospal-success-100); } }
+  &.card-purple { background: #faf5ff; border-color: var(--hospal-purple-100); .kpi-icon, strong { color: var(--hospal-purple); } .kpi-icon { background: var(--hospal-purple-100); } }
 }
 
 .report-card {
@@ -77,18 +77,18 @@ ion-content {
   padding: 1.35rem;
   border: 1px solid $border-color;
   border-radius: 16px;
-  background: #ffffff;
+  background: var(--hospal-white);
   box-shadow: 0 2px 4px rgba(15, 23, 42, 0.03);
 }
 
 .card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
 .card-heading h2 { margin: 0.3rem 0 0; font-size: 1.05rem; font-weight: 700; }
 .heading-icon { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 9px; font-size: 1.3rem; }
-.blue-icon { color: #2563eb; background: #eff6ff; }
-.green-icon { color: #16a34a; background: #f0fdf4; }
+.blue-icon { color: var(--hospal-primary-bright); background: var(--hospal-primary-50); }
+.green-icon { color: var(--hospal-success); background: var(--hospal-success-50); }
 
-.progress-track { height: 9px; margin-top: 0.8rem; overflow: hidden; border-radius: 10px; background: #e2e8f0; }
-.progress-value { display: block; width: 75%; height: 100%; border-radius: inherit; background: #2563eb; }
+.progress-track { height: 9px; margin-top: 0.8rem; overflow: hidden; border-radius: 10px; background: var(--hospal-border); }
+.progress-value { display: block; width: 75%; height: 100%; border-radius: inherit; background: var(--hospal-primary-bright); }
 .legend-dot { width: 7px; height: 7px; border-radius: 50%; }
 
 @media (max-width: 760px) {
@@ -149,7 +149,7 @@ ion-content {
   padding: 0.25rem;
   overflow-x: auto;
   border-radius: 10px;
-  background: #f1f5f9;
+  background: var(--hospal-surface-muted);
 }
 
 .segment-btn {
@@ -170,7 +170,7 @@ ion-content {
   cursor: pointer;
 
   &.active {
-    background: #ffffff;
+    background: var(--hospal-white);
     color: $blue-primary;
     box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
   }
@@ -197,7 +197,7 @@ ion-content {
   padding: 0.35rem 0.75rem;
   border: 1px solid $border-color;
   border-radius: 20px;
-  background: #ffffff;
+  background: var(--hospal-white);
   color: $text-muted;
   font-family: inherit;
   font-size: 0.76rem;
@@ -207,7 +207,7 @@ ion-content {
   &.active {
     border-color: $blue-primary;
     background: $blue-primary;
-    color: #ffffff;
+    color: var(--hospal-white);
     font-weight: 600;
   }
 }
@@ -254,7 +254,7 @@ ion-content {
   box-sizing: border-box;
   border: 1px solid $border-color;
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--hospal-white);
   color: $text-dark;
   font-family: inherit;
   font-size: 0.85rem;
@@ -295,7 +295,7 @@ ion-content {
   &:focus-within { border-color: $blue-primary; }
 }
 
-.filters-error { margin: 0; color: #b91c1c; font-size: 0.78rem; }
+.filters-error { margin: 0; color: var(--hospal-danger-strong); font-size: 0.78rem; }
 
 .btn-clear-filters {
   display: inline-flex;
@@ -306,13 +306,13 @@ ion-content {
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: #b91c1c;
+  color: var(--hospal-danger-strong);
   font-family: inherit;
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
 
-  &:hover { background: #fef2f2; }
+  &:hover { background: var(--hospal-danger-50); }
 }
 
 .btn-action-primary:disabled { opacity: 0.55; cursor: not-allowed; }
@@ -343,7 +343,7 @@ ion-content {
   padding: 0.9rem 1.1rem;
   border: 1px solid $border-color;
   border-radius: 12px;
-  background: #ffffff;
+  background: var(--hospal-white);
   color: $text-muted;
   font-size: 0.85rem;
 
@@ -351,15 +351,15 @@ ion-content {
 }
 
 .reports-error {
-  border-color: #fecaca;
-  background: #fef2f2;
+  border-color: var(--hospal-danger-200);
+  background: var(--hospal-danger-50);
   color: #991b1b;
 
   button {
     padding: 0.35rem 0.75rem;
     border: 1px solid #fca5a5;
     border-radius: 8px;
-    background: #ffffff;
+    background: var(--hospal-white);
     color: #991b1b;
     font-family: inherit;
     font-weight: 600;
@@ -373,7 +373,7 @@ ion-content {
   gap: 0.45rem;
   padding: 0.3rem 0.75rem;
   border-radius: 20px;
-  background: #eff6ff;
+  background: var(--hospal-primary-50);
   color: $blue-primary;
   font-size: 0.75rem;
   font-weight: 600;
@@ -395,16 +395,16 @@ ion-content {
   align-items: center;
   gap: 0.35rem;
   padding: 0.4rem 0.85rem;
-  border: 1px solid #bfdbfe;
+  border: 1px solid var(--hospal-primary-200);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--hospal-white);
   color: $blue-primary;
   font-family: inherit;
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
 
-  &:hover { background: #eff6ff; }
+  &:hover { background: var(--hospal-primary-50); }
 }
 
 /* ==========================================================================
@@ -414,7 +414,7 @@ ion-content {
 .kpi-grid.period-kpis { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 
 .kpi-card {
-  &.card-red { background: #fff5f5; border-color: #fee2e2; .kpi-icon, strong { color: #dc2626; } .kpi-icon { background: #fee2e2; } }
+  &.card-red { background: #fff5f5; border-color: #fee2e2; .kpi-icon, strong { color: var(--hospal-danger); } .kpi-icon { background: #fee2e2; } }
 
   .kpi-delta {
     display: inline-flex;
@@ -430,8 +430,8 @@ ion-content {
     font-style: normal;
     font-weight: 700;
 
-    &.up { background: #dcfce7; color: #15803d; }
-    &.down { background: #fee2e2; color: #b91c1c; }
+    &.up { background: var(--hospal-success-100); color: #15803d; }
+    &.down { background: #fee2e2; color: var(--hospal-danger-strong); }
   }
 }
 
@@ -458,12 +458,12 @@ ion-content {
   width: 24px;
   height: 24px;
   border-radius: 7px;
-  background: #f1f5f9;
+  background: var(--hospal-surface-muted);
   color: $text-dark;
   font-size: 0.72rem;
   font-weight: 700;
 
-  &.leader { background: $blue-primary; color: #ffffff; }
+  &.leader { background: $blue-primary; color: var(--hospal-white); }
 }
 
 .ranking-body { display: grid; flex: 1; gap: 0.3rem; min-width: 0; }
@@ -535,7 +535,7 @@ ion-content {
   th {
     padding: 0.75rem 1rem;
     border-bottom: 1px solid $border-color;
-    background: #f8fafc;
+    background: var(--hospal-surface);
     color: $text-muted;
     font-size: 0.68rem;
     font-weight: 700;
@@ -547,7 +547,7 @@ ion-content {
 
   td {
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid var(--hospal-surface-muted);
     font-size: 0.84rem;
     vertical-align: middle;
   }
@@ -559,7 +559,7 @@ ion-content {
 .trx-row {
   cursor: pointer;
 
-  &:hover, &:focus-visible { outline: none; background: #f8fafc; }
+  &:hover, &:focus-visible { outline: none; background: var(--hospal-surface); }
   &:last-child td { border-bottom: 0; }
   &.row-cancelled td { color: $text-muted; }
   &.row-cancelled .cell-main, &.row-cancelled strong { text-decoration: line-through; }
@@ -578,8 +578,8 @@ ion-content {
   font-weight: 600;
   white-space: nowrap;
 
-  &.tag-tarifa { background: #eff6ff; color: #1d4ed8; }
-  &.tag-base { background: #f1f5f9; color: #475569; }
+  &.tag-tarifa { background: var(--hospal-primary-50); color: var(--hospal-primary-strong); }
+  &.tag-base { background: var(--hospal-surface-muted); color: var(--hospal-text-soft); }
   &.tag-promo { background: #fdf2f8; color: #be185d; }
 }
 
@@ -591,10 +591,10 @@ ion-content {
   font-weight: 700;
   white-space: nowrap;
 
-  &.status-pagado { background: #dcfce7; color: #15803d; }
-  &.status-abonado { background: #dbeafe; color: #1d4ed8; }
+  &.status-pagado { background: var(--hospal-success-100); color: #15803d; }
+  &.status-abonado { background: var(--hospal-primary-100); color: var(--hospal-primary-strong); }
   &.status-pendiente { background: #fef3c7; color: #b45309; }
-  &.status-anulado { background: #f1f5f9; color: #64748b; }
+  &.status-anulado { background: var(--hospal-surface-muted); color: var(--hospal-text-muted); }
 }
 
 .btn-row-detail {
@@ -602,16 +602,16 @@ ion-content {
   align-items: center;
   gap: 0.3rem;
   padding: 0.35rem 0.7rem;
-  border: 1px solid #bfdbfe;
+  border: 1px solid var(--hospal-primary-200);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--hospal-white);
   color: $blue-primary;
   font-family: inherit;
   font-size: 0.76rem;
   font-weight: 600;
   cursor: pointer;
 
-  &:hover { background: #eff6ff; }
+  &:hover { background: var(--hospal-primary-50); }
 }
 
 .trx-empty-row td { padding: 0; }
@@ -625,7 +625,7 @@ ion-content {
   font-size: 0.85rem;
   text-align: center;
 
-  ion-icon { color: #94a3b8; font-size: 1.6rem; }
+  ion-icon { color: var(--hospal-text-subtle); font-size: 1.6rem; }
   p { margin: 0; }
 }
 
@@ -636,7 +636,7 @@ ion-content {
   gap: 0.75rem;
   padding: 0.7rem 1rem;
   border-top: 1px solid $border-color;
-  background: #f8fafc;
+  background: var(--hospal-surface);
   color: $text-muted;
   font-size: 0.78rem;
 }
@@ -666,7 +666,7 @@ ion-content {
   border: 1px solid $border-color;
   border-top: 3px solid $blue-primary;
   border-radius: 16px;
-  background: #ffffff;
+  background: var(--hospal-white);
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
 }
 
@@ -692,12 +692,12 @@ ion-content {
   height: 34px;
   border: 1px solid $border-color;
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--hospal-white);
   color: $text-muted;
   font-size: 1.2rem;
   cursor: pointer;
 
-  &:hover { background: #f1f5f9; color: $text-dark; }
+  &:hover { background: var(--hospal-surface-muted); color: $text-dark; }
 }
 
 .detail-body {
@@ -719,7 +719,7 @@ ion-content {
   padding: 0.65rem 0.8rem;
   border: 1px solid $border-color;
   border-radius: 10px;
-  background: #f8fafc;
+  background: var(--hospal-surface);
 
   > span { color: $text-muted; font-size: 0.66rem; font-weight: 700; text-transform: uppercase; }
   strong { font-size: 0.86rem; }
@@ -745,7 +745,7 @@ ion-content {
   dt { color: $text-muted; }
   dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
 
-  &.muted dt, &.muted dd { color: #94a3b8; font-size: 0.78rem; font-weight: 500; }
+  &.muted dt, &.muted dd { color: var(--hospal-text-subtle); font-size: 0.78rem; font-weight: 500; }
   &.discount dd { color: #be185d; }
   &.surcharge dd { color: #c2410c; }
 
@@ -766,16 +766,16 @@ ion-content {
   display: grid;
   gap: 0.2rem;
   padding: 0.75rem 0.85rem;
-  border: 1px solid #dbeafe;
+  border: 1px solid var(--hospal-primary-100);
   border-radius: 12px;
   background: #f0f4ff;
 
   span { color: $text-muted; font-size: 0.72rem; font-weight: 600; }
-  strong { color: #2563eb; font-size: 1.05rem; }
+  strong { color: var(--hospal-primary-bright); font-size: 1.05rem; }
 
-  &.paid { border-color: #dcfce7; background: #f0fdf4; strong { color: #16a34a; } }
-  &.balance { border-color: #fde68a; background: #fffbeb; strong { color: #b45309; } }
-  &.balance.settled { border-color: #dcfce7; background: #f0fdf4; strong { color: #16a34a; } }
+  &.paid { border-color: var(--hospal-success-100); background: var(--hospal-success-50); strong { color: var(--hospal-success); } }
+  &.balance { border-color: #fde68a; background: var(--hospal-warning-50); strong { color: #b45309; } }
+  &.balance.settled { border-color: var(--hospal-success-100); background: var(--hospal-success-50); strong { color: var(--hospal-success); } }
 }
 
 .nights-detail {
@@ -799,7 +799,7 @@ ion-content {
     align-items: center;
     gap: 0.6rem;
     padding: 0.35rem 0;
-    border-top: 1px solid #f1f5f9;
+    border-top: 1px solid var(--hospal-surface-muted);
     font-size: 0.78rem;
 
     .tag { justify-self: start; margin: 0; }
@@ -813,7 +813,7 @@ ion-content {
   gap: 1rem;
   padding: 0.9rem 1.35rem;
   border-top: 1px solid $border-color;
-  background: #f8fafc;
+  background: var(--hospal-surface);
   color: $text-muted;
   font-size: 0.78rem;
 }

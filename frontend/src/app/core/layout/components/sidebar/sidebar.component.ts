@@ -4,7 +4,6 @@ import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
-  businessOutline,
   peopleOutline,
   bedOutline,
   calendarOutline,
@@ -49,7 +48,6 @@ export class SidebarComponent {
 
   constructor() {
     addIcons({
-      businessOutline,
       peopleOutline,
       bedOutline,
       calendarOutline,

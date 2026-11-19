@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { AuthService } from '../../../core/auth/application/auth.service';
 import { SedeService } from '../../locations/application/sede.service';
+import { StorageService } from '../../../shared/infrastructure/storage.service';
 
 export type TipoAlerta = 'LLEGADA_ATRASADA' | 'SALIDA_ATRASADA' | 'SALDO_PENDIENTE' | 'POSIBLE_DUPLICADO' | 'STOCK_BAJO';
 
@@ -22,23 +23,6 @@ export interface Alerta {
 const REFRESH_MS = 3 * 60 * 1000;
 const VISTAS_KEY = 'hospal.alertas.vistas';
 
-function leerVistas(): Set<string> {
-  try {
-    const raw = localStorage.getItem(VISTAS_KEY);
-    return new Set(raw ? (JSON.parse(raw) as string[]) : []);
-  } catch {
-    return new Set();
-  }
-}
-
-function guardarVistas(ids: Set<string>): void {
-  try {
-    localStorage.setItem(VISTAS_KEY, JSON.stringify([...ids]));
-  } catch {
-    /* almacenamiento no disponible */
-  }
-}
-
 /**
  * RF-20: alertas de Recepción (GET /alertas). Se recargan al cambiar de sede y cada 3 minutos.
  * Solo para usuarios con permiso de Recepción (admin y staff).
@@ -48,11 +32,12 @@ export class AlertasService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
   private readonly sedeService = inject(SedeService);
+  private readonly storage = inject(StorageService);
 
   /** Todas las alertas que devuelve el backend. */
   private readonly todas = signal<Alerta[]>([]);
   /** IDs de alertas marcadas como vistas (persistidas en este navegador). */
-  private readonly vistas = signal<Set<string>>(leerVistas());
+  private readonly vistas = signal<Set<string>>(new Set(this.storage.getJson<string[]>(VISTAS_KEY) ?? []));
   /** Alertas visibles: excluye las marcadas como vistas. */
   readonly alertas = computed(() => this.todas().filter((a) => !this.vistas().has(a.id)));
   readonly loading = signal(false);
@@ -99,7 +84,7 @@ export class AlertasService {
     const next = new Set(this.vistas());
     next.add(id);
     this.vistas.set(next);
-    guardarVistas(next);
+    this.guardarVistas(next);
   }
 
   /** Marca todas las alertas visibles como vistas. */
@@ -107,7 +92,7 @@ export class AlertasService {
     const next = new Set(this.vistas());
     this.alertas().forEach((a) => next.add(a.id));
     this.vistas.set(next);
-    guardarVistas(next);
+    this.guardarVistas(next);
   }
 
   /** Olvida IDs vistos que ya no existen en el backend (la alerta se resolvió). */
@@ -116,7 +101,11 @@ export class AlertasService {
     const next = new Set([...this.vistas()].filter((id) => vigentes.has(id)));
     if (next.size !== this.vistas().size) {
       this.vistas.set(next);
-      guardarVistas(next);
+      this.guardarVistas(next);
     }
+  }
+
+  private guardarVistas(ids: Set<string>): void {
+    this.storage.setJson(VISTAS_KEY, [...ids]);
   }
 }

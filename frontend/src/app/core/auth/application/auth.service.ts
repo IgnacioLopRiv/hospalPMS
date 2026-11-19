@@ -1,8 +1,9 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { getApiErrorMessage } from '../../../shared/domain/api-error-message';
+import { StorageService } from '../../../shared/infrastructure/storage.service';
 import {
   AuthUser,
   Permission,
@@ -37,6 +38,7 @@ const ACCESS_TOKEN_STORAGE_KEY = 'hospal.accessToken';
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
+  private readonly storage = inject(StorageService);
   private readonly apiUrl = `${environment.apiUrl}/funcionarios`;
   private readonly authUrl = `${environment.apiUrl}/auth`;
 
@@ -110,8 +112,8 @@ export class AuthService {
       this.saveCurrentUser(publicUser);
       await this.ensureUsers();
       return { ok: true };
-    } catch (error: any) {
-      const status = error?.status;
+    } catch (error: unknown) {
+      const status = error instanceof HttpErrorResponse ? error.status : undefined;
       if (status === 404) {
         return { ok: false, error: 'email', message: LOGIN_MESSAGES.email };
       }
@@ -120,7 +122,7 @@ export class AuthService {
       }
       return {
         ok: false,
-        message: error?.error?.message || 'Error de conexión con el servidor.',
+        message: getApiErrorMessage(error, 'Error de conexión con el servidor.'),
       };
     }
   }
@@ -223,27 +225,11 @@ export class AuthService {
   }
 
   private readSavedCurrentUser(): AuthUser | null {
-    try {
-      const raw = localStorage.getItem(CURRENT_USER_STORAGE_KEY);
-      if (raw) {
-        return JSON.parse(raw) as AuthUser;
-      }
-    } catch {
-      // Ignorar error de almacenamiento
-    }
-    return null;
+    return this.storage.getJson<AuthUser>(CURRENT_USER_STORAGE_KEY);
   }
 
   private saveCurrentUser(user: AuthUser | null): void {
-    try {
-      if (user) {
-        localStorage.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify(user));
-      } else {
-        localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
-      }
-    } catch {
-      // Ignorar error de almacenamiento
-    }
+    this.storage.setJson(CURRENT_USER_STORAGE_KEY, user);
   }
 
   private toPublicUser(user: StoredUser): AuthUser {
@@ -252,20 +238,11 @@ export class AuthService {
   }
 
   private readStorage(key: string): string | null {
-    try {
-      return localStorage.getItem(key);
-    } catch {
-      return null;
-    }
+    return this.storage.getString(key);
   }
 
   private writeStorage(key: string, value: string | null): void {
-    try {
-      if (value) localStorage.setItem(key, value);
-      else localStorage.removeItem(key);
-    } catch {
-      // Ignorar error de almacenamiento
-    }
+    this.storage.setString(key, value);
   }
 
   private isValidEmail(email: string): boolean {

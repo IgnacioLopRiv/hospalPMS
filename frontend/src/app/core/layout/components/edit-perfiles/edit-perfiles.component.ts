@@ -24,6 +24,7 @@ import {
 import { AuthService } from '../../../auth/application/auth.service';
 import { ROLES_WITH_SEDE, StoredUser, UserRole } from '../../../auth/domain/auth.roles';
 import { SedeService } from '../../../../features/locations/application/sede.service';
+import { getApiErrorMessage } from '../../../../shared/domain/api-error-message';
 
 type FormMode = 'add' | 'edit' | null;
 
@@ -199,9 +200,9 @@ export class EditPerfilesComponent {
         this.showSuccess('Usuario actualizado correctamente.');
       }
       this.cancelForm();
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.errorMessage.set(
-        error?.error?.message || 'No se pudieron guardar los cambios. Inténtalo de nuevo.',
+        getApiErrorMessage(error, 'No se pudieron guardar los cambios. Inténtalo de nuevo.'),
       );
     } finally {
       this.saving.set(false);

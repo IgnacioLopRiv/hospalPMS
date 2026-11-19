@@ -1,8 +1,8 @@
-$blue-primary: #1e50d8;
+$blue-primary: var(--hospal-primary);
 $blue-dark: #172554;
-$blue-card-hover: #eff6ff;
-$text-dark: #0f172a;
-$text-muted: #64748b;
+$blue-card-hover: var(--hospal-primary-50);
+$text-dark: var(--hospal-text);
+$text-muted: var(--hospal-text-muted);
 
 :host {
   display: block;
@@ -11,7 +11,7 @@ $text-muted: #64748b;
 }
 
 .sedes-content {
-  --background: radial-gradient(circle at top, #2563eb 0%, #1e3a8a 55%, #0f172a 100%);
+  --background: radial-gradient(circle at top, var(--hospal-primary-bright) 0%, #1e3a8a 55%, var(--hospal-text) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -59,7 +59,7 @@ $text-muted: #64748b;
       align-items: center;
       justify-content: center;
       font-size: 1.4rem;
-      color: #ffffff;
+      color: var(--hospal-white);
     }
 
     .brand-title {
@@ -70,7 +70,7 @@ $text-muted: #64748b;
       .brand-name {
         font-size: 1.15rem;
         font-weight: 800;
-        color: #ffffff;
+        color: var(--hospal-white);
         letter-spacing: 0.3px;
         line-height: 1.1;
       }
@@ -87,7 +87,7 @@ $text-muted: #64748b;
   h1 {
     font-size: 2rem;
     font-weight: 700;
-    color: #ffffff;
+    color: var(--hospal-white);
     margin: 0;
     letter-spacing: -0.5px;
   }
@@ -104,7 +104,7 @@ $text-muted: #64748b;
 .sedes-card-box {
   width: 100%;
   max-width: 520px;
-  background: #ffffff;
+  background: var(--hospal-white);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 20px;
@@ -145,7 +145,7 @@ $text-muted: #64748b;
     .btn-create-sede {
       background: $blue-primary;
       border: 1px solid $blue-primary;
-      color: #ffffff;
+      color: var(--hospal-white);
       padding: 0.35rem 0.75rem;
       border-radius: 20px;
       font-size: 0.85rem;
@@ -178,8 +178,8 @@ $text-muted: #64748b;
 
 .sede-btn-card {
   width: 100%;
-  background: #ffffff;
-  border: 1px solid #dbeafe;
+  background: var(--hospal-white);
+  border: 1px solid var(--hospal-primary-100);
   border-radius: 14px;
   padding: 1rem 1.25rem;
   display: flex;
@@ -195,7 +195,7 @@ $text-muted: #64748b;
     width: 44px;
     height: 44px;
     border-radius: 10px;
-    background: #eff6ff;
+    background: var(--hospal-primary-50);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -227,7 +227,7 @@ $text-muted: #64748b;
 
       ion-icon {
         font-size: 0.85rem;
-        color: #94a3b8;
+        color: var(--hospal-text-subtle);
       }
     }
   }
@@ -237,7 +237,7 @@ $text-muted: #64748b;
     border: none;
     padding: 0.4rem;
     font-size: 1.15rem;
-    color: #94a3b8;
+    color: var(--hospal-text-subtle);
     border-radius: 8px;
     cursor: pointer;
     display: flex;
@@ -246,7 +246,7 @@ $text-muted: #64748b;
     transition: all 0.2s ease;
 
     &:hover {
-      background: #f1f5f9;
+      background: var(--hospal-surface-muted);
       color: $text-dark;
     }
   }
@@ -255,7 +255,7 @@ $text-muted: #64748b;
     display: flex;
     align-items: center;
     gap: 0.35rem;
-    color: #94a3b8;
+    color: var(--hospal-text-subtle);
     font-size: 0.88rem;
     font-weight: 600;
     transition: all 0.2s ease;
@@ -268,12 +268,12 @@ $text-muted: #64748b;
 
   &:hover {
     transform: translateY(-2px);
-    border-color: #93c5fd;
+    border-color: var(--hospal-primary-300);
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
 
     .card-icon-tag {
       background: $blue-primary;
-      color: #ffffff;
+      color: var(--hospal-white);
     }
 
     .card-details h2 {
@@ -305,7 +305,7 @@ $text-muted: #64748b;
   }
 
   .btn-create-empty {
-    background: #ffffff;
+    background: var(--hospal-white);
     color: $blue-primary;
     border: none;
     border-radius: 10px;
@@ -362,7 +362,7 @@ $text-muted: #64748b;
   width: min(480px, 100%);
 
   #sede-delete-message strong {
-    color: #0f172a;
+    color: var(--hospal-text);
     font-weight: 700;
   }
 

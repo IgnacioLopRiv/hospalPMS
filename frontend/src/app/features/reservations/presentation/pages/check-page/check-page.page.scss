@@ -1,10 +1,10 @@
-$blue-primary: #1e50d8;
-$border-color: #e5e9f2;
-$text-dark: #1f2937;
-$text-muted: #64748b;
-$green-primary: #16a34a;
-$green-light: #f0fdf4;
-$green-border: #dcfce7;
+$blue-primary: var(--hospal-primary);
+$border-color: var(--hospal-border-soft);
+$text-dark: var(--hospal-text-alt);
+$text-muted: var(--hospal-text-muted);
+$green-primary: var(--hospal-success);
+$green-light: var(--hospal-success-50);
+$green-border: var(--hospal-success-100);
 $orange-primary: #ea580c;
 $orange-light: #fff7ed;
 $orange-border: #fed7aa;
@@ -45,7 +45,7 @@ $orange-border: #fed7aa;
 
     .btn-top-action {
       background: $blue-primary;
-      color: #ffffff;
+      color: var(--hospal-white);
       border: none;
       border-radius: 8px;
       padding: 0.65rem 1.3rem;
@@ -72,7 +72,7 @@ $orange-border: #fed7aa;
   margin-bottom: 2rem;
 
   .kpi-card {
-    background: #ffffff;
+    background: var(--hospal-white);
     padding: 1.1rem 1.3rem;
     border-radius: 12px;
     display: flex;
@@ -105,10 +105,10 @@ $orange-border: #fed7aa;
     }
 
     &.card-green {
-      background: #f0fdf4;
+      background: var(--hospal-success-50);
       border-color: $green-border;
       .kpi-icon, h3 { color: $green-primary; }
-      .kpi-icon { background: #dcfce7; }
+      .kpi-icon { background: var(--hospal-success-100); }
     }
 
     &.card-orange {
@@ -120,16 +120,16 @@ $orange-border: #fed7aa;
 
     &.card-blue {
       background: #f0f4ff;
-      border-color: #dbeafe;
-      .kpi-icon, h3 { color: #2563eb; }
+      border-color: var(--hospal-primary-100);
+      .kpi-icon, h3 { color: var(--hospal-primary-bright); }
       .kpi-icon { background: #e0f2fe; }
     }
 
     &.card-purple {
       background: #faf5ff;
-      border-color: #f3e8ff;
-      .kpi-icon, h3 { color: #7c3aed; }
-      .kpi-icon { background: #f3e8ff; }
+      border-color: var(--hospal-purple-100);
+      .kpi-icon, h3 { color: var(--hospal-purple); }
+      .kpi-icon { background: var(--hospal-purple-100); }
     }
   }
 }
@@ -144,7 +144,7 @@ $orange-border: #fed7aa;
   padding: 0 0.8rem;
   border: 1px solid $border-color;
   border-radius: 10px;
-  background: #fff;
+  background: var(--hospal-white);
 
   ion-icon { color: $text-muted; font-size: 1.05rem; flex-shrink: 0; }
 
@@ -171,7 +171,7 @@ $orange-border: #fed7aa;
 }
 
 .check-column {
-  background: #f8fafc;
+  background: var(--hospal-surface);
   border: 1px solid $border-color;
   border-radius: 16px;
   padding: 1.35rem;
@@ -192,7 +192,7 @@ $orange-border: #fed7aa;
     justify-content: space-between;
     align-items: center;
     padding-bottom: 0.9rem;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--hospal-border);
 
     .column-title-group {
       display: flex;
@@ -209,7 +209,7 @@ $orange-border: #fed7aa;
         font-size: 1.25rem;
 
         &.checkin {
-          background: #dcfce7;
+          background: var(--hospal-success-100);
           color: $green-primary;
         }
 
@@ -240,7 +240,7 @@ $orange-border: #fed7aa;
       border-radius: 20px;
 
       &.checkin {
-        background: #dcfce7;
+        background: var(--hospal-success-100);
         color: $green-primary;
       }
 
@@ -265,7 +265,7 @@ $orange-border: #fed7aa;
 
 /* ── Tarjetas de huésped ─────────────────────────────────────────────────── */
 .guest-card {
-  background: #ffffff;
+  background: var(--hospal-white);
   border-radius: 14px;
   padding: 1.2rem;
   border: 1px solid $border-color;
@@ -295,9 +295,9 @@ $orange-border: #fed7aa;
       font-weight: 700;
       font-size: 0.88rem;
 
-      &.color-purple { background: #f3e8ff; color: #7c3aed; }
+      &.color-purple { background: var(--hospal-purple-100); color: var(--hospal-purple); }
       &.color-orange { background: #ffedd5; color: #ea580c; }
-      &.color-green  { background: #dcfce7; color: #16a34a; }
+      &.color-green  { background: var(--hospal-success-100); color: var(--hospal-success); }
       &.color-blue   { background: #e0f2fe; color: #0284c7; }
     }
 
@@ -364,10 +364,10 @@ $orange-border: #fed7aa;
       }
 
       &.overdue {
-        border-color: #fecaca;
-        color: #dc2626;
-        background: #fef2f2;
-        .dot { background: #dc2626; }
+        border-color: var(--hospal-danger-200);
+        color: var(--hospal-danger);
+        background: var(--hospal-danger-50);
+        .dot { background: var(--hospal-danger); }
       }
     }
 
@@ -383,7 +383,7 @@ $orange-border: #fed7aa;
       min-width: 220px;
       padding: 0.3rem;
       border-radius: 10px;
-      background: #fff;
+      background: var(--hospal-white);
       border: 1px solid $border-color;
       box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
       display: flex;
@@ -405,9 +405,9 @@ $orange-border: #fed7aa;
         cursor: pointer;
 
         ion-icon { font-size: 1rem; color: $text-muted; }
-        &:hover, &:focus-visible { background: #f1f5f9; outline: none; }
-        &.danger, &.danger ion-icon { color: #dc2626; }
-        &.danger:hover { background: #fef2f2; }
+        &:hover, &:focus-visible { background: var(--hospal-surface-muted); outline: none; }
+        &.danger, &.danger ion-icon { color: var(--hospal-danger); }
+        &.danger:hover { background: var(--hospal-danger-50); }
       }
     }
 
@@ -422,7 +422,7 @@ $orange-border: #fed7aa;
       border-radius: 4px;
 
       &:hover {
-        background: #f1f5f9;
+        background: var(--hospal-surface-muted);
         color: $text-dark;
       }
     }
@@ -539,7 +539,7 @@ $orange-border: #fed7aa;
 
     .btn-action-primary {
       flex: 1.4;
-      color: #ffffff;
+      color: var(--hospal-white);
       border: none;
 
       &.checkin {
@@ -555,7 +555,7 @@ $orange-border: #fed7aa;
       /* Habitación en aseo u ocupada: no se puede recibir al huésped todavía */
       &:disabled,
       &:disabled:hover {
-        background: #e2e8f0;
+        background: var(--hospal-border);
         color: $text-muted;
         cursor: not-allowed;
       }
@@ -571,7 +571,7 @@ $orange-border: #fed7aa;
       gap: 0.4rem;
       border-radius: 8px;
       padding: 0.55rem 0.9rem;
-      background: #ffffff;
+      background: var(--hospal-white);
       border: 1px solid $border-color;
       color: $text-muted;
       font: inherit;
@@ -586,7 +586,7 @@ $orange-border: #fed7aa;
       }
 
       &:hover:not(:disabled) {
-        background: #f8fafc;
+        background: var(--hospal-surface);
         color: $text-dark;
       }
 
@@ -603,7 +603,7 @@ $orange-border: #fed7aa;
 
         ion-icon {
           font-size: 1.05rem;
-          color: #16a34a;
+          color: var(--hospal-success);
         }
       }
     }
@@ -611,7 +611,7 @@ $orange-border: #fed7aa;
     // Acción secundaria del check-out, con el color de la columna.
     .btn-action-extend {
       flex: 1;
-      background: #ffffff;
+      background: var(--hospal-white);
       border: 1px solid $orange-border;
       color: $orange-primary;
       white-space: nowrap;
@@ -629,7 +629,7 @@ $orange-border: #fed7aa;
 
 /* ── Estado Vacío de Columna ─────────────────────────────────────────────── */
 .empty-column-box {
-  background: #ffffff;
+  background: var(--hospal-white);
   border: 1px dashed $border-color;
   border-radius: 12px;
   padding: 3rem 1.5rem;
@@ -715,7 +715,7 @@ $orange-border: #fed7aa;
   max-width: 440px;
   padding: 1.5rem;
   border-radius: 14px;
-  background: #fff;
+  background: var(--hospal-white);
   color: $text-dark;
 
   h2 { margin: 0 0 0.5rem; font-size: 1.15rem; }
@@ -753,22 +753,22 @@ $orange-border: #fed7aa;
   gap: 6px;
   margin-top: 12px;
   padding: 12px 14px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--hospal-border);
   border-radius: 10px;
-  background: #f8fafc;
+  background: var(--hospal-surface);
   font-size: 0.9rem;
 
   > div {
     display: flex;
     justify-content: space-between;
     gap: 12px;
-    color: #475569;
+    color: var(--hospal-text-soft);
   }
 
   .room-change-quote-balance {
     margin-top: 4px;
     padding-top: 8px;
-    border-top: 1px dashed #cbd5e1;
+    border-top: 1px dashed var(--hospal-border-strong);
     color: #b45309;
     font-weight: 600;
 

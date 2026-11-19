@@ -1,6 +1,6 @@
-$border-color: #e5e9f2;
-$text-dark: #1f2937;
-$text-muted: #64748b;
+$border-color: var(--hospal-border-soft);
+$text-dark: var(--hospal-text-alt);
+$text-muted: var(--hospal-text-muted);
 
 ion-modal.user-menu-config {
   --width: min(520px, calc(100% - 1rem));
@@ -19,7 +19,7 @@ ion-modal.user-menu-config {
     max-height: 85dvh;
     min-height: 0;
     width: 100%;
-    background: #ffffff;
+    background: var(--hospal-white);
     border-radius: 12px;
   }
 }
@@ -56,9 +56,9 @@ ion-modal.user-menu-config {
     margin: 0.5rem 0 0;
     padding: 0.75rem 1rem;
     background: #fee2e2;
-    border: 1px solid #fecaca;
+    border: 1px solid var(--hospal-danger-200);
     border-radius: 8px;
-    color: #dc2626;
+    color: var(--hospal-danger);
     font-size: 0.85rem;
   }
 }

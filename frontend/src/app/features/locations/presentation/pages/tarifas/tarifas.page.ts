@@ -11,7 +11,6 @@ import {
   cashOutline,
   checkmarkOutline,
   closeOutline,
-  informationCircleOutline,
   pricetagOutline,
   trashOutline,
 } from 'ionicons/icons';
@@ -106,7 +105,6 @@ export class TarifasPage {
       cashOutline,
       checkmarkOutline,
       closeOutline,
-      informationCircleOutline,
       pricetagOutline,
       trashOutline,
     });

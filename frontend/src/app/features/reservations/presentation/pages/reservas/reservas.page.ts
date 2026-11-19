@@ -23,12 +23,9 @@ import {
   chevronDownOutline,
   chevronForwardOutline,
   closeCircleOutline,
-  createOutline,
   logInOutline,
   logOutOutline,
   logoWhatsapp,
-  peopleOutline,
-  timeOutline,
   closeOutline,
 } from 'ionicons/icons';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -279,12 +276,9 @@ export class ReservasPage implements OnInit, OnDestroy {
       chevronDownOutline,
       chevronForwardOutline,
       closeCircleOutline,
-      createOutline,
       logInOutline,
       logOutOutline,
       logoWhatsapp,
-      peopleOutline,
-      timeOutline,
     });
   }
 

@@ -1,9 +1,9 @@
-$blue-primary: #1e50d8;
+$blue-primary: var(--hospal-primary);
 $blue-light: rgba(30, 80, 216, 0.08);
-$purple: #7c3aed;
+$purple: var(--hospal-purple);
 $danger: #eb445a;
 $success: #2dd36f;
-$text-dark: #1f2937;
+$text-dark: var(--hospal-text-alt);
 $text-muted: #6b7280;
 $border: rgba(0, 0, 0, 0.08);
 $border-hover: rgba(30, 80, 216, 0.2);
@@ -30,11 +30,11 @@ ion-modal.edit-tipologias-banner {
   max-height: 90vh;
   max-height: 90dvh;
   box-sizing: border-box;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--hospal-border);
   border-top: 3px solid $blue-primary;
   border-radius: 16px;
   overflow: hidden;
-  background: #ffffff;
+  background: var(--hospal-white);
 }
 
 // ── Header ──────────────────────────────────────────────────────────────────
@@ -44,8 +44,8 @@ ion-modal.edit-tipologias-banner {
   justify-content: space-between;
   gap: 1rem;
   padding: 1.35rem 1.5rem;
-  border-bottom: 1px solid #e2e8f0;
-  background: #ffffff;
+  border-bottom: 1px solid var(--hospal-border);
+  background: var(--hospal-white);
   flex-shrink: 0;
 
   .banner-title { min-width: 0; }
@@ -62,7 +62,7 @@ ion-modal.edit-tipologias-banner {
 
   h2 {
     margin: 0 0 0.15rem;
-    color: #0f172a;
+    color: var(--hospal-text);
     font-size: 1.2rem;
     font-weight: 700;
     letter-spacing: -0.3px;
@@ -72,7 +72,7 @@ ion-modal.edit-tipologias-banner {
     display: flex;
     align-items: center;
     gap: 4px;
-    color: #64748b;
+    color: var(--hospal-text-muted);
     font-size: 0.82rem;
 
     ion-icon { font-size: 0.9rem; }
@@ -85,14 +85,14 @@ ion-modal.edit-tipologias-banner {
   height: 36px;
   flex-shrink: 0;
   place-items: center;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--hospal-border);
   border-radius: 8px;
-  background: #ffffff;
-  color: #64748b;
+  background: var(--hospal-white);
+  color: var(--hospal-text-muted);
   font-size: 1.25rem;
   cursor: pointer;
 
-  &:hover { border-color: #bfdbfe; background: #eff6ff; color: $blue-primary; }
+  &:hover { border-color: var(--hospal-primary-200); background: var(--hospal-primary-50); color: $blue-primary; }
   &:focus-visible { outline: 3px solid rgba(30, 80, 216, 0.2); outline-offset: 2px; }
 }
 
@@ -103,8 +103,8 @@ ion-modal.edit-tipologias-banner {
   justify-content: flex-end;
   gap: 0.75rem;
   padding: 1rem 1.5rem;
-  border-top: 1px solid #e2e8f0;
-  background: #f8fafc;
+  border-top: 1px solid var(--hospal-border);
+  background: var(--hospal-surface);
   flex-shrink: 0;
 
   button {
@@ -125,17 +125,17 @@ ion-modal.edit-tipologias-banner {
   }
 
   .footer-close-btn {
-    border: 1px solid #cbd5e1;
-    background: #ffffff;
-    color: #334155;
-    &:hover { background: #f1f5f9; }
+    border: 1px solid var(--hospal-border-strong);
+    background: var(--hospal-white);
+    color: var(--hospal-text-secondary);
+    &:hover { background: var(--hospal-surface-muted); }
   }
 
   .add-btn {
     border: 1px solid $blue-primary;
     background: $blue-primary;
-    color: #ffffff;
-    &:hover { background: #1d4ed8; }
+    color: var(--hospal-white);
+    &:hover { background: var(--hospal-primary-strong); }
   }
 }
 
@@ -165,8 +165,8 @@ ion-modal.edit-tipologias-banner {
 // ── Inline form ──────────────────────────────────────────────────────────────
 .user-form {
   padding: 20px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--hospal-white);
+  border: 1px solid var(--hospal-border);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
   animation: fadeInDown 0.2s ease;
@@ -185,14 +185,14 @@ ion-modal.edit-tipologias-banner {
     flex: 0 0 auto;
     place-items: center;
     border-radius: 10px;
-    background: #eff6ff;
+    background: var(--hospal-primary-50);
     color: $blue-primary;
     font-size: 1.25rem;
   }
 
   h3 {
     margin: 0 0 3px;
-    color: #0f172a;
+    color: var(--hospal-text);
     font-size: 1rem;
     font-weight: 700;
     letter-spacing: -0.2px;
@@ -200,7 +200,7 @@ ion-modal.edit-tipologias-banner {
 
   .user-form-heading p {
     margin: 0;
-    color: #64748b;
+    color: var(--hospal-text-muted);
     font-size: 0.82rem;
   }
 
@@ -214,7 +214,7 @@ ion-modal.edit-tipologias-banner {
     display: grid;
     min-width: 0;
     gap: 7px;
-    color: #1f2937;
+    color: var(--hospal-text-alt);
     font-size: 0.82rem;
     font-weight: 600;
 
@@ -222,22 +222,22 @@ ion-modal.edit-tipologias-banner {
       min-height: 44px;
       box-sizing: border-box;
       padding: 0 12px;
-      border: 1px solid #cbd5e1;
+      border: 1px solid var(--hospal-border-strong);
       border-radius: 8px;
-      --background: #ffffff;
-      --color: #0f172a;
-      --placeholder-color: #94a3b8;
+      --background: var(--hospal-white);
+      --color: var(--hospal-text);
+      --placeholder-color: var(--hospal-text-subtle);
       --placeholder-opacity: 1;
       --padding-start: 12px;
       --padding-end: 12px;
-      --highlight-color-focused: #1e50d8;
+      --highlight-color-focused: var(--hospal-primary);
       font-size: 0.9rem;
       font-weight: 400;
       transition: border-color 0.18s ease, box-shadow 0.18s ease;
     }
 
     ion-input.has-focus {
-      border-color: #1e50d8;
+      border-color: var(--hospal-primary);
       box-shadow: 0 0 0 3px rgba(30, 80, 216, 0.12);
     }
   }
@@ -265,19 +265,19 @@ ion-modal.edit-tipologias-banner {
     }
 
     .form-cancel-btn {
-      border: 1px solid #cbd5e1;
-      background: #ffffff;
-      color: #334155;
+      border: 1px solid var(--hospal-border-strong);
+      background: var(--hospal-white);
+      color: var(--hospal-text-secondary);
 
-      &:hover { background: #f8fafc; }
+      &:hover { background: var(--hospal-surface); }
     }
 
     .form-submit-btn {
       border: 1px solid $blue-primary;
       background: $blue-primary;
-      color: #ffffff;
+      color: var(--hospal-white);
 
-      &:hover { background: #1d4ed8; }
+      &:hover { background: var(--hospal-primary-strong); }
     }
   }
 }
@@ -296,7 +296,7 @@ ion-modal.edit-tipologias-banner {
     width: 100%;
     margin-bottom: 8px;
     padding: 0;
-    color: #1f2937;
+    color: var(--hospal-text-alt);
     font-size: 0.82rem;
     font-weight: 600;
   }
@@ -315,9 +315,9 @@ ion-modal.edit-tipologias-banner {
 .features-hint {
   margin: 0;
   padding: 10px 12px;
-  border: 1px dashed #cbd5e1;
+  border: 1px dashed var(--hospal-border-strong);
   border-radius: 8px;
-  color: #64748b;
+  color: var(--hospal-text-muted);
   font-size: 0.82rem;
   text-align: center;
 }
@@ -336,16 +336,16 @@ ion-modal.edit-tipologias-banner {
   align-items: center;
   min-width: 0;
   min-height: 44px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--hospal-border);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--hospal-white);
   transition: border-color 0.15s ease, background-color 0.15s ease;
 
-  &:hover { border-color: #bfdbfe; }
+  &:hover { border-color: var(--hospal-primary-200); }
 
   &.selected {
-    border-color: #93c5fd;
-    background: #eff6ff;
+    border-color: var(--hospal-primary-300);
+    background: var(--hospal-primary-50);
   }
 
   .feature-delete {
@@ -361,7 +361,7 @@ ion-modal.edit-tipologias-banner {
   gap: 8px;
   min-width: 0;
   padding: 8px 10px;
-  color: #0f172a;
+  color: var(--hospal-text);
   font-size: 0.85rem;
   cursor: pointer;
 
@@ -392,8 +392,8 @@ ion-modal.edit-tipologias-banner {
   margin-left: auto;
   padding: 1px 7px;
   border-radius: 10px;
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--hospal-surface-muted);
+  color: var(--hospal-text-soft);
   font-size: 0.66rem;
   font-weight: 600;
 }
@@ -415,7 +415,7 @@ ion-modal.edit-tipologias-banner {
   }
 
   small {
-    color: #64748b;
+    color: var(--hospal-text-muted);
     font-weight: 500;
   }
 }
@@ -429,11 +429,11 @@ ion-modal.edit-tipologias-banner {
     flex: 1;
     min-height: 40px;
     box-sizing: border-box;
-    border: 1px solid #cbd5e1;
+    border: 1px solid var(--hospal-border-strong);
     border-radius: 8px;
-    --background: #ffffff;
-    --color: #0f172a;
-    --placeholder-color: #94a3b8;
+    --background: var(--hospal-white);
+    --color: var(--hospal-text);
+    --placeholder-color: var(--hospal-text-subtle);
     --placeholder-opacity: 1;
     --padding-start: 12px;
     --padding-end: 12px;
@@ -452,16 +452,16 @@ ion-modal.edit-tipologias-banner {
   gap: 4px;
   min-height: 40px;
   padding: 0.5rem 0.85rem;
-  border: 1px solid #bfdbfe;
+  border: 1px solid var(--hospal-primary-200);
   border-radius: 8px;
-  background: #eff6ff;
+  background: var(--hospal-primary-50);
   color: $blue-primary;
   font: inherit;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
 
-  &:hover:not(:disabled) { background: #dbeafe; }
+  &:hover:not(:disabled) { background: var(--hospal-primary-100); }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
   &:focus-visible { outline: 3px solid rgba(30, 80, 216, 0.2); outline-offset: 2px; }
 }
@@ -481,10 +481,10 @@ ion-modal.edit-tipologias-banner {
   align-items: center;
   gap: 3px;
   padding: 2px 7px;
-  border: 1px solid var(--typology-border, #e2e8f0);
+  border: 1px solid var(--typology-border, var(--hospal-border));
   border-radius: 12px;
-  background: #ffffff;
-  color: #334155;
+  background: var(--hospal-white);
+  color: var(--hospal-text-secondary);
   font-size: 0.7rem;
   font-weight: 500;
 
@@ -494,7 +494,7 @@ ion-modal.edit-tipologias-banner {
   }
 
   &.more {
-    color: #64748b;
+    color: var(--hospal-text-muted);
     font-weight: 700;
   }
 }
@@ -591,7 +591,7 @@ ion-modal.edit-tipologias-banner {
   height: 40px;
   border-radius: 10px;
   background: var(--typology-border, rgba(30, 80, 216, 0.1));
-  color: var(--typology-color, #1e50d8);
+  color: var(--typology-color, var(--hospal-primary));
   font-size: 1.25rem;
   display: flex;
   align-items: center;
@@ -629,7 +629,7 @@ ion-modal.edit-tipologias-banner {
   padding: 2px 8px;
   border-radius: 14px;
   background: var(--typology-background, rgba(30, 80, 216, 0.08));
-  color: var(--typology-color, #1e50d8);
+  color: var(--typology-color, var(--hospal-primary));
 
   ion-icon {
     font-size: 0.8rem;
@@ -647,7 +647,7 @@ ion-modal.edit-tipologias-banner {
 
 .tipologia-desc {
   font-size: 0.8rem;
-  color: #64748b;
+  color: var(--hospal-text-muted);
   margin-top: 2px;
 }
 

@@ -1,7 +1,7 @@
-$text-dark: #0f172a;
-$text-muted: #64748b;
-$border-color: #e2e8f0;
-$primary: #1e50d8;
+$text-dark: var(--hospal-text);
+$text-muted: var(--hospal-text-muted);
+$border-color: var(--hospal-border);
+$primary: var(--hospal-primary);
 
 :host {
   display: block;
@@ -59,7 +59,7 @@ $primary: #1e50d8;
   padding: 0.45rem 0.7rem;
   border: 1px solid $border-color;
   border-radius: 10px;
-  background: #ffffff;
+  background: var(--hospal-white);
 }
 
 .base-prices-settings {
@@ -69,7 +69,7 @@ $primary: #1e50d8;
   padding: 0.9rem;
   border: 1px solid $border-color;
   border-radius: 10px;
-  background: #ffffff;
+  background: var(--hospal-white);
 }
 
 .base-prices-header {
@@ -132,7 +132,7 @@ $primary: #1e50d8;
   flex: 0 0 auto;
   place-items: center;
   border-radius: 8px;
-  background: #eff6ff;
+  background: var(--hospal-primary-50);
   color: $primary;
   font-size: 1.15rem;
 }
@@ -160,7 +160,7 @@ $primary: #1e50d8;
   border: 1px solid $primary;
   border-radius: 8px;
   background: $primary;
-  color: #ffffff;
+  color: var(--hospal-white);
   font: inherit;
   font-size: 0.74rem;
   font-weight: 600;
@@ -195,7 +195,7 @@ $primary: #1e50d8;
   padding: 0.55rem 1rem;
   border: 1px solid $primary;
   background: $primary;
-  color: #ffffff;
+  color: var(--hospal-white);
 
   &:hover:not(:disabled) { background: #1740b0; }
   &:disabled { opacity: 0.55; cursor: not-allowed; }
@@ -208,9 +208,9 @@ $primary: #1e50d8;
   max-width: 560px;
   margin: 4rem auto;
   padding: 2.5rem 2rem;
-  border: 1px dashed #cbd5e1;
+  border: 1px dashed var(--hospal-border-strong);
   border-radius: 16px;
-  background: #ffffff;
+  background: var(--hospal-white);
   text-align: center;
 
   .empty-icon { color: $primary; font-size: 2rem; }
@@ -225,9 +225,9 @@ $primary: #1e50d8;
   gap: 0.35rem;
   margin-bottom: 1rem;
   padding: 0.85rem 1rem;
-  border: 1px solid #bfdbfe;
+  border: 1px solid var(--hospal-primary-200);
   border-radius: 10px;
-  background: #eff6ff;
+  background: var(--hospal-primary-50);
   color: #1e40af;
   font-size: 0.85rem;
 }
@@ -237,7 +237,7 @@ $primary: #1e50d8;
   height: 8px;
   flex: 0 0 auto;
   border-radius: 50%;
-  background: #94a3b8;
+  background: var(--hospal-text-subtle);
 }
 
 .active-dot {
@@ -245,7 +245,7 @@ $primary: #1e50d8;
   height: 8px;
   flex: 0 0 auto;
   border-radius: 50%;
-  background: #16a34a;
+  background: var(--hospal-success);
 }
 
 .rates-grid {
@@ -259,10 +259,10 @@ $primary: #1e50d8;
   padding: 1.2rem;
   border: 1px solid $border-color;
   border-radius: 14px;
-  background: #ffffff;
+  background: var(--hospal-white);
   box-shadow: 0 3px 12px rgba(15, 23, 42, 0.035);
 
-  &.rate-active { border-top: 3px solid #16a34a; }
+  &.rate-active { border-top: 3px solid var(--hospal-success); }
 }
 
 .rate-card-header,
@@ -299,7 +299,7 @@ $primary: #1e50d8;
   flex: 0 0 auto;
   place-items: center;
   border-radius: 10px;
-  background: #eff6ff;
+  background: var(--hospal-primary-50);
   color: $primary;
   font-size: 1.15rem;
 }
@@ -318,16 +318,16 @@ $primary: #1e50d8;
   min-height: 34px;
   padding: 0.35rem 0.7rem;
   border: 1px solid $border-color;
-  background: #ffffff;
+  background: var(--hospal-white);
   color: $text-dark;
-  &:hover { border-color: #bfdbfe; background: #eff6ff; color: $primary; }
+  &:hover { border-color: var(--hospal-primary-200); background: var(--hospal-primary-50); color: $primary; }
 }
 
 .btn-delete-rate {
   width: 34px;
   min-height: 34px;
   padding: 0;
-  border: 1px solid #fecaca;
+  border: 1px solid var(--hospal-danger-200);
   background: #fff1f2;
   color: #be123c;
   &:hover { background: #ffe4e6; }
@@ -337,7 +337,7 @@ $primary: #1e50d8;
 .rate-prices {
   margin-top: 1.1rem;
   padding-top: 0.9rem;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--hospal-surface-muted);
 
   h3 {
     display: flex;
@@ -361,7 +361,7 @@ $primary: #1e50d8;
   gap: 0.25rem;
   margin: 0 0.35rem 0.35rem 0;
   padding: 0.3rem 0.55rem;
-  border: 1px solid #dbeafe;
+  border: 1px solid var(--hospal-primary-100);
   border-radius: 6px;
   background: #f8fbff;
   color: #1e40af;
@@ -423,7 +423,7 @@ $primary: #1e50d8;
   border: 1px solid $border-color;
   border-top: 3px solid $primary;
   border-radius: 16px;
-  background: #ffffff;
+  background: var(--hospal-white);
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
 }
 
@@ -459,11 +459,11 @@ $primary: #1e50d8;
   place-items: center;
   border: 1px solid $border-color;
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--hospal-white);
   color: $text-muted;
   font-size: 1.2rem;
   cursor: pointer;
-  &:hover { background: #f1f5f9; color: $text-dark; }
+  &:hover { background: var(--hospal-surface-muted); color: $text-dark; }
 }
 
 .config-modal-body {
@@ -488,7 +488,7 @@ $primary: #1e50d8;
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  color: #94a3b8;
+  color: var(--hospal-text-subtle);
   font-size: 0.78rem;
   font-weight: 600;
   white-space: nowrap;
@@ -502,9 +502,9 @@ $primary: #1e50d8;
   width: 28px;
   height: 28px;
   place-items: center;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--hospal-border-strong);
   border-radius: 50%;
-  background: #ffffff;
+  background: var(--hospal-white);
   color: inherit;
   font-size: 0.75rem;
 }
@@ -513,13 +513,13 @@ $primary: #1e50d8;
 .wizard-step.complete .wizard-step-number {
   border-color: $primary;
   background: $primary;
-  color: #ffffff;
+  color: var(--hospal-white);
 }
 
 .wizard-connector {
   height: 1px;
   flex: 1;
-  background: #cbd5e1;
+  background: var(--hospal-border-strong);
   &.complete { background: $primary; }
 }
 
@@ -558,9 +558,9 @@ $primary: #1e50d8;
   min-height: 42px;
   box-sizing: border-box;
   padding: 0.55rem 0.7rem;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--hospal-border-strong);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--hospal-white);
   color: $text-dark;
   font: inherit;
   font-size: 0.85rem;
@@ -574,7 +574,7 @@ $primary: #1e50d8;
   padding: 1rem;
   border: 1px solid $border-color;
   border-radius: 10px;
-  background: #f8fafc;
+  background: var(--hospal-surface);
 }
 
 .period-editor-header {
@@ -585,17 +585,17 @@ $primary: #1e50d8;
 .btn-remove-period {
   min-height: 34px;
   padding: 0.35rem 0.65rem;
-  border: 1px solid #bfdbfe;
-  background: #eff6ff;
+  border: 1px solid var(--hospal-primary-200);
+  background: var(--hospal-primary-50);
   color: $primary;
   white-space: nowrap;
-  &:hover { background: #dbeafe; }
+  &:hover { background: var(--hospal-primary-100); }
 }
 
 .btn-remove-period {
   min-height: 30px;
   padding: 0.25rem 0.5rem;
-  border-color: #fecaca;
+  border-color: var(--hospal-danger-200);
   background: #fff1f2;
   color: #be123c;
 }
@@ -615,14 +615,14 @@ $primary: #1e50d8;
   padding: 0;
   border: 1px solid $border-color;
   border-radius: 7px;
-  background: #ffffff;
+  background: var(--hospal-white);
   color: $text-dark;
   font: inherit;
   font-size: 0.78rem;
   cursor: pointer;
-  &:hover { border-color: #bfdbfe; color: $primary; }
-  &.selected { border-color: $primary; background: #eff6ff; color: $primary; font-weight: 700; }
-  &:disabled { border-color: #e2e8f0; background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
+  &:hover { border-color: var(--hospal-primary-200); color: $primary; }
+  &.selected { border-color: $primary; background: var(--hospal-primary-50); color: $primary; font-weight: 700; }
+  &:disabled { border-color: var(--hospal-border); background: var(--hospal-surface-muted); color: var(--hospal-text-subtle); cursor: not-allowed; }
 }
 
 .selection-chip {
@@ -630,14 +630,14 @@ $primary: #1e50d8;
   padding: 0.35rem;
   border: 1px solid $border-color;
   border-radius: 7px;
-  background: #ffffff;
+  background: var(--hospal-white);
   color: $text-muted;
   font: inherit;
   font-size: 0.74rem;
   cursor: pointer;
-  &:hover { border-color: #bfdbfe; color: $primary; }
-  &.selected { border-color: $primary; background: #eff6ff; color: $primary; font-weight: 700; }
-  &:disabled { border-color: #e2e8f0; background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
+  &:hover { border-color: var(--hospal-primary-200); color: $primary; }
+  &.selected { border-color: $primary; background: var(--hospal-primary-50); color: $primary; font-weight: 700; }
+  &:disabled { border-color: var(--hospal-border); background: var(--hospal-surface-muted); color: var(--hospal-text-subtle); cursor: not-allowed; }
 }
 
 .date-range-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem; }
@@ -645,7 +645,7 @@ $primary: #1e50d8;
 .date-chips { display: flex; flex-wrap: wrap; }
 .date-chip { margin-bottom: 0; }
 .date-chip button { display: grid; padding: 0; border: 0; background: transparent; color: inherit; cursor: pointer; }
-.period-validation { margin: 0; color: #b91c1c; font-size: 0.76rem; }
+.period-validation { margin: 0; color: var(--hospal-danger-strong); font-size: 0.76rem; }
 
 .config-tarifas-grid { display: grid; gap: 0.65rem; }
 .config-tarifa-row {
@@ -656,7 +656,7 @@ $primary: #1e50d8;
   padding: 0.7rem 0.85rem;
   border: 1px solid $border-color;
   border-radius: 9px;
-  background: #ffffff;
+  background: var(--hospal-white);
 }
 
 .config-tipo-info { display: flex; min-width: 0; align-items: center; gap: 0.55rem; }
@@ -673,9 +673,9 @@ $primary: #1e50d8;
   overflow: hidden;
   border: 1px solid $border-color;
   border-radius: 7px;
-  background: #ffffff;
+  background: var(--hospal-white);
   &:focus-within { border-color: $primary; }
-  .currency-symbol { align-self: stretch; display: grid; place-items: center; padding: 0 0.55rem; border-right: 1px solid $border-color; background: #f1f5f9; color: $text-muted; font-size: 0.8rem; font-weight: 700; }
+  .currency-symbol { align-self: stretch; display: grid; place-items: center; padding: 0 0.55rem; border-right: 1px solid $border-color; background: var(--hospal-surface-muted); color: $text-muted; font-size: 0.8rem; font-weight: 700; }
   input { width: 100%; min-width: 0; padding: 0.45rem 0.55rem; border: 0; outline: 0; background: transparent; color: $text-dark; font: inherit; font-size: 0.84rem; }
 }
 
@@ -687,7 +687,7 @@ $primary: #1e50d8;
   gap: 0.65rem;
   padding: 1rem 1.5rem;
   border-top: 1px solid $border-color;
-  background: #f8fafc;
+  background: var(--hospal-surface);
 }
 
 .wizard-actions {
@@ -699,9 +699,9 @@ $primary: #1e50d8;
 .btn-cancel {
   padding: 0.5rem 1rem;
   border: 1px solid $border-color;
-  background: #ffffff;
+  background: var(--hospal-white);
   color: $text-muted;
-  &:hover { background: #f1f5f9; color: $text-dark; }
+  &:hover { background: var(--hospal-surface-muted); color: $text-dark; }
 }
 
 .btn-previous-step {
@@ -709,13 +709,13 @@ $primary: #1e50d8;
   padding: 0.5rem 1rem;
   border: 1px solid $border-color;
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--hospal-white);
   color: $text-dark;
   font: inherit;
   font-size: 0.84rem;
   font-weight: 600;
   cursor: pointer;
-  &:hover { border-color: #bfdbfe; background: #eff6ff; color: $primary; }
+  &:hover { border-color: var(--hospal-primary-200); background: var(--hospal-primary-50); color: $primary; }
 }
 
 @media (max-width: 1000px) {

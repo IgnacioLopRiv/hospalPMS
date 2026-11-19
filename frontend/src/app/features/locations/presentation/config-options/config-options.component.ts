@@ -5,9 +5,6 @@ import { IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
   peopleOutline,
-  logOutOutline,
-  closeOutline,
-  shieldCheckmarkOutline,
   cardOutline,
 } from 'ionicons/icons';
 
@@ -37,9 +34,6 @@ export class ConfigOptionsComponent {
   constructor() {
     addIcons({
       peopleOutline,
-      logOutOutline,
-      closeOutline,
-      shieldCheckmarkOutline,
       cardOutline,
     });
   }

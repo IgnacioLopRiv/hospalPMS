@@ -1,12 +1,12 @@
-$blue-primary: #1e50d8;
+$blue-primary: var(--hospal-primary);
 $blue-light: rgba(30, 80, 216, 0.08);
-$purple: #7c3aed;
-$danger: #dc2626;
-$success: #16a34a;
-$text-dark: #0f172a;
-$text-muted: #64748b;
-$border: #e2e8f0;
-$border-hover: #cbd5e1;
+$purple: var(--hospal-purple);
+$danger: var(--hospal-danger);
+$success: var(--hospal-success);
+$text-dark: var(--hospal-text);
+$text-muted: var(--hospal-text-muted);
+$border: var(--hospal-border);
+$border-hover: var(--hospal-border-strong);
 
 // ── Modal size & Centered alignment ──────────────────────────────────────────
 ion-modal.edit-perfiles-modal,
@@ -38,8 +38,8 @@ ion-modal.edit-perfiles-banner {
   max-height: 88dvh;
   border-radius: 20px;
   overflow: hidden;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--hospal-white);
+  border: 1px solid var(--hospal-border);
   color: $text-dark;
   // La animación de apertura la aplica Ionic globalmente (overlay-animations.ts).
 }
@@ -51,8 +51,8 @@ ion-modal.edit-perfiles-banner {
   align-items: center;
   justify-content: space-between;
   padding: 1.25rem 1.5rem;
-  background: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--hospal-white);
+  border-bottom: 1px solid var(--hospal-border);
   gap: 1rem;
   flex-shrink: 0;
 
@@ -70,7 +70,7 @@ ion-modal.edit-perfiles-banner {
       height: 42px;
       flex-shrink: 0;
       border-radius: 12px;
-      background: #eff6ff;
+      background: var(--hospal-primary-50);
       color: $blue-primary;
       font-size: 1.35rem;
     }
@@ -107,7 +107,7 @@ ion-modal.edit-perfiles-banner {
   border: 1px solid $blue-primary;
   border-radius: 8px;
   background: $blue-primary;
-  color: #ffffff;
+  color: var(--hospal-white);
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
@@ -118,7 +118,7 @@ ion-modal.edit-perfiles-banner {
   }
 
   &:hover {
-    background: #1d4ed8;
+    background: var(--hospal-primary-strong);
     box-shadow: 0 3px 10px rgba(30, 80, 216, 0.25);
   }
 
@@ -133,18 +133,18 @@ ion-modal.edit-perfiles-banner {
   width: 36px;
   height: 36px;
   place-items: center;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--hospal-border);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--hospal-white);
   color: $text-muted;
   font-size: 1.25rem;
   cursor: pointer;
   transition: all 0.18s ease;
 
   &:hover {
-    border-color: #fecaca;
-    background: #fef2f2;
-    color: #b91c1c;
+    border-color: var(--hospal-danger-200);
+    background: var(--hospal-danger-50);
+    color: var(--hospal-danger-strong);
   }
 
   &:active {
@@ -167,7 +167,7 @@ ion-modal.edit-perfiles-banner {
 // ── Success toast ────────────────────────────────────────────────────────────
 .success-toast {
   padding: 10px 16px;
-  background: #f0fdf4;
+  background: var(--hospal-success-50);
   border: 1px solid #bbf7d0;
   border-radius: 10px;
   color: #15803d;
@@ -179,8 +179,8 @@ ion-modal.edit-perfiles-banner {
 // ── Inline form ──────────────────────────────────────────────────────────────
 .user-form {
   padding: 1.35rem 1.5rem;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--hospal-white);
+  border: 1px solid var(--hospal-border);
   border-radius: 16px;
   box-shadow: 0 4px 18px rgba(15, 23, 42, 0.05);
   animation: fadeInDown 0.22s ease;
@@ -191,7 +191,7 @@ ion-modal.edit-perfiles-banner {
     gap: 0.75rem;
     margin-bottom: 1.25rem;
     padding-bottom: 0.9rem;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid var(--hospal-surface-muted);
 
     .user-form-icon {
       display: grid;
@@ -200,7 +200,7 @@ ion-modal.edit-perfiles-banner {
       flex-shrink: 0;
       place-items: center;
       border-radius: 10px;
-      background: #eff6ff;
+      background: var(--hospal-primary-50);
       color: $blue-primary;
       font-size: 1.25rem;
     }
@@ -229,18 +229,18 @@ ion-modal.edit-perfiles-banner {
       width: 32px;
       height: 32px;
       place-items: center;
-      border: 1px solid #e2e8f0;
+      border: 1px solid var(--hospal-border);
       border-radius: 6px;
-      background: #ffffff;
+      background: var(--hospal-white);
       color: $text-muted;
       font-size: 1.1rem;
       cursor: pointer;
       transition: all 0.15s ease;
 
       &:hover {
-        background: #f8fafc;
+        background: var(--hospal-surface);
         color: $text-dark;
-        border-color: #cbd5e1;
+        border-color: var(--hospal-border-strong);
       }
     }
   }
@@ -262,7 +262,7 @@ ion-modal.edit-perfiles-banner {
     }
 
     .field-label {
-      color: #334155;
+      color: var(--hospal-text-secondary);
       font-size: 0.76rem;
       font-weight: 600;
       letter-spacing: 0.01em;
@@ -277,7 +277,7 @@ ion-modal.edit-perfiles-banner {
       .field-icon {
         position: absolute;
         left: 0.85rem;
-        color: #94a3b8;
+        color: var(--hospal-text-subtle);
         font-size: 1.1rem;
         pointer-events: none;
         transition: color 0.15s ease;
@@ -289,29 +289,29 @@ ion-modal.edit-perfiles-banner {
         width: 100%;
         min-height: 42px;
         padding: 0.6rem 0.85rem 0.6rem 2.45rem;
-        border: 1px solid #cbd5e1;
+        border: 1px solid var(--hospal-border-strong);
         border-radius: 10px;
-        background: #f8fafc;
-        color: #0f172a;
+        background: var(--hospal-surface);
+        color: var(--hospal-text);
         color-scheme: light;
         font: inherit;
         font-size: 0.84rem;
         transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
 
         &:hover:not(:focus) {
-          border-color: #93c5fd;
-          background: #ffffff;
+          border-color: var(--hospal-primary-300);
+          background: var(--hospal-white);
         }
 
         &:focus {
           border-color: #3b82f6;
           outline: none;
-          background: #ffffff;
+          background: var(--hospal-white);
           box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
         }
 
         &::placeholder {
-          color: #94a3b8;
+          color: var(--hospal-text-subtle);
         }
       }
 
@@ -319,8 +319,8 @@ ion-modal.edit-perfiles-banner {
         cursor: pointer;
 
         option {
-          background: #ffffff;
-          color: #0f172a;
+          background: var(--hospal-white);
+          color: var(--hospal-text);
         }
       }
 
@@ -337,7 +337,7 @@ ion-modal.edit-perfiles-banner {
     gap: 0.65rem;
     margin-top: 1.25rem;
     padding-top: 0.9rem;
-    border-top: 1px solid #f1f5f9;
+    border-top: 1px solid var(--hospal-surface-muted);
 
     button {
       display: inline-flex;
@@ -364,23 +364,23 @@ ion-modal.edit-perfiles-banner {
     }
 
     .btn-cancel {
-      border: 1px solid #cbd5e1;
-      background: #ffffff;
-      color: #334155;
+      border: 1px solid var(--hospal-border-strong);
+      background: var(--hospal-white);
+      color: var(--hospal-text-secondary);
 
       &:hover {
-        background: #f8fafc;
-        border-color: #94a3b8;
+        background: var(--hospal-surface);
+        border-color: var(--hospal-text-subtle);
       }
     }
 
     .btn-submit {
       border: 1px solid $blue-primary;
       background: $blue-primary;
-      color: #ffffff;
+      color: var(--hospal-white);
 
       &:hover {
-        background: #1d4ed8;
+        background: var(--hospal-primary-strong);
         box-shadow: 0 4px 12px rgba(30, 80, 216, 0.25);
       }
 
@@ -398,10 +398,10 @@ ion-modal.edit-perfiles-banner {
   gap: 0.5rem;
   margin-top: 0.9rem;
   padding: 0.65rem 0.9rem;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--hospal-danger-50);
+  border: 1px solid var(--hospal-danger-200);
   border-radius: 8px;
-  color: #b91c1c;
+  color: var(--hospal-danger-strong);
   font-size: 0.82rem;
   font-weight: 500;
   animation: fadeInDown 0.15s ease;
@@ -459,8 +459,8 @@ ion-modal.edit-perfiles-banner {
   color: $text-muted;
   font-size: 0.875rem;
   font-style: italic;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--hospal-surface);
+  border: 1px solid var(--hospal-border);
   border-radius: 10px;
   text-align: center;
 }
@@ -480,20 +480,20 @@ ion-modal.edit-perfiles-banner {
   align-items: center;
   gap: 12px;
   padding: 11px 15px;
-  background: #ffffff;
+  background: var(--hospal-white);
   border: 1px solid $border;
   border-radius: 12px;
   transition: all 0.15s ease;
 
   &:hover {
-    background: #f8fafc;
+    background: var(--hospal-surface);
     border-color: $border-hover;
     box-shadow: 0 3px 8px rgba(15, 23, 42, 0.04);
   }
 
   &.is-current {
-    border-color: #bfdbfe;
-    background: #eff6ff;
+    border-color: var(--hospal-primary-200);
+    background: var(--hospal-primary-50);
   }
 }
 
@@ -502,7 +502,7 @@ ion-modal.edit-perfiles-banner {
   height: 38px;
   border-radius: 50%;
   background: $blue-primary;
-  color: #ffffff;
+  color: var(--hospal-white);
   font-size: 1rem;
   font-weight: 700;
   display: flex;
@@ -594,9 +594,9 @@ ion-modal.edit-perfiles-banner {
     }
 
     &.danger {
-      border: 1px solid #fecaca;
-      background: #fef2f2;
-      color: #b91c1c;
+      border: 1px solid var(--hospal-danger-200);
+      background: var(--hospal-danger-50);
+      color: var(--hospal-danger-strong);
 
       &:hover {
         background: #fee2e2;
@@ -605,12 +605,12 @@ ion-modal.edit-perfiles-banner {
     }
 
     &.cancel {
-      border: 1px solid #cbd5e1;
-      background: #ffffff;
-      color: #475569;
+      border: 1px solid var(--hospal-border-strong);
+      background: var(--hospal-white);
+      color: var(--hospal-text-soft);
 
       &:hover {
-        background: #f8fafc;
+        background: var(--hospal-surface);
         color: $text-dark;
       }
     }
@@ -632,7 +632,7 @@ ion-modal.edit-perfiles-banner {
   transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
 
   &:hover {
-    background: #e2e8f0;
+    background: var(--hospal-border);
     color: $text-dark;
   }
 
@@ -641,12 +641,12 @@ ion-modal.edit-perfiles-banner {
   }
 
   &.edit:hover {
-    background: #eff6ff;
+    background: var(--hospal-primary-50);
     color: $blue-primary;
   }
 
   &.delete:hover:not(:disabled) {
-    background: #fef2f2;
+    background: var(--hospal-danger-50);
     color: $danger;
   }
 
@@ -654,7 +654,7 @@ ion-modal.edit-perfiles-banner {
     color: $danger;
 
     &:hover {
-      background: #fef2f2;
+      background: var(--hospal-danger-50);
     }
   }
 
@@ -731,6 +731,6 @@ ion-modal.edit-perfiles-banner {
   justify-content: flex-end;
   gap: 0.65rem;
   padding: 1rem 1.5rem;
-  border-top: 1px solid #e2e8f0;
-  background: #f8fafc;
+  border-top: 1px solid var(--hospal-border);
+  background: var(--hospal-surface);
 }
