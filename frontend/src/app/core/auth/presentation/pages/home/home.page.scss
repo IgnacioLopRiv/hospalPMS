@@ -233,21 +233,6 @@ $text-muted: #64748b;
       cursor: not-allowed;
     }
   }
-
-  .btn-secondary {
-    background: transparent;
-    border: none;
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 0.82rem;
-    cursor: pointer;
-    text-decoration: underline;
-    transition: color 0.2s ease;
-    margin-top: 0.2rem;
-
-    &:hover {
-      color: #ffffff;
-    }
-  }
 }
 
 /* Pie con información de ayuda */

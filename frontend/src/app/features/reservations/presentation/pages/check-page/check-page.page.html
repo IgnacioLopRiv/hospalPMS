@@ -885,6 +885,9 @@
   @if (cancelTarget; as item) {
   <div class="check-dialog-backdrop" appModalPortal appEscapeClose (escapeClose)="closeCancelReservation()" (click)="closeCancelReservation()">
     <section class="check-dialog app-modal" role="alertdialog" aria-modal="true" aria-labelledby="cancel-title" (click)="$event.stopPropagation()">
+      <button type="button" class="modal-close-x modal-close-x--floating" aria-label="Cerrar" (click)="closeCancelReservation()">
+        <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+      </button>
       <h2 id="cancel-title">¿Marcar como no-show?</h2>
       <p>La reserva de <strong>{{ item.guestName }}</strong> (Hab. {{ item.roomNumber }}) quedará cancelada y la habitación se libera. Esta acción no se puede deshacer desde Recepción.</p>
       @if (cancelError) {
@@ -901,6 +904,9 @@
   @if (roomChangeItem; as item) {
   <div class="check-dialog-backdrop" appModalPortal appEscapeClose (escapeClose)="closeRoomChange()" (click)="closeRoomChange()">
     <section class="check-dialog app-modal" role="dialog" aria-modal="true" aria-labelledby="room-change-title" (click)="$event.stopPropagation()">
+      <button type="button" class="modal-close-x modal-close-x--floating" aria-label="Cerrar" (click)="closeRoomChange()">
+        <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+      </button>
       <h2 id="room-change-title">Cambiar habitación</h2>
       <p><strong>{{ item.guestName }}</strong> · actualmente en Hab. {{ item.roomNumber }} ({{ item.dateRange }})</p>
       @if (roomChangeOptions.length) {
@@ -1169,6 +1175,9 @@
       aria-labelledby="checkin-receipt-title"
       (click)="$event.stopPropagation()">
       <ng-container *ngTemplateOutlet="paymentReceiptTpl; context: { $implicit: receipt, titleId: 'checkin-receipt-title', kind: 'checkin' }"></ng-container>
+      <button type="button" class="modal-close-x modal-close-x--floating" aria-label="Cerrar" (click)="closeCheckInReceipt()">
+        <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+      </button>
     </section>
   </div>
   }

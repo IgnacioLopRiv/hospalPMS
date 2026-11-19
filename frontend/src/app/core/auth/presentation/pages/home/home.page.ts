@@ -32,7 +32,6 @@ export class HomePage {
   email = '';
   password = '';
   errorMessage = '';
-  showRecover = false;
   submitting = false;
 
   constructor() {
@@ -52,14 +51,12 @@ export class HomePage {
 
     this.submitting = true;
     this.errorMessage = '';
-    this.showRecover = false;
 
     const result = await this.auth.login(this.email, this.password);
     this.submitting = false;
 
     if (!result.ok) {
       this.errorMessage = result.message ?? 'No se pudo iniciar sesión.';
-      this.showRecover = result.error === 'email' || result.error === 'password';
       return;
     }
 
@@ -79,11 +76,5 @@ export class HomePage {
 
     // Aseo sin sede asignada no puede elegirla: igual entra a su página de inicio
     this.router.navigate([this.auth.can('changeSede') ? '/sedes' : this.auth.homeRoute()]);
-  }
-
-  goRecover(): void {
-    this.router.navigate(['/recuperar'], {
-      queryParams: this.email.trim() ? { email: this.email.trim() } : undefined,
-    });
   }
 }

@@ -71,7 +71,6 @@ export interface ReservationCalendarEntry {
   providedIn: 'root'
 })
 export class HostalService {
-  private readonly BASE_PREFIX = 'hospal_db_';
   private readonly huespedRepository = inject(HuespedRepository);
   private readonly reservasRepository = inject(ReservasRepository);
   private guestsViewSubject = new BehaviorSubject<GuestCardView[]>([]);
@@ -862,17 +861,6 @@ export class HostalService {
   }
 
   // ── Utilities ──────────────────────────────────────────────────────────────
-
-  /**
-   * Clears all old (non-sede-scoped) test data from localStorage.
-   * Call once to migrate away from the legacy global storage.
-   */
-  clearLegacyData(): void {
-    const legacyKeys = ['huespedes', 'habitaciones', 'reservas', 'tipologias'];
-    for (const key of legacyKeys) {
-      localStorage.removeItem(`${this.BASE_PREFIX}${key}`);
-    }
-  }
 
   private fromDomainHuesped(guest: HuespedDomain, sedeId: number): Huesped {
     return {

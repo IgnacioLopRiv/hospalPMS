@@ -68,27 +68,12 @@ export const routes: Routes = [
     loadComponent: () => import('../../features/reservations/presentation/pages/reservas/reservas.page').then((m) => m.ReservasPage),
   },
   {
-    path: 'recepcion',
-    canActivate: [authGuard, permissionGuard('frontDesk')],
-    loadComponent: () => import('../../features/reservations/presentation/pages/check-page/check-page.page').then(m => m.CheckPagePage),
-  },
-  {
-    path: 'check-page',
-    redirectTo: 'recepcion',
-    pathMatch: 'full',
-  },
-  {
     path: 'tarifas',
     canActivate: [authGuard, permissionGuard('viewReports')],
     loadComponent: () => import('../../features/locations/presentation/pages/tarifas').then((m) => m.TarifasPage),
   },
   {
-    path: 'recuperar',
-    loadComponent: () => import('../auth/presentation/pages/recuperar/recuperar.page').then((m) => m.RecuperarPage),
+    path: '**',
+    redirectTo: 'home',
   },
-  {
-    path: 'restablecer',
-    loadComponent: () => import('../auth/presentation/pages/restablecer/restablecer.page').then((m) => m.RestablecerPage),
-  }
-
 ];

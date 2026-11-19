@@ -60,12 +60,6 @@
           <span>{{ submitting ? 'Verificando...' : 'Ingresar al Sistema' }}</span>
           <ion-icon name="chevron-forward-outline"></ion-icon>
         </button>
-
-        @if (showRecover) {
-          <button type="button" class="btn-secondary" (click)="goRecover()">
-            ¿Olvidaste tu contraseña? Recuperar aquí
-          </button>
-        }
       </form>
 
       <footer class="login-help">

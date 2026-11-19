@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule, JwtSignOptions } from '@nestjs/jwt';
-import { NotificationsModule } from '../notifications/notifications.module';
 import { AuthService } from './application/auth.service';
 import { AuthController } from './infrastructure/auth.controller';
 import { JwtAuthGuard } from './infrastructure/jwt-auth.guard';
@@ -11,7 +10,6 @@ import { RolesGuard } from './infrastructure/roles.guard';
 /** RF-07: sesión con JWT. Registra los guards globales (token y roles). */
 @Module({
   imports: [
-    NotificationsModule,
     JwtModule.registerAsync({
       global: true,
       inject: [ConfigService],

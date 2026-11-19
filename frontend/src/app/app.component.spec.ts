@@ -9,7 +9,7 @@ describe('AppComponent', () => {
       imports: [AppComponent],
       providers: [
         provideRouter([]),
-        { provide: HostalService, useValue: { clearLegacyData: () => undefined } },
+        { provide: HostalService, useValue: {} },
       ]
     }).compileComponents();
     

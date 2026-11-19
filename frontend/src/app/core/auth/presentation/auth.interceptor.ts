@@ -6,7 +6,7 @@ import { environment } from '../../../../environments/environment';
 import { AuthService } from '../application/auth.service';
 
 /** Rutas de /auth que no deben cerrar sesión al responder 401. */
-const PUBLIC_AUTH_PATHS = ['/auth/login', '/auth/recuperar', '/auth/restablecer'];
+const PUBLIC_AUTH_PATHS = ['/auth/login'];
 
 /**
  * RF-07: adjunta el JWT a cada petición hacia la API y, si la API responde 401
