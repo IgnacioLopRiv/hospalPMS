@@ -1,3 +1,5 @@
+@use 'check-dialog';
+
 $blue-primary: var(--hospal-primary);
 $border-color: var(--hospal-border-soft);
 $text-dark: var(--hospal-text-alt);
@@ -697,83 +699,4 @@ $orange-border: #fed7aa;
     }
   }
 
-}
-/* ── Diálogos de acciones (no-show, cambio de habitación) ─────────────────── */
-.check-dialog-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  background: rgba(15, 23, 42, 0.45);
-}
-
-.check-dialog {
-  width: 100%;
-  max-width: 440px;
-  padding: 1.5rem;
-  border-radius: 14px;
-  background: var(--hospal-white);
-  color: $text-dark;
-
-  h2 { margin: 0 0 0.5rem; font-size: 1.15rem; }
-  p { margin: 0 0 1rem; color: $text-muted; font-size: 0.9rem; line-height: 1.45; }
-}
-
-.check-dialog-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  margin-bottom: 1rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-
-  select {
-    height: 40px;
-    padding: 0 0.6rem;
-    border: 1px solid $border-color;
-    border-radius: 8px;
-    font: inherit;
-    font-weight: 400;
-  }
-}
-
-.check-dialog-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-}
-
-// Resumen de precio al cambiar de habitación antes del check-in.
-.room-change-quote {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 12px;
-  padding: 12px 14px;
-  border: 1px solid var(--hospal-border);
-  border-radius: 10px;
-  background: var(--hospal-surface);
-  font-size: 0.9rem;
-
-  > div {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    color: var(--hospal-text-soft);
-  }
-
-  .room-change-quote-balance {
-    margin-top: 4px;
-    padding-top: 8px;
-    border-top: 1px dashed var(--hospal-border-strong);
-    color: #b45309;
-    font-weight: 600;
-
-    &.credit {
-      color: #15803d;
-    }
-  }
 }

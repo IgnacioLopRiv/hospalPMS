@@ -1,3 +1,4 @@
+import { TarifaPricingService } from './tarifa-pricing.service';
 import { PosRepository } from '../../../../payments-pos/domain/pos.repository';
 import { createPosRepositoryStub } from '../../../../payments-pos/domain/testing/pos.repository.stub';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
@@ -391,7 +392,7 @@ describe('CheckPagePage', () => {
       }],
       precios: { 1: 40000 },
     }] };
-    await component['loadTarifasConfig']();
+    await fixture.debugElement.injector.get(TarifaPricingService).load();
     component.updateAvailableRooms();
     expect(component.availableRooms.length).toBe(1);
     expect(component.roomNightlyPrice(component.availableRooms[0])).toBe(40000);

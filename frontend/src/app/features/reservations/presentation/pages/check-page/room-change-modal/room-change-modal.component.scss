@@ -1,0 +1,34 @@
+@use '../check-dialog';
+
+:host { display: contents; }
+
+.room-change-quote {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--hospal-border);
+  border-radius: 10px;
+  background: var(--hospal-surface);
+  font-size: 0.9rem;
+
+  > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    color: var(--hospal-text-soft);
+  }
+
+  .room-change-quote-balance {
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--hospal-border-strong);
+    color: #b45309;
+    font-weight: 600;
+
+    &.credit {
+      color: #15803d;
+    }
+  }
+}

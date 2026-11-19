@@ -902,49 +902,11 @@
   }
 
   @if (roomChangeItem; as item) {
-  <div class="check-dialog-backdrop" appModalPortal appEscapeClose (escapeClose)="closeRoomChange()" (click)="closeRoomChange()">
-    <section class="check-dialog app-modal" role="dialog" aria-modal="true" aria-labelledby="room-change-title" (click)="$event.stopPropagation()">
-      <button type="button" class="modal-close-x modal-close-x--floating" aria-label="Cerrar" (click)="closeRoomChange()">
-        <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
-      </button>
-      <h2 id="room-change-title">Cambiar habitación</h2>
-      <p><strong>{{ item.guestName }}</strong> · actualmente en Hab. {{ item.roomNumber }} ({{ item.dateRange }})</p>
-      @if (roomChangeOptions.length) {
-      <div class="check-dialog-field">
-        <span>Nueva habitación</span>
-        <app-room-picker [rooms]="roomChangeOptions" [typologies]="sedeTipologias()" [(value)]="roomChangeRoomId"
-          placeholder="Selecciona una habitación libre"></app-room-picker>
-      </div>
-      @if (roomChangeQuote; as quote) {
-      <div class="room-change-quote">
-        <div><span>Total actual</span><span>{{ (roomChangeReservation?.precio_total ?? 0) | currency:'CLP':'symbol-narrow':'1.0-0' }}</span></div>
-        <div><span>Diferencia de tarifa</span><span>{{ quote.delta >= 0 ? '+' : '−' }}{{ (quote.delta < 0 ? -quote.delta : quote.delta) | currency:'CLP':'symbol-narrow':'1.0-0' }}</span></div>
-        <div><span>Nuevo total</span><strong>{{ quote.newTotal | currency:'CLP':'symbol-narrow':'1.0-0' }}</strong></div>
-        <div><span>Ya pagado {{ quote.paid >= (roomChangeReservation?.precio_total ?? 0) ? '(pago completo)' : quote.paid > 0 ? '(abono)' : '' }}</span><span>{{ quote.paid | currency:'CLP':'symbol-narrow':'1.0-0' }}</span></div>
-        <div class="room-change-quote-balance" [class.credit]="quote.balance < 0">
-          <span>{{ quote.balance > 0 ? 'Saldo a cobrar en el check-in' : quote.balance < 0 ? 'Saldo a favor del huésped' : 'Saldo' }}</span>
-          <strong>{{ (quote.balance < 0 ? -quote.balance : quote.balance) | currency:'CLP':'symbol-narrow':'1.0-0' }}</strong>
-        </div>
-      </div>
-      } @else if (roomChangeRoomId && !roomChangeLoading) {
-      <p class="entry-error">No hay precio configurado para la tipología de esa habitación en /tarifas.</p>
-      }
-      } @else {
-      <p class="entry-error">No hay otras habitaciones libres para esas fechas.</p>
-      }
-      @if (roomChangeError) {
-      <p class="entry-error" role="alert">{{ roomChangeError }}</p>
-      }
-      <footer class="check-dialog-actions">
-        <button type="button" class="modal-btn modal-btn--secondary" (click)="closeRoomChange()">Cancelar</button>
-        <button type="button" class="modal-btn modal-btn--primary" [disabled]="!roomChangeOptions.length || !roomChangeQuote || roomChangeSaving || roomChangeLoading"
-          (click)="confirmRoomChange()">{{ roomChangeSaving ? 'Guardando…' : 'Cambiar habitación' }}</button>
-      </footer>
-    </section>
-  </div>
+  <app-room-change-modal [roomChangeItem]="item" (closed)="roomChangeItem = null" (completed)="onCheckModalCompleted($event); roomChangeItem = null"></app-room-change-modal>
   }
 
   @if (checkInPaymentItem; as item) {
+  <div class="check-modal-portal" appModalPortal>
   <div class="checkin-payment-backdrop" appEscapeClose (escapeClose)="closeCheckInPayment()" (click)="closeCheckInPayment()">
     <section
       class="checkin-payment-modal app-modal"
@@ -1028,145 +990,15 @@
       </footer>
     </section>
   </div>
-  }
-
-  @if (extendItem; as item) {
-  <div class="checkin-payment-backdrop" appEscapeClose (escapeClose)="closeExtendStay()" (click)="closeExtendStay()">
-    <section
-      class="checkin-payment-modal extend-stay-modal app-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="extend-stay-title"
-      (click)="$event.stopPropagation()">
-      <header>
-        <div class="checkin-payment-icon"><ion-icon name="calendar-outline"></ion-icon></div>
-        <button type="button" class="modal-close-x modal-close-x--floating" aria-label="Cerrar" (click)="closeExtendStay()">
-          <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
-        </button>
-      </header>
-      <h2 id="extend-stay-title">Extender estadía</h2>
-      <p class="checkin-payment-guest">{{ item.guestName }} · Habitación {{ item.roomNumber }}</p>
-
-      @if (extendReservation; as reservation) {
-      <div class="extend-stay-dates">
-        <div>
-          <small>Entrada</small>
-          <strong>{{ reservation.fecha_llegada | date:'dd/MM/yyyy' }}</strong>
-        </div>
-        <div>
-          <small>Salida actual</small>
-          <strong>{{ reservation.fecha_salida | date:'dd/MM/yyyy' }}</strong>
-        </div>
-        <div [class.pending]="!extendNewDeparture">
-          <small>Nueva salida</small>
-          <strong>{{ extendNewDeparture ? (extendNewDeparture | date:'dd/MM/yyyy') : '—' }}</strong>
-        </div>
-      </div>
-
-      <fieldset class="checkin-payment-methods extend-stay-options" [disabled]="extendLoading || extendSaving || posCobro.enCurso()">
-        <legend>¿Cuánto quieres extender?</legend>
-        @for (nights of extendNightOptions; track nights) {
-        <button
-          type="button"
-          [class.selected]="extendNights === nights && !extendCustomDate"
-          [attr.aria-pressed]="extendNights === nights && !extendCustomDate"
-          [disabled]="!canExtendBy(nights)"
-          [title]="extendBlockedReason(nights) ?? ''"
-          (click)="selectExtendNights(nights)">
-          +{{ nights }} {{ nights === 1 ? 'noche' : 'noches' }}
-        </button>
-        }
-        <label class="extend-stay-custom">
-          <span>Otra fecha de salida</span>
-          <input type="date" [min]="extendMinCustomDate" [ngModel]="extendCustomDate" (ngModelChange)="onExtendCustomDate($event)" />
-        </label>
-      </fieldset>
-
-      <div class="extend-stay-room">
-        <label class="extend-stay-keep">
-          <input type="checkbox" [ngModel]="extendKeepRoom" (ngModelChange)="setExtendKeepRoom($event)"
-            [disabled]="extendSaving || posCobro.enCurso()" />
-          <span>Mantener la habitación {{ item.roomNumber }}</span>
-        </label>
-        @if (!extendKeepRoom) {
-        @if (extendNights < 1) {
-        <p class="extend-stay-room-hint">Elige primero cuánto extender para ver las habitaciones libres.</p>
-        } @else if (extendRoomOptions.length) {
-        <div class="extend-stay-room-select">
-          <span>Nueva habitación</span>
-          <app-room-picker [rooms]="extendRoomOptions" [typologies]="sedeTipologias()" [(value)]="extendRoomId"
-            [disabled]="extendSaving || posCobro.enCurso()" placeholder="Selecciona una habitación libre"></app-room-picker>
-        </div>
-        <p class="extend-stay-room-hint">La habitación {{ item.roomNumber }} quedará en aseo. Las noches extra se cobran con la tarifa de la nueva habitación.</p>
-        } @else {
-        <p class="entry-error">No hay otras habitaciones libres para toda la estadía.</p>
-        }
-        }
-      </div>
-
-      @if (extendNights > 0 && (extendKeepRoom || extendNewRoom)) {
-      @if (extendCost !== null && extendRoomChangeDelta !== null) {
-      <div class="checkin-payment-amount">
-        <span>{{ extendAmountDue > 0 ? 'A cobrar ahora' : 'Sin cobro adicional' }}</span>
-        <strong>{{ extendAmountDue | currency:'CLP':'symbol-narrow':'1.0-0' }}</strong>
-        <small>
-          {{ extendNights }} {{ extendNights === 1 ? 'noche' : 'noches' }} extra {{ extendCost | currency:'CLP':'symbol-narrow':'1.0-0' }}
-          @if (extendRoomChangeDelta) {
-          · Cambio de habitación (noches restantes) {{ extendRoomChangeDelta > 0 ? '+' : '−' }}{{ (extendRoomChangeDelta < 0 ? -extendRoomChangeDelta : extendRoomChangeDelta) | currency:'CLP':'symbol-narrow':'1.0-0' }}
-          }
-          · Nuevo total {{ extendNewTotal | currency:'CLP':'symbol-narrow':'1.0-0' }}
-          · Ya pagado {{ (reservation.monto_pagado ?? 0) | currency:'CLP':'symbol-narrow':'1.0-0' }}
-        </small>
-      </div>
-      @if (extendAmountDue > 0) {
-      <fieldset class="checkin-payment-methods">
-        <legend>¿Cómo se recibió el pago?</legend>
-        <button type="button" [class.selected]="extendPaymentMethod === 'transferencia'" [attr.aria-pressed]="extendPaymentMethod === 'transferencia'"
-          [disabled]="posCobro.enCurso()" (click)="extendPaymentMethod = 'transferencia'">
-          <ion-icon name="swap-horizontal-outline"></ion-icon> Transferencia
-        </button>
-        <button type="button" [class.selected]="extendPaymentMethod === 'efectivo'" [attr.aria-pressed]="extendPaymentMethod === 'efectivo'"
-          [disabled]="posCobro.enCurso()" (click)="extendPaymentMethod = 'efectivo'">
-          <ion-icon name="cash-outline"></ion-icon> Efectivo
-        </button>
-        <button type="button" [class.selected]="extendPaymentMethod === 'debito'" [attr.aria-pressed]="extendPaymentMethod === 'debito'"
-          [disabled]="!posDisponible || posCobro.enCurso()" (click)="extendPaymentMethod = 'debito'">
-          <ion-icon name="card-outline"></ion-icon> Débito
-        </button>
-        <button type="button" [class.selected]="extendPaymentMethod === 'credito'" [attr.aria-pressed]="extendPaymentMethod === 'credito'"
-          [disabled]="!posDisponible || posCobro.enCurso()" (click)="extendPaymentMethod = 'credito'">
-          <ion-icon name="card-outline"></ion-icon> Crédito
-        </button>
-        @if (!posDisponible && !posLoading) {
-        <p class="pos-payment-hint">Para cobrar con débito o crédito, activa un terminal de pago en Configuración → Terminal de pago (POS).</p>
-        }
-      </fieldset>
-      <app-pos-cobro-estado></app-pos-cobro-estado>
-      }
-      } @else if (!extendLoading) {
-      <p class="entry-error">No hay precio configurado para la tipología {{ extendTypology?.nombre ?? 'de la habitación' }} en esas fechas. Revísalo en /tarifas.</p>
-      }
-      }
-      }
-
-      @if (extendError) {
-      <p class="entry-error" role="alert">{{ extendError }}</p>
-      }
-      <footer class="checkin-payment-actions">
-        <button type="button" class="modal-btn modal-btn--secondary" [disabled]="extendSaving || posCobro.enCurso()" (click)="closeExtendStay()">Cancelar</button>
-        <button
-          type="button"
-          class="modal-btn modal-btn--primary entry-submit-button"
-          [disabled]="extendNights < 1 || extendCost === null || !canExtendBy(extendNights) || (!extendKeepRoom && !extendNewRoom) || (extendAmountDue > 0 && !extendPaymentMethod) || extendSaving || posCobro.enCurso()"
-          (click)="confirmExtendStay()">
-          {{ posCobro.enCurso() ? 'Cobrando en el terminal…' : extendSaving ? 'Guardando…' : extendAmountDue > 0 && extendNights > 0 ? (isCardMethod(extendPaymentMethod) ? 'Cobrar en el terminal y extender' : 'Cobrar y extender') : 'Extender estadía' }}
-        </button>
-      </footer>
-    </section>
   </div>
   }
 
+  @if (extendItem; as item) {
+  <app-extend-stay-modal [extendItem]="item" (closed)="extendItem = null" (completed)="onCheckModalCompleted($event); extendItem = null"></app-extend-stay-modal>
+  }
+
   @if (checkInReceipt; as receipt) {
+  <div class="check-modal-portal" appModalPortal>
   <div class="checkin-payment-backdrop" appEscapeClose (escapeClose)="closeCheckInReceipt()" (click)="closeCheckInReceipt()">
     <section
       class="checkin-payment-modal receipt-mode app-modal"
@@ -1179,6 +1011,7 @@
         <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
       </button>
     </section>
+  </div>
   </div>
   }
   }

@@ -1,0 +1,42 @@
+@if (roomChangeItem; as item) {
+<div class="check-dialog-backdrop" appModalPortal appEscapeClose (escapeClose)="closeRoomChange()" (click)="closeRoomChange()">
+  <section class="check-dialog app-modal" role="dialog" aria-modal="true" aria-labelledby="room-change-title" (click)="$event.stopPropagation()">
+    <button type="button" class="modal-close-x modal-close-x--floating" aria-label="Cerrar" (click)="closeRoomChange()">
+      <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+    </button>
+    <h2 id="room-change-title">Cambiar habitación</h2>
+    <p><strong>{{ item.guestName }}</strong> · actualmente en Hab. {{ item.roomNumber }} ({{ item.dateRange }})</p>
+    @if (roomChangeOptions.length) {
+    <div class="check-dialog-field">
+      <span>Nueva habitación</span>
+      <app-room-picker [rooms]="roomChangeOptions" [typologies]="sedeTipologias()" [(value)]="roomChangeRoomId"
+        placeholder="Selecciona una habitación libre"></app-room-picker>
+    </div>
+    @if (roomChangeQuote; as quote) {
+    <div class="room-change-quote">
+      <div><span>Total actual</span><span>{{ (roomChangeReservation?.precio_total ?? 0) | currency:'CLP':'symbol-narrow':'1.0-0' }}</span></div>
+      <div><span>Diferencia de tarifa</span><span>{{ quote.delta >= 0 ? '+' : '−' }}{{ (quote.delta < 0 ? -quote.delta : quote.delta) | currency:'CLP':'symbol-narrow':'1.0-0' }}</span></div>
+      <div><span>Nuevo total</span><strong>{{ quote.newTotal | currency:'CLP':'symbol-narrow':'1.0-0' }}</strong></div>
+      <div><span>Ya pagado {{ quote.paid >= (roomChangeReservation?.precio_total ?? 0) ? '(pago completo)' : quote.paid > 0 ? '(abono)' : '' }}</span><span>{{ quote.paid | currency:'CLP':'symbol-narrow':'1.0-0' }}</span></div>
+      <div class="room-change-quote-balance" [class.credit]="quote.balance < 0">
+        <span>{{ quote.balance > 0 ? 'Saldo a cobrar en el check-in' : quote.balance < 0 ? 'Saldo a favor del huésped' : 'Saldo' }}</span>
+        <strong>{{ (quote.balance < 0 ? -quote.balance : quote.balance) | currency:'CLP':'symbol-narrow':'1.0-0' }}</strong>
+      </div>
+    </div>
+    } @else if (roomChangeRoomId && !roomChangeLoading) {
+    <p class="entry-error">No hay precio configurado para la tipología de esa habitación en /tarifas.</p>
+    }
+    } @else {
+    <p class="entry-error">No hay otras habitaciones libres para esas fechas.</p>
+    }
+    @if (roomChangeError) {
+    <p class="entry-error" role="alert">{{ roomChangeError }}</p>
+    }
+    <footer class="check-dialog-actions">
+      <button type="button" class="modal-btn modal-btn--secondary" (click)="closeRoomChange()">Cancelar</button>
+      <button type="button" class="modal-btn modal-btn--primary" [disabled]="!roomChangeOptions.length || !roomChangeQuote || roomChangeSaving || roomChangeLoading"
+        (click)="confirmRoomChange()">{{ roomChangeSaving ? 'Guardando…' : 'Cambiar habitación' }}</button>
+    </footer>
+  </section>
+</div>
+}

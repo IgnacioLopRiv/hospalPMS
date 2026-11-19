@@ -5,9 +5,10 @@ $text-dark: var(--hospal-text-alt);
 $text-muted: var(--hospal-text-muted);
 
 // El modal de nueva reserva se mueve a <body> (appModalPortal), fuera de
-// .check-page-container, así que también se aplica a su fondo.
+// .check-page-container, así que también se aplica a su fondo (y a .check-modal-portal).
 .check-page-container,
-.entry-modal-backdrop {
+.entry-modal-backdrop,
+.check-modal-portal {
 .room-search-summary {
   margin: 0 0 1rem;
   color: $text-muted;

@@ -3,7 +3,7 @@ import { Component, ComponentRef, EventEmitter, HostListener, inject, Input, OnD
 import { CommonModule, DOCUMENT } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { IonIcon } from '@ionic/angular/standalone';
-import { firstValueFrom, Subscription } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { addIcons } from 'ionicons';
 import {
   alertCircleOutline,
@@ -39,17 +39,34 @@ import {
   ReservationCalendarEntry,
 } from '../../../../huespedes/application/hostal.service';
 import { getApiErrorMessage } from '../../../../../shared/domain/api-error-message';
-import { isRoomReadyForGuest, isValidStayRange, stayInterval } from '../../../domain/stay-schedule';
-import { GuestCardView, Huesped, Habitacion, MetodoPagoReserva, MetodoPagoTarjeta, Reserva, SedeHabitacion, SedeTipologia } from '../../../../../shared/domain/hostal.model';
+import { isValidStayRange, stayInterval } from '../../../domain/stay-schedule';
+import { GuestCardView, Huesped, Habitacion, SedeHabitacion, SedeTipologia } from '../../../../../shared/domain/hostal.model';
 import { PosCobroService, PosDisponible } from '../../../../payments-pos/application/pos-cobro.service';
 import { PosCobroEstadoComponent } from '../../../../payments-pos/presentation/pos-cobro-estado/pos-cobro-estado.component';
 import { COUNTRY_OPTIONS } from '../../../../../shared/domain/country-options';
 import { CountryPickerComponent } from '../../../../../shared/presentation/country-picker/country-picker.component';
-import { RoomPickerComponent } from '../../../../../shared/presentation/room-picker/room-picker.component';
 import { FotoHabitacionService } from '../../../../locations/application/foto-habitacion.service';
 import { FotoHabitacion } from '../../../../locations/domain/foto-habitacion.model';
 import { InventarioService } from '../../../../inventory/application/inventario.service';
-import { Tarifa, TarifasRepository } from '../../../../locations/domain/tarifas.repository';
+import { TarifaPricingService } from './tarifa-pricing.service';
+import { ExtendStayModalComponent } from './extend-stay-modal/extend-stay-modal.component';
+import { RoomChangeModalComponent } from './room-change-modal/room-change-modal.component';
+import { isValidDateKey, chargedNights, formatDayMonth, localDateString, todayKey } from './check-dates';
+import { formatRut, isValidEmail, isValidRut, normalizeDocument, sanitizeDigits } from './guest-validation';
+import {
+  chargeWithPos,
+  CheckItemPlaceholder,
+  CheckModalResult,
+  GuestDraft,
+  isCardMethod,
+  PAYMENT_METHOD_LABELS,
+  PaymentMethod,
+  PaymentReceipt,
+  ReservationQuote,
+  roomBlockedReason,
+} from './check-page.models';
+
+export type { CheckItemPlaceholder, GuestDraft, PaymentReceipt } from './check-page.models';
 import { ModalPortalDirective } from '../../../../../shared/presentation/modal-portal/modal-portal.directive';
 import {
   isValidPhoneFormat,
@@ -58,111 +75,14 @@ import {
   PHONE_FORMAT_ERROR,
 } from '../../../../../shared/domain/phone-format';
 
-export interface GuestDraft {
-  documentType: 'rut' | 'passport';
-  documento: string;
-  nombre: string;
-  apellido: string;
-  telefono: string;
-  phoneCountry: string;
-  email: string;
-  nacionalidad: string;
-}
-
-type PaymentMethod = MetodoPagoReserva;
-
-const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
-  transferencia: 'transferencia',
-  efectivo: 'efectivo',
-  debito: 'tarjeta de débito',
-  credito: 'tarjeta de crédito',
-};
-
-const isCardMethod = (method: PaymentMethod | ''): method is MetodoPagoTarjeta =>
-  method === 'debito' || method === 'credito';
-type TarifaPeriodType = 'months' | 'weekdays' | 'month-days' | 'specific-month-days' | 'date-range' | 'specific-dates';
-
-interface StoredTarifaPeriod {
-  tipo: TarifaPeriodType;
-  meses: number[];
-  diasSemana: number[];
-  diasMes: number[];
-  fechaInicio: string;
-  fechaFin: string;
-  fechas: string[];
-  anio?: number;
-  mes?: number;
-}
-
-interface StoredTarifa {
-  periodos: StoredTarifaPeriod[];
-  precios: Record<number, number>;
-}
-
-interface ReservationQuote {
-  nights: number;
-  total: number;
-  depositPercentage: number;
-  deposit: number;
-  typologyName: string;
-  roomNumber: string;
-  guestName: string;
-}
-
-/** Comprobante que se muestra tras cobrar una reserva nueva o el saldo del check-in. */
-export interface PaymentReceipt {
-  subtitle: string;
-  guestName: string;
-  roomNumber: string;
-  typologyName: string;
-  arrivalDate: string;
-  arrivalTime: string;
-  departureDate: string;
-  departureTime: string;
-  nights: number;
-  personCount: number;
-  total: number;
-  /** Lo pagado antes de este cobro (abono de la reserva). */
-  previouslyPaid?: number;
-  paid: number;
-  pending: number;
-  methodLabel: string;
-  reference: string;
-  paidAt: Date;
-  note?: string;
-}
-
-export interface CheckItemPlaceholder {
-  id: number;
-  guestName: string;
-  initials: string;
-  country: string;
-  phone?: string;
-  email?: string;
-  roomNumber: string;
-  roomType: string;
-  dateRange: string;
-  nights: number;
-  scheduledTime: string;
-  timeWindowLabel: string;
-  statusBadge: string;
-  avatarColor: 'green' | 'orange' | 'blue' | 'purple';
-  totalAmount: number;
-  amountPaid: number;
-  outstandingBalance: number;
-  hasPaymentRecord: boolean;
-  notes?: string;
-  isVip?: boolean;
-  /** Llegada o salida de un día anterior que sigue pendiente. */
-  isOverdue?: boolean;
-}
 
 @Component({
   selector: 'app-check-page',
   templateUrl: './check-page.page.html',
   styleUrls: ['./check-page.page.scss'],
   standalone: true,
-  imports: [EscapeCloseDirective, CommonModule, FormsModule, IonIcon, CountryPickerComponent, ModalPortalDirective, PosCobroEstadoComponent, RoomPickerComponent],
+  imports: [EscapeCloseDirective, CommonModule, FormsModule, IonIcon, CountryPickerComponent, ModalPortalDirective, PosCobroEstadoComponent, ExtendStayModalComponent, RoomChangeModalComponent],
+  providers: [TarifaPricingService],
 })
 export class CheckPagePage implements OnInit, OnDestroy {
   private readonly sedeService = inject(SedeService);
@@ -171,7 +91,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
   private readonly document = inject(DOCUMENT);
   private readonly fotoHabitacionService = inject(FotoHabitacionService);
   private readonly inventarioService = inject(InventarioService);
-  private readonly tarifasRepository = inject(TarifasRepository);
+  private readonly pricing = inject(TarifaPricingService);
   readonly posCobro = inject(PosCobroService);
   private readonly viewContainer = inject(ViewContainerRef);
   /** Página de Huéspedes embebida en modo "solo modales" sobre Recepción. */
@@ -186,7 +106,6 @@ export class CheckPagePage implements OnInit, OnDestroy {
   private receiptMessage = '';
   /** Reserva cuyo saldo ya se cobró en el POS, por si el check-in falla después. */
   private checkInPaidByPos: number | null = null;
-  private tarifasConfig: { sedeId: number; porcentajeAbono: number; tarifas: Tarifa[] } | null = null;
   readonly phoneFormatError = PHONE_FORMAT_ERROR;
   @Input() modalOnly = false;
   @Input() guestDraft?: GuestDraft;
@@ -264,13 +183,13 @@ export class CheckPagePage implements OnInit, OnDestroy {
   }
 
   get duplicateGuest(): Huesped | undefined {
-    const document = this.normalizeDocument(this.entryForm.documento);
+    const document = normalizeDocument(this.entryForm.documento);
     if (!document) {
       return undefined;
     }
 
     return this.availableGuests.find((guest) =>
-      this.normalizeDocument(guest.documento ?? '') === document
+      normalizeDocument(guest.documento ?? '') === document
     );
   }
 
@@ -283,60 +202,6 @@ export class CheckPagePage implements OnInit, OnDestroy {
   openMenuId: string | null = null;
   cancelTarget: CheckItemPlaceholder | null = null;
   cancelError = '';
-  roomChangeItem: CheckItemPlaceholder | null = null;
-  roomChangeOptions: Habitacion[] = [];
-  roomChangeRoomId = '';
-  roomChangeError = '';
-  roomChangeSaving = false;
-  roomChangeLoading = false;
-  roomChangeReservation: Reserva | null = null;
-
-  /**
-   * Total y saldo de la reserva si se cambia a la habitación elegida. La diferencia de tarifa
-   * entre tipologías se suma al total actual (así se respetan descuentos o ajustes previos).
-   * balance < 0 significa saldo a favor del huésped. null si falta un precio.
-   */
-  get roomChangeQuote(): { delta: number; newTotal: number; paid: number; balance: number } | null {
-    const reservation = this.roomChangeReservation;
-    const newRoom = this.roomChangeOptions.find((room) => room.id_habitacion === Number(this.roomChangeRoomId));
-    if (!reservation || !newRoom) return null;
-    const nights = this.getNights(reservation.fecha_llegada, reservation.fecha_salida);
-    const delta = this.roomSwapDelta(reservation.id_habitacion, newRoom.id_tipologia, reservation.fecha_llegada, nights);
-    if (delta === null) return null;
-    const newTotal = Math.max(0, (reservation.precio_total ?? 0) + delta);
-    const paid = reservation.monto_pagado ?? 0;
-    return { delta, newTotal, paid, balance: newTotal - paid };
-  }
-
-  /** Diferencia de precio de `nights` noches desde `from` entre la tipología nueva y la de la habitación actual. */
-  private roomSwapDelta(currentRoomId: number, newTypologyId: number, from: string, nights: number): number | null {
-    if (nights <= 0) return 0;
-    const currentRoom = this.sedeService.habitaciones().find((h) => h.id === currentRoomId);
-    const typologies = this.sedeService.tipologias();
-    const oldTypology = typologies.find((t) => t.id === currentRoom?.tipologiaId);
-    const newTypology = typologies.find((t) => t.id === newTypologyId);
-    if (!oldTypology || !newTypology) return null;
-    const oldPrice = this.priceNights(oldTypology, from, nights);
-    const newPrice = this.priceNights(newTypology, from, nights);
-    return oldPrice === null || newPrice === null ? null : newPrice - oldPrice;
-  }
-
-  /** Precio de `nights` noches desde `from` con las tarifas vigentes; null si falta precio. */
-  private priceNights(typology: SedeTipologia, from: string, nights: number): number | null {
-    let rates: StoredTarifa[];
-    try {
-      rates = this.loadStoredTarifas();
-    } catch {
-      return null;
-    }
-    let total = 0;
-    for (let offset = 0; offset < nights; offset++) {
-      const price = this.getEffectiveNightlyPrice(typology, new Date(`${this.addDays(from, offset)}T00:00:00`), rates);
-      if (price === undefined || !Number.isFinite(price) || price < 0) return null;
-      total += price;
-    }
-    return Math.round(total);
-  }
 
   get filteredCheckIns(): CheckItemPlaceholder[] {
     return this.applySearch(this.pendingCheckIns);
@@ -368,308 +233,40 @@ export class CheckPagePage implements OnInit, OnDestroy {
     this.openMenuId = this.openMenuId === menuId ? null : menuId;
   }
 
+  // ── Extender estadía / cambio de habitación (modales hijos) ──────────────────
+  extendItem: CheckItemPlaceholder | null = null;
+  roomChangeItem: CheckItemPlaceholder | null = null;
+
+  openExtendStay(item: CheckItemPlaceholder): void {
+    this.openMenuId = null;
+    if (!this.reservationExists(item)) return;
+    this.extendItem = item;
+  }
+
+  openRoomChange(item: CheckItemPlaceholder): void {
+    this.openMenuId = null;
+    if (!this.reservationExists(item)) return;
+    this.roomChangeItem = item;
+  }
+
+  /** Mensaje y comprobante (si hubo cobro) que devuelve un modal hijo al terminar. */
+  onCheckModalCompleted(result: CheckModalResult): void {
+    this.entrySuccessMessage = result.message;
+    this.movementError = '';
+    if (result.receipt) this.checkInReceipt = result.receipt;
+  }
+
+  private reservationExists(item: CheckItemPlaceholder): boolean {
+    const exists = this.hostalService.getReservations().some((r) => r.id_reserva === item.id);
+    if (!exists) this.movementError = 'La reserva ya no existe. Actualiza la lista e inténtalo otra vez.';
+    return exists;
+  }
+
   /**
    * Abre sobre Recepción el modal de Huéspedes que corresponde a la acción (ficha, editar datos
    * del huésped o editar la reserva), sin cambiar de página.
    */
-  // ── Extender estadía ────────────────────────────────────────────────────────
-  /** Opciones rápidas de extensión, en noches. */
-  readonly extendNightOptions = [1, 2, 3, 7];
-  extendItem: CheckItemPlaceholder | null = null;
-  extendReservation: Reserva | null = null;
-  extendTypology: SedeTipologia | null = null;
-  extendNights = 0;
-  extendCustomDate = '';
-  extendPaymentMethod: PaymentMethod | '' = '';
-  extendError = '';
-  extendSaving = false;
-  extendLoading = false;
-  /** Mantener la habitación actual (por defecto) o mudar al huésped a otra para la extensión. */
-  extendKeepRoom = true;
-  extendRoomId = '';
-  private extendPaidByPos: number | null = null;
 
-  /** Habitaciones libres para toda la estadía extendida (sin la actual), listas para recibir al huésped. */
-  get extendRoomOptions(): Habitacion[] {
-    const reservation = this.extendReservation;
-    if (!reservation || this.extendNights < 1) return [];
-    return this.hostalService
-      .getAvailableRooms(
-        reservation.fecha_llegada,
-        this.addDays(reservation.fecha_salida, this.extendNights),
-        reservation.cantidad_personas,
-        reservation.id_reserva,
-        { arrivalTime: reservation.hora_llegada, departureTime: reservation.hora_salida },
-      )
-      .filter((room) => room.id_habitacion !== reservation.id_habitacion && !this.checkInBlockedReason(room.numero_habitacion));
-  }
-
-  /** Habitación nueva elegida (solo si se desmarcó "mantener la habitación"). */
-  get extendNewRoom(): Habitacion | null {
-    if (this.extendKeepRoom || !this.extendRoomId) return null;
-    return this.extendRoomOptions.find((room) => room.id_habitacion === Number(this.extendRoomId)) ?? null;
-  }
-
-  /** Tipología con la que se cobran las noches extra: la de la habitación nueva, si se cambia. */
-  private get extendPricingTypology(): SedeTipologia | null {
-    const newRoom = this.extendNewRoom;
-    if (!newRoom) return this.extendTypology;
-    return this.sedeService.tipologias().find((t) => t.id === newRoom.id_tipologia) ?? null;
-  }
-
-
-  setExtendKeepRoom(keep: boolean): void {
-    this.extendKeepRoom = keep;
-    this.extendRoomId = '';
-    if (this.extendNights > 0) this.extendError = this.extendBlockedReason(this.extendNights) ?? '';
-  }
-
-  /** Si la habitación elegida deja de estar libre con las nuevas noches, se limpia la selección. */
-  private syncExtendRoomSelection(): void {
-    if (this.extendRoomId && !this.extendNewRoom) this.extendRoomId = '';
-  }
-
-  /** Nueva fecha de salida según las noches elegidas (o la fecha personalizada). */
-  get extendNewDeparture(): string {
-    if (!this.extendReservation || this.extendNights < 1) return '';
-    return this.addDays(this.extendReservation.fecha_salida, this.extendNights);
-  }
-
-  /** Costo de las noches extra según las tarifas vigentes; null si falta precio. */
-  get extendCost(): number | null {
-    const reservation = this.extendReservation;
-    const typology = this.extendPricingTypology;
-    if (!reservation || !typology || this.extendNights < 1) return null;
-    return this.priceNights(typology, reservation.fecha_salida, this.extendNights);
-  }
-
-  /**
-   * Si se cambia de habitación a mitad de estadía, las noches que quedan (desde hoy hasta la
-   * salida actual) se recalculan con la tipología nueva: puede sumar o restar. 0 si no hay cambio.
-   */
-  get extendRoomChangeDelta(): number | null {
-    const reservation = this.extendReservation;
-    const newRoom = this.extendNewRoom;
-    if (!reservation || !newRoom) return 0;
-    const today = this.localDateString(new Date());
-    const from = reservation.fecha_llegada > today ? reservation.fecha_llegada : today;
-    const remaining = Math.max(0, this.daysBetween(from, reservation.fecha_salida));
-    return this.roomSwapDelta(reservation.id_habitacion, newRoom.id_tipologia, from, remaining);
-  }
-
-  /** Nuevo total de la estadía con la extensión (y el ajuste por cambio de habitación). */
-  get extendNewTotal(): number {
-    return Math.max(0, (this.extendReservation?.precio_total ?? 0) + (this.extendCost ?? 0) + (this.extendRoomChangeDelta ?? 0));
-  }
-
-  /** Lo que se cobra ahora: nuevo total menos lo ya pagado (incluye saldo previo, si lo hubiera). */
-  get extendAmountDue(): number {
-    return Math.max(0, this.extendNewTotal - (this.extendReservation?.monto_pagado ?? 0));
-  }
-
-  async openExtendStay(item: CheckItemPlaceholder): Promise<void> {
-    this.openMenuId = null;
-    const reservation = this.hostalService.getReservations().find((r) => r.id_reserva === item.id);
-    if (!reservation) {
-      this.movementError = 'La reserva ya no existe. Actualiza la lista e inténtalo otra vez.';
-      return;
-    }
-    const room = this.sedeService.habitaciones().find((h) => h.id === reservation.id_habitacion);
-    this.extendTypology = this.sedeService.tipologias().find((t) => t.id === room?.tipologiaId) ?? null;
-    this.extendItem = item;
-    this.extendReservation = reservation;
-    this.extendNights = 0;
-    this.extendCustomDate = '';
-    this.extendPaymentMethod = '';
-    this.extendError = '';
-    this.extendKeepRoom = true;
-    this.extendRoomId = '';
-    this.extendPaidByPos = null;
-    this.posCobro.reset();
-    this.extendLoading = true;
-    try {
-      await Promise.all([this.loadTarifasConfig(), this.loadPosDisponible()]);
-    } catch (error) {
-      this.extendError = getApiErrorMessage(error, 'No se pudieron cargar las tarifas.');
-    } finally {
-      this.extendLoading = false;
-    }
-  }
-
-  closeExtendStay(): void {
-    if (this.extendSaving || this.posCobro.enCurso()) return;
-    this.posCobro.reset();
-    this.extendItem = null;
-    this.extendReservation = null;
-    this.extendTypology = null;
-  }
-
-  /** La habitación sigue libre si se extiende la salida esa cantidad de noches. */
-  canExtendBy(nights: number): boolean {
-    return this.extendBlockedReason(nights) === null;
-  }
-
-  /** Motivo por el que no se puede extender esa cantidad de noches, o null si se puede. */
-  extendBlockedReason(nights: number): string | null {
-    const reservation = this.extendReservation;
-    if (!reservation || nights < 1) return 'Elige cuántas noches quieres extender.';
-    // Estadía atrasada: la nueva salida no puede quedar en el pasado.
-    if (this.addDays(reservation.fecha_salida, nights) < this.localDateString(new Date())) {
-      return 'La nueva salida no puede quedar en el pasado.';
-    }
-    // Si se cambia de habitación, la actual puede estar tomada: la disponibilidad se valida con la nueva.
-    if (!this.extendKeepRoom) return null;
-    const free = this.hostalService
-      .getAvailableRooms(
-        reservation.fecha_llegada,
-        this.addDays(reservation.fecha_salida, nights),
-        reservation.cantidad_personas,
-        reservation.id_reserva,
-        { arrivalTime: reservation.hora_llegada, departureTime: reservation.hora_salida },
-      )
-      .some((room) => room.id_habitacion === reservation.id_habitacion);
-    return free ? null : `La habitación ${this.extendItem?.roomNumber} tiene otra reserva en esas fechas. Desmarca "Mantener la habitación" para elegir otra.`;
-  }
-
-  selectExtendNights(nights: number): void {
-    if (this.extendSaving || this.posCobro.enCurso()) return;
-    this.extendNights = nights;
-    this.extendCustomDate = '';
-    this.extendError = this.extendBlockedReason(nights) ?? '';
-    this.syncExtendRoomSelection();
-  }
-
-  onExtendCustomDate(value: string): void {
-    this.extendCustomDate = value;
-    const reservation = this.extendReservation;
-    if (!reservation || !value) {
-      this.extendNights = 0;
-      return;
-    }
-    const nights = this.daysBetween(reservation.fecha_salida, value);
-    if (nights < 1) {
-      this.extendNights = 0;
-      this.extendError = 'La nueva salida debe ser posterior a la salida actual.';
-      return;
-    }
-    this.extendNights = nights;
-    this.extendError = this.extendBlockedReason(nights) ?? '';
-    this.syncExtendRoomSelection();
-  }
-
-  get extendMinCustomDate(): string {
-    if (!this.extendReservation) return '';
-    const next = this.addDays(this.extendReservation.fecha_salida, 1);
-    const today = this.localDateString(new Date());
-    return next > today ? next : today;
-  }
-
-  async confirmExtendStay(): Promise<void> {
-    const item = this.extendItem;
-    const reservation = this.extendReservation;
-    if (!item || !reservation || this.extendNights < 1) {
-      this.extendError = 'Elige cuántas noches quieres extender.';
-      return;
-    }
-    const blocked = this.extendBlockedReason(this.extendNights);
-    if (blocked) {
-      this.extendError = blocked;
-      return;
-    }
-    const newRoom = this.extendNewRoom;
-    if (!this.extendKeepRoom && !newRoom) {
-      this.extendError = 'Elige la nueva habitación.';
-      return;
-    }
-    const cost = this.extendCost;
-    if (cost === null || this.extendRoomChangeDelta === null) {
-      this.extendError = `Configura un precio para la tipología ${this.extendPricingTypology?.nombre ?? 'de la habitación'} en /tarifas antes de extender.`;
-      return;
-    }
-    const amount = this.extendAmountDue;
-    if (amount > 0 && this.extendPaymentMethod === '') {
-      this.extendError = 'Selecciona el medio de pago de la extensión.';
-      return;
-    }
-    if (this.posCobro.enCurso()) return;
-    this.extendError = '';
-    this.extendSaving = true;
-
-    let method = this.extendPaymentMethod;
-    // Con tarjeta se cobra primero en el terminal (registra el pago); luego se guarda la nueva salida.
-    if (amount > 0 && isCardMethod(method) && this.extendPaidByPos !== reservation.id_reserva) {
-      const used = await this.chargeWithPos(reservation.id_reserva, amount, 'PAGO_FINAL', method);
-      if (!used) {
-        this.extendSaving = false;
-        this.extendError = 'La extensión no se cobró. Reintenta o elige otro medio de pago.';
-        return;
-      }
-      method = used;
-      this.extendPaidByPos = reservation.id_reserva;
-    }
-
-    const newDeparture = this.extendNewDeparture;
-    const previouslyPaid = reservation.monto_pagado ?? 0;
-    try {
-      const saved = await this.hostalService.extendStay(reservation.id_reserva, {
-        newDeparture,
-        newTotal: this.extendNewTotal,
-        amount,
-        method: method || undefined,
-        roomId: newRoom?.id_habitacion,
-      });
-      // Cambio de habitación: la anterior queda en aseo y la nueva pasa a ocupada.
-      if (newRoom) {
-        await this.sedeService.marcarEnAseo(item.roomNumber);
-        await this.sedeService.marcarOcupada(newRoom.numero_habitacion, item.guestName);
-      }
-      const roomNumber = newRoom?.numero_habitacion ?? item.roomNumber;
-      const typologyName = newRoom ? (this.extendPricingTypology?.nombre ?? item.roomType) : item.roomType;
-      const nights = this.getNights(saved.fecha_llegada, saved.fecha_salida);
-      const message = `Estadía de ${item.guestName} extendida ${this.extendNights} ${this.extendNights === 1 ? 'noche' : 'noches'}: nueva salida ${this.formatDate(newDeparture)}.`
-        + (newRoom ? ` Se cambió a la habitación ${roomNumber}; la ${item.roomNumber} quedó en aseo.` : '');
-      if (amount > 0 && method) {
-        this.checkInReceipt = {
-          subtitle: `Extensión de estadía · ${this.extendNights} ${this.extendNights === 1 ? 'noche' : 'noches'} más`,
-          guestName: item.guestName,
-          roomNumber,
-          typologyName,
-          arrivalDate: saved.fecha_llegada,
-          arrivalTime: saved.hora_llegada ?? '',
-          departureDate: saved.fecha_salida,
-          departureTime: saved.hora_salida ?? '',
-          nights,
-          personCount: saved.cantidad_personas ?? 1,
-          total: this.extendNewTotal,
-          previouslyPaid,
-          paid: amount,
-          pending: 0,
-          methodLabel: PAYMENT_METHOD_LABELS[method],
-          reference: (isCardMethod(method) ? this.posCobro.transaccion()?.externalReference : null) || `Reserva #${reservation.id_reserva}`,
-          paidAt: new Date(),
-        };
-      }
-      this.entrySuccessMessage = message;
-      this.movementError = '';
-      this.extendPaidByPos = null;
-      this.extendSaving = false;
-      this.closeExtendStay();
-    } catch (error) {
-      this.extendSaving = false;
-      this.extendError = getApiErrorMessage(error, 'No se pudo extender la estadía.')
-        + (this.extendPaidByPos === reservation.id_reserva ? ' El cobro con tarjeta ya quedó registrado: reintenta sin volver a cobrar.' : '');
-    }
-  }
-
-  private addDays(dateKey: string, days: number): string {
-    const date = new Date(`${dateKey}T00:00:00`);
-    date.setDate(date.getDate() + days);
-    return this.localDateString(date);
-  }
-
-  private daysBetween(from: string, to: string): number {
-    return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / (24 * 60 * 60 * 1000));
-  }
 
   async openGuestAction(item: CheckItemPlaceholder, accion: 'detalle' | 'editar-huesped' | 'editar-reserva'): Promise<void> {
     this.openMenuId = null;
@@ -719,88 +316,6 @@ export class CheckPagePage implements OnInit, OnDestroy {
     }
   }
 
-  async openRoomChange(item: CheckItemPlaceholder): Promise<void> {
-    this.openMenuId = null;
-    this.roomChangeError = '';
-    this.roomChangeRoomId = '';
-    const reservation = this.hostalService.getReservations().find((r) => r.id_reserva === item.id);
-    if (!reservation) {
-      this.movementError = 'La reserva ya no existe. Actualiza la lista e inténtalo otra vez.';
-      return;
-    }
-    this.roomChangeReservation = reservation;
-    this.roomChangeOptions = this.hostalService
-      .getAvailableRooms(
-        reservation.fecha_llegada,
-        reservation.fecha_salida,
-        reservation.cantidad_personas,
-        reservation.id_reserva,
-        { arrivalTime: reservation.hora_llegada, departureTime: reservation.hora_salida },
-      )
-      .filter((room) => room.id_habitacion !== reservation.id_habitacion && !this.checkInBlockedReason(room.numero_habitacion));
-    this.roomChangeItem = item;
-    // Las tarifas hacen falta para recalcular el total con la nueva tipología.
-    this.roomChangeLoading = true;
-    try {
-      await this.loadTarifasConfig();
-    } catch (error) {
-      this.roomChangeError = getApiErrorMessage(error, 'No se pudieron cargar las tarifas.');
-    } finally {
-      this.roomChangeLoading = false;
-    }
-  }
-
-  closeRoomChange(): void {
-    if (this.roomChangeSaving) return;
-    this.roomChangeItem = null;
-    this.roomChangeReservation = null;
-    this.roomChangeOptions = [];
-  }
-
-  async confirmRoomChange(): Promise<void> {
-    const item = this.roomChangeItem;
-    const roomId = Number(this.roomChangeRoomId);
-    if (!item || !roomId) {
-      this.roomChangeError = 'Selecciona la nueva habitación.';
-      return;
-    }
-    const reservation = this.hostalService.getReservations().find((r) => r.id_reserva === item.id);
-    if (!reservation) {
-      this.roomChangeError = 'La reserva ya no existe.';
-      return;
-    }
-    const quote = this.roomChangeQuote;
-    if (!quote) {
-      this.roomChangeError = 'Configura el precio de la tipología de esa habitación en /tarifas antes de cambiarla.';
-      return;
-    }
-    this.roomChangeSaving = true;
-    try {
-      await this.hostalService.updateReservation(item.id, {
-        id_habitacion: roomId,
-        fecha_llegada: reservation.fecha_llegada,
-        fecha_salida: reservation.fecha_salida,
-        hora_llegada: reservation.hora_llegada ?? item.scheduledTime,
-        hora_salida: reservation.hora_salida,
-        cantidad_personas: reservation.cantidad_personas ?? 1,
-        precio_total: quote.newTotal,
-        pago_completo: quote.paid >= quote.newTotal,
-      });
-      const newRoom = this.roomChangeOptions.find((room) => room.id_habitacion === roomId);
-      const money = (value: number) => `$${Math.abs(value).toLocaleString('es-CL')}`;
-      const balanceNote = quote.balance > 0
-        ? ` Nuevo total ${money(quote.newTotal)}: quedan ${money(quote.balance)} por cobrar en el check-in.`
-        : quote.balance < 0
-          ? ` Nuevo total ${money(quote.newTotal)}: el huésped tiene ${money(quote.balance)} a favor.`
-          : ` Nuevo total ${money(quote.newTotal)}: la reserva queda pagada.`;
-      this.entrySuccessMessage = `${item.guestName} ahora está asignado a la habitación ${newRoom?.numero_habitacion ?? roomId}.${balanceNote}`;
-      this.roomChangeSaving = false;
-      this.closeRoomChange();
-    } catch (error) {
-      this.roomChangeSaving = false;
-      this.roomChangeError = getApiErrorMessage(error, 'No se pudo cambiar la habitación.');
-    }
-  }
 
   get totalRoomsInvolved(): number {
     const rooms = new Set<string>();
@@ -859,10 +374,10 @@ export class CheckPagePage implements OnInit, OnDestroy {
         ...this.entryForm,
         ...guestDraft,
       };
-      const normalizedDocument = this.normalizeDocument(guestDraft.documento);
+      const normalizedDocument = normalizeDocument(guestDraft.documento);
       const existingGuest = normalizedDocument
         ? this.availableGuests.find((guest) =>
-          this.normalizeDocument(guest.documento ?? '') === normalizedDocument
+          normalizeDocument(guest.documento ?? '') === normalizedDocument
         )
         : undefined;
       if (existingGuest) {
@@ -944,7 +459,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
   }
 
   refreshPendingChecks(): void {
-    const today = this.localDateString(new Date());
+    const today = todayKey();
     const entries = this.hostalService.getReservationCalendarData();
     // Llegadas de hoy y llegadas atrasadas cuya estadía aún no termina.
     const checkIns = entries.filter((entry) =>
@@ -1044,7 +559,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
     this.isSearchingRooms = true;
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
     try {
-      await this.loadTarifasConfig();
+      await this.pricing.load();
       this.updateAvailableRooms();
     } catch (error) {
       this.entryError = error instanceof Error
@@ -1125,22 +640,6 @@ export class CheckPagePage implements OnInit, OnDestroy {
     }
   }
 
-  /** Envía el cobro con tarjeta al terminal; true si quedó aprobado y registrado. */
-  private async chargeWithPos(
-    reservaId: number,
-    monto: number,
-    tipoOperacion: 'ABONO' | 'PAGO_FINAL',
-    method: MetodoPagoTarjeta,
-  ): Promise<MetodoPagoTarjeta | null> {
-    if (!this.posDisponible) return null;
-    const tx = await this.posCobro.cobrar(
-      { reservaId, monto, tipoOperacion, tipoTarjeta: method === 'debito' ? 'DEBITO' : 'CREDITO' },
-      this.posDisponible,
-    );
-    if (tx?.estado !== 'APROBADA' || !tx.pagoId) return null;
-    // El terminal informa el tipo real de tarjeta usado.
-    return tx.metodoPago === 'TARJETA_DEBITO' ? 'debito' : tx.metodoPago === 'TARJETA_CREDITO' ? 'credito' : method;
-  }
 
   /** Cierra el comprobante y termina el ingreso. */
   closeReceipt(): void {
@@ -1264,14 +763,14 @@ export class CheckPagePage implements OnInit, OnDestroy {
 
   /** Fecha mínima de llegada (hoy, en hora local); el backend rechaza fechas pasadas. */
   get minArrivalDate(): string {
-    return this.localDateString(new Date());
+    return todayKey();
   }
 
   isReservationDetailsValid(form: NgForm): boolean {
     return form.valid === true &&
-      this.isValidReservationDate(this.entryForm.arrivalDate) &&
+      isValidDateKey(this.entryForm.arrivalDate) &&
       this.entryForm.arrivalDate >= this.minArrivalDate &&
-      this.isValidReservationDate(this.entryForm.departureDate) &&
+      isValidDateKey(this.entryForm.departureDate) &&
       this.isEntryStayValid() &&
       Number.isInteger(this.entryForm.personCount) &&
       this.entryForm.personCount >= 1 &&
@@ -1284,8 +783,8 @@ export class CheckPagePage implements OnInit, OnDestroy {
       ? !!this.selectedGuest
       : this.areNewGuestFieldsValid();
     return form.valid === true && guestIsValid &&
-      this.isValidReservationDate(this.entryForm.arrivalDate) &&
-      this.isValidReservationDate(this.entryForm.departureDate) &&
+      isValidDateKey(this.entryForm.arrivalDate) &&
+      isValidDateKey(this.entryForm.departureDate) &&
       this.isEntryStayValid() &&
       Number.isInteger(this.entryForm.personCount) &&
       this.entryForm.personCount >= 1 &&
@@ -1363,7 +862,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
       let usedMethod: PaymentMethod = paymentMethod;
       if (isCardMethod(paymentMethod)) {
         // El cobro POS necesita la reserva; si no se aprueba, se elimina.
-        const used = await this.chargeWithPos(
+        const used = await chargeWithPos(this.posCobro, this.posDisponible,
           reservationId, this.paymentAmount, this.paymentOption === 'full' ? 'PAGO_FINAL' : 'ABONO', paymentMethod,
         );
         if (!used) {
@@ -1423,7 +922,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
 
     let method = this.checkInPaymentMethod;
     if (item.outstandingBalance > 0 && isCardMethod(method) && this.checkInPaidByPos !== item.id) {
-      const used = await this.chargeWithPos(item.id, item.outstandingBalance, 'PAGO_FINAL', method);
+      const used = await chargeWithPos(this.posCobro, this.posDisponible, item.id, item.outstandingBalance, 'PAGO_FINAL', method);
       if (!used) {
         this.checkInPaymentError = 'El saldo no se cobró. Reintenta o elige otro medio de pago.';
         return;
@@ -1485,54 +984,32 @@ export class CheckPagePage implements OnInit, OnDestroy {
   }
 
   isRoomOcupada(roomNumber: string): boolean {
-    const room = this.sedeService.habitaciones().find((h) => String(h.numero).trim() === String(roomNumber).trim());
-    return room?.estado === 'ocupada';
+    return this.roomEstado(roomNumber) === 'ocupada';
+  }
+
+  isRoomEnAseo(roomNumber: string): boolean {
+    return this.roomEstado(roomNumber) === 'en aseo';
+  }
+
+  private roomEstado(roomNumber: string): string | undefined {
+    return this.sedeService.habitaciones().find((h) => String(h.numero).trim() === String(roomNumber).trim())?.estado;
   }
 
   /** Motivo por el que la habitación no puede recibir un check-in, o null si está libre. */
   checkInBlockedReason(roomNumber: string): string | null {
-    const room = this.sedeService.habitaciones().find((h) => String(h.numero).trim() === String(roomNumber).trim());
-    if (isRoomReadyForGuest(room?.estado)) return null;
-    return room?.estado === 'en aseo'
-      ? `la habitación ${roomNumber} está en aseo`
-      : `la habitación ${roomNumber} está ocupada`;
-  }
-
-  isRoomEnAseo(roomNumber: string): boolean {
-    const room = this.sedeService.habitaciones().find((h) => String(h.numero).trim() === String(roomNumber).trim());
-    return room?.estado === 'en aseo';
+    return roomBlockedReason(this.sedeService.habitaciones(), roomNumber);
   }
 
   formatRut(value: string): void {
-    const cleaned = value.replace(/[^0-9k]/gi, '').toUpperCase();
-    const hasCheckDigitK = cleaned.endsWith('K');
-    const digits = cleaned.replace(/\D/g, '').slice(0, 9);
-
-    if (digits.length === 0) {
-      this.entryForm.documento = '';
-      return;
-    }
-
-    if (hasCheckDigitK) {
-      const body = digits.slice(0, 8);
-      this.entryForm.documento = body
-        ? `${body.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}-K`
-        : 'K';
-      return;
-    }
-
-    // The last digit is always the check digit, whatever the RUT length.
-    this.entryForm.documento = digits.length === 1
-      ? digits
-      : `${digits.slice(0, -1).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}-${digits.slice(-1)}`;
+    this.entryForm.documento = formatRut(value);
   }
 
   sanitizeDigits(value: string, maxLength = 20): string {
-    return value.replace(/\D/g, '').slice(0, maxLength);
+    return sanitizeDigits(value, maxLength);
   }
 
   isValidEmail(value: string): boolean {
-    return /^[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?(?:\.[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?)+$/i.test(value.trim());
+    return isValidEmail(value);
   }
 
   handleDocumentInput(event: Event): void {
@@ -1579,32 +1056,9 @@ export class CheckPagePage implements OnInit, OnDestroy {
   }
 
   isValidRut(value: string): boolean {
-    const rut = value.replace(/[.\s-]/g, '').toUpperCase();
-    if (!/^\d{7,8}[0-9K]$/.test(rut) || /^0+$/.test(rut)) {
-      return false;
-    }
-
-    const body = rut.slice(0, -1);
-    let multiplier = 2;
-    const sum = [...body].reverse().reduce((total, digit) => {
-      const updatedTotal = total + Number(digit) * multiplier;
-      multiplier = multiplier === 7 ? 2 : multiplier + 1;
-      return updatedTotal;
-    }, 0);
-    const remainder = 11 - (sum % 11);
-    const verifier = remainder === 11 ? '0' : remainder === 10 ? 'K' : String(remainder);
-    return rut.endsWith(verifier);
+    return isValidRut(value);
   }
 
-  private normalizeDocument(value: string): string {
-    return value.replace(/[.\s-]/g, '').toUpperCase();
-  }
-
-  private isValidReservationDate(value: string): boolean {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-    const date = new Date(`${value}T00:00:00`);
-    return !Number.isNaN(date.getTime()) && this.localDateString(date) === value;
-  }
 
   private setPageScrollLocked(locked: boolean): void {
     if (locked) {
@@ -1630,7 +1084,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
     personCount: number;
     roomId: string;
   } {
-    const arrival = this.localDateString(new Date());
+    const arrival = todayKey();
     const departureDate = new Date();
     departureDate.setDate(departureDate.getDate() + 1);
     return {
@@ -1643,7 +1097,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
       email: '',
       nacionalidad: '',
       arrivalDate: arrival,
-      departureDate: this.localDateString(departureDate),
+      departureDate: localDateString(departureDate),
       arrivalTime: '14:00',
       departureTime: '12:00',
       personCount: 1,
@@ -1651,15 +1105,9 @@ export class CheckPagePage implements OnInit, OnDestroy {
     };
   }
 
-  private localDateString(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
 
   private updateCurrentDateKey(): void {
-    const dateKey = this.localDateString(new Date());
+    const dateKey = todayKey();
 
     if (dateKey !== this.currentDateKey) {
       this.currentDateKey = dateKey;
@@ -1673,7 +1121,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
     index: number,
     isOverdue = false
   ): CheckItemPlaceholder {
-    const nights = this.getNights(entry.arrivalDate, entry.departureDate);
+    const nights = chargedNights(entry.arrivalDate, entry.departureDate);
     const colors: CheckItemPlaceholder['avatarColor'][] = ['green', 'orange', 'blue', 'purple'];
     const initials = entry.guestName
       .split(/\s+/)
@@ -1692,7 +1140,7 @@ export class CheckPagePage implements OnInit, OnDestroy {
       email: entry.email,
       roomNumber: entry.roomNumber,
       roomType: entry.roomType,
-      dateRange: `${this.formatDate(entry.arrivalDate)} → ${this.formatDate(entry.departureDate)}`,
+      dateRange: `${formatDayMonth(entry.arrivalDate)} → ${formatDayMonth(entry.departureDate)}`,
       nights,
       scheduledTime: type === 'checkin' ? (entry.arrivalTime || '14:00') : (entry.departureTime || '12:00'),
       timeWindowLabel: type === 'checkin' ? 'Hora de llegada' : 'Hora de salida',
@@ -1708,12 +1156,6 @@ export class CheckPagePage implements OnInit, OnDestroy {
     };
   }
 
-  /** Noches cobradas; una estadía del mismo día (pocas horas) se cobra como 1 noche mínima. */
-  private getNights(arrivalDate: string, departureDate: string): number {
-    const arrival = Date.parse(`${arrivalDate}T00:00:00Z`);
-    const departure = Date.parse(`${departureDate}T00:00:00Z`);
-    return Math.max(1, Math.round((departure - arrival) / (24 * 60 * 60 * 1000)));
-  }
 
   private createReservationQuote(): ReservationQuote {
     const roomId = Number(this.entryForm.roomId);
@@ -1725,8 +1167,8 @@ export class CheckPagePage implements OnInit, OnDestroy {
       throw new Error('No se encontró la tipología de la habitación seleccionada.');
     }
 
-    const rates = this.loadStoredTarifas();
-    const nights = this.getNights(this.entryForm.arrivalDate, this.entryForm.departureDate);
+    const rates = this.pricing.rates();
+    const nights = chargedNights(this.entryForm.arrivalDate, this.entryForm.departureDate);
     if (nights < 1) {
       throw new Error('El rango de fechas debe incluir al menos una noche.');
     }
@@ -1735,14 +1177,14 @@ export class CheckPagePage implements OnInit, OnDestroy {
     for (let offset = 0; offset < nights; offset++) {
       const date = new Date(`${this.entryForm.arrivalDate}T00:00:00`);
       date.setDate(date.getDate() + offset);
-      const nightlyPrice = this.getEffectiveNightlyPrice(typology, date, rates);
+      const nightlyPrice = this.pricing.nightlyPrice(typology, date, rates);
       if (nightlyPrice === undefined || !Number.isFinite(nightlyPrice) || nightlyPrice < 0) {
         throw new Error(`Configura un precio para la tipología ${typology.nombre} en /tarifas antes de confirmar.`);
       }
       total += nightlyPrice;
     }
 
-    const depositPercentage = this.loadDepositPercentage();
+    const depositPercentage = this.pricing.depositPercentage();
     total = Math.round(total);
     return {
       nights,
@@ -1760,116 +1202,13 @@ export class CheckPagePage implements OnInit, OnDestroy {
   private updateRoomNightlyPrices(): void {
     this.roomNightlyPrices.clear();
     if (this.availableRooms.length === 0) return;
-    const rates = this.loadStoredTarifas();
+    const rates = this.pricing.rates();
     const arrivalDate = new Date(`${this.entryForm.arrivalDate}T00:00:00`);
     for (const typology of this.sedeService.tipologias()) {
-      const price = this.getEffectiveNightlyPrice(typology, arrivalDate, rates);
+      const price = this.pricing.nightlyPrice(typology, arrivalDate, rates);
       this.roomNightlyPrices.set(typology.id, price ?? null);
     }
   }
 
-  private getEffectiveNightlyPrice(
-    typology: SedeTipologia,
-    date: Date,
-    rates: StoredTarifa[]
-  ): number | undefined {
-    const matchingRates = rates.filter((rate) =>
-      rate.periodos.some((period) => this.tarifaPeriodMatches(period, date))
-    );
-    let nightlyPrice = typeof typology.precioBase === 'number' &&
-      Number.isFinite(typology.precioBase) && typology.precioBase >= 0
-      ? typology.precioBase
-      : undefined;
-    for (const rate of matchingRates) {
-      const ratePrice = rate.precios[typology.id] ?? typology.precioBase;
-      if (typeof ratePrice === 'number' && Number.isFinite(ratePrice) && ratePrice >= 0 &&
-        (nightlyPrice === undefined || ratePrice > nightlyPrice)) {
-        nightlyPrice = ratePrice;
-      }
-    }
-    return nightlyPrice;
-  }
 
-  private async loadTarifasConfig(): Promise<void> {
-    const sedeId = this.sede()?.id;
-    if (sedeId === undefined) {
-      throw new Error('Selecciona una sede para consultar sus tarifas.');
-    }
-    const [abono, tarifas] = await Promise.all([
-      firstValueFrom(this.tarifasRepository.getAbono(sedeId)),
-      firstValueFrom(this.tarifasRepository.listTarifas(sedeId)),
-    ]);
-    this.tarifasConfig = {
-      sedeId,
-      porcentajeAbono: abono.porcentajeAbono,
-      tarifas: tarifas.filter((tarifa) => tarifa.activa),
-    };
-  }
-
-  private loadStoredTarifas(): StoredTarifa[] {
-    const sedeId = this.sede()?.id;
-    if (sedeId === undefined) {
-      throw new Error('Selecciona una sede para consultar sus tarifas.');
-    }
-    if (this.tarifasConfig?.sedeId !== sedeId) return [];
-    const parsed: unknown = this.tarifasConfig.tarifas;
-    if (!Array.isArray(parsed) || !parsed.every((rate) => this.isStoredTarifa(rate))) {
-      throw new Error('Las tarifas guardadas tienen un formato inválido. Revísalas en /tarifas.');
-    }
-    return parsed.filter((rate): rate is StoredTarifa => this.isStoredTarifa(rate));
-  }
-
-  private isStoredTarifa(value: unknown): value is StoredTarifa {
-    if (!value || typeof value !== 'object') return false;
-    const rate = value as Record<string, unknown>;
-    const periodTypes: TarifaPeriodType[] = [
-      'months', 'weekdays', 'month-days', 'specific-month-days', 'date-range', 'specific-dates',
-    ];
-    return Array.isArray(rate['periodos']) &&
-      rate['periodos'].every((period: unknown) => {
-        if (!period || typeof period !== 'object') return false;
-        const item = period as Record<string, unknown>;
-        return typeof item['tipo'] === 'string' && periodTypes.includes(item['tipo'] as TarifaPeriodType) &&
-        Array.isArray(item['meses']) && item['meses'].every(Number.isInteger) &&
-        Array.isArray(item['diasSemana']) && item['diasSemana'].every(Number.isInteger) &&
-        Array.isArray(item['diasMes']) && item['diasMes'].every(Number.isInteger) &&
-        typeof item['fechaInicio'] === 'string' && typeof item['fechaFin'] === 'string' &&
-        Array.isArray(item['fechas']) && item['fechas'].every((date) => typeof date === 'string');
-    }) &&
-    !!rate['precios'] && typeof rate['precios'] === 'object' && !Array.isArray(rate['precios']) &&
-      Object.values(rate['precios']).every((price) =>
-        typeof price === 'number' && Number.isFinite(price) && price >= 0
-      );
-  }
-
-  private loadDepositPercentage(): number {
-    const sedeId = this.sede()?.id;
-    if (sedeId === undefined) {
-      throw new Error('Selecciona una sede para consultar el porcentaje de abono.');
-    }
-    if (this.tarifasConfig?.sedeId !== sedeId) return 20;
-    const percentage = this.tarifasConfig.porcentajeAbono;
-    if (!Number.isFinite(percentage) || percentage < 1 || percentage > 100) {
-      throw new Error('El porcentaje de abono configurado en /tarifas no es válido.');
-    }
-    return percentage;
-  }
-
-  private tarifaPeriodMatches(period: StoredTarifaPeriod, date: Date): boolean {
-    const dateString = this.localDateString(date);
-    switch (period.tipo) {
-      case 'months': return period.meses.includes(date.getMonth());
-      case 'weekdays': return period.diasSemana.includes((date.getDay() + 6) % 7);
-      case 'month-days': return period.diasMes.includes(date.getDate());
-      case 'specific-month-days': return period.anio === date.getFullYear() &&
-        period.mes === date.getMonth() && period.diasMes.includes(date.getDate());
-      case 'date-range': return dateString >= period.fechaInicio && dateString <= period.fechaFin;
-      case 'specific-dates': return period.fechas.includes(dateString);
-    }
-  }
-
-  private formatDate(dateKey: string): string {
-    const [, month, day] = dateKey.split('-');
-    return `${day}/${month}`;
-  }
 }
