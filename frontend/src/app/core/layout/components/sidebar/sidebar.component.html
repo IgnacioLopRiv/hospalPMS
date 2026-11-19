@@ -1,4 +1,6 @@
-<aside class="sidebar-container">
+<div class="sidebar-backdrop" [class.open]="layout.sidebarOpen()" (click)="layout.closeSidebar()" aria-hidden="true"></div>
+
+<aside id="app-sidebar" class="sidebar-container" [class.open]="layout.sidebarOpen()">
   <nav class="nav-menu">
     @if (canUseFrontDesk()) {
     <a class="nav-item" routerLink="/recepcion" routerLinkActive="active">

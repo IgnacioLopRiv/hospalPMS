@@ -1,6 +1,8 @@
-import { ChangeDetectorRef, Component, ElementRef, ViewChild, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, HostListener, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { filter } from 'rxjs/operators';
 import { IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
@@ -15,6 +17,7 @@ import {
   closeOutline,
 } from 'ionicons/icons';
 
+import { LayoutService } from '../../layout.service';
 import { AuthService } from '../../../auth/application/auth.service';
 import { ROLE_LABELS } from '../../../auth/domain/auth.roles';
 import { SedeService } from '../../../../features/locations/application/sede.service';
@@ -37,6 +40,7 @@ export class SidebarComponent {
   private readonly auth = inject(AuthService);
   private readonly sedeService = inject(SedeService);
   private readonly changeDetector = inject(ChangeDetectorRef);
+  readonly layout = inject(LayoutService);
 
   @ViewChild('logoutDialog') logoutDialog?: ElementRef<HTMLDialogElement>;
   isLogoutDialogOpen = false;
@@ -59,6 +63,21 @@ export class SidebarComponent {
       cubeOutline,
       closeOutline,
     });
+
+    // En móvil, cerrar el menú al navegar.
+    this.router.events
+      .pipe(
+        filter((e) => e instanceof NavigationEnd),
+        takeUntilDestroyed(),
+      )
+      .subscribe(() => this.layout.closeSidebar());
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.layout.sidebarOpen() && !this.isLogoutDialogOpen) {
+      this.layout.closeSidebar();
+    }
   }
 
   getUserInitials(): string {
@@ -78,6 +97,7 @@ export class SidebarComponent {
   }
 
   confirmLogout(): void {
+    this.layout.closeSidebar();
     this.isLogoutDialogOpen = true;
     this.changeDetector.detectChanges();
     const dialog = this.logoutDialog?.nativeElement;

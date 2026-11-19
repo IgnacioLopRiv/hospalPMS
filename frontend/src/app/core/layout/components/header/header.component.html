@@ -1,6 +1,11 @@
 <header class="app-header">
   <!-- Lado Izquierdo: Logo HosPal + Chip informativo de Sede -->
   <div class="header-left">
+    <button type="button" class="menu-toggle" aria-label="Abrir menú" aria-controls="app-sidebar"
+      [attr.aria-expanded]="layout.sidebarOpen()" (click)="layout.toggleSidebar()">
+      <ion-icon name="menu-outline" aria-hidden="true"></ion-icon>
+    </button>
+
     <div class="brand-box">
       <img src="assets/icon/PMSwhite.png" class="brand-icon" alt="HosPal logo" />
       <div class="brand-text">

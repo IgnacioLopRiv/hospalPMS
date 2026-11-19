@@ -73,8 +73,7 @@ ion-app {
 
 @media (max-width: 720px) {
   .app-body-container {
-    flex-direction: column;
-    height: calc(100dvh - 104px);
+    height: calc(100dvh - 56px);
   }
 
   .app-body-container.no-layout {
@@ -91,7 +90,7 @@ ion-app {
 @supports not (height: 100dvh) {
   @media (max-width: 720px) {
     .app-body-container {
-      height: calc(100vh - 104px);
+      height: calc(100vh - 56px);
     }
 
     .app-body-container.no-layout {

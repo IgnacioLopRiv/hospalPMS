@@ -19,6 +19,30 @@ $text-dark: var(--hospal-text-alt);
   border-bottom: 1px solid rgba(255, 255, 255, 0.15);
   background: $blue-primary;
 
+  .menu-toggle {
+    display: none;
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--hospal-white);
+    cursor: pointer;
+
+    ion-icon {
+      font-size: 1.4rem;
+    }
+
+    &:hover,
+    &:focus-visible {
+      background: rgba(255, 255, 255, 0.12);
+    }
+  }
+
   .header-left {
     display: flex;
     align-items: center;
@@ -246,6 +270,10 @@ $text-dark: var(--hospal-text-alt);
   .app-header {
     height: 56px;
     padding: 0 0.75rem;
+
+    .menu-toggle {
+      display: inline-flex;
+    }
 
     .header-left {
       min-width: 0;

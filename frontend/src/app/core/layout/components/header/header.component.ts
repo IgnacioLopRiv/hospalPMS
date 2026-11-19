@@ -8,8 +8,10 @@ import {
   businessOutline,
   notificationsOutline,
   chevronDownOutline,
+  menuOutline,
 } from 'ionicons/icons';
 
+import { LayoutService } from '../../layout.service';
 import { SedeService } from '../../../../features/locations/application/sede.service';
 import { AuthService } from '../../../auth/application/auth.service';
 import { ConfigOptionsComponent } from '../../../../features/locations/presentation/config-options/config-options.component';
@@ -38,6 +40,7 @@ export class HeaderComponent {
   private readonly sedeService = inject(SedeService);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
+  readonly layout = inject(LayoutService);
   /** RF-20: alertas de Recepción (campana). */
   readonly alertas = inject(AlertasService);
   readonly alertasOpen = signal(false);
@@ -62,6 +65,7 @@ export class HeaderComponent {
       businessOutline,
       notificationsOutline,
       chevronDownOutline,
+      menuOutline,
     });
   }
 
