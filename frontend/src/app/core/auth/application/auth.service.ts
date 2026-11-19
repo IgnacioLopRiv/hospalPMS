@@ -18,9 +18,9 @@ export interface LoginResult {
   message?: string;
 }
 
-interface RecoveryEntry {
-  token: string;
-  expiresAt: number;
+interface LoginResponse {
+  accessToken: string;
+  user: AuthUser;
 }
 
 const LOGIN_MESSAGES: Record<LoginErrorCode, string> = {
@@ -31,19 +31,22 @@ const LOGIN_MESSAGES: Record<LoginErrorCode, string> = {
 };
 
 const CURRENT_USER_STORAGE_KEY = 'hospal.currentUser';
+const ACCESS_TOKEN_STORAGE_KEY = 'hospal.accessToken';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = `${environment.apiUrl}/funcionarios`;
-  private loaded = false;
+  private readonly authUrl = `${environment.apiUrl}/auth`;
 
-  // Recovery tokens stored in memory only (Map: email → entry)
-  private readonly recoveryTokens = new Map<string, RecoveryEntry>();
+  /** JWT de la sesión activa (RF-07). Lo adjunta authInterceptor en cada petición. */
+  private accessToken: string | null = this.readStorage(ACCESS_TOKEN_STORAGE_KEY);
 
   // ── Public signals ────────────────────────────────────────────────────────
   /** Usuario con sesión activa. Persistido en localStorage para sobrevivir a recargas de página. */
-  readonly currentUser = signal<AuthUser | null>(this.readSavedCurrentUser());
+  readonly currentUser = signal<AuthUser | null>(
+    this.accessToken ? this.readSavedCurrentUser() : null,
+  );
 
   /** Lista reactiva de todos los funcionarios cargados desde el backend. */
   readonly users = signal<StoredUser[]>([]);
@@ -58,7 +61,12 @@ export class AuthService {
   readonly canViewInventory = computed(() => this.can('viewInventory'));
 
   constructor() {
-    this.ensureUsers();
+    void this.ensureUsers();
+  }
+
+  /** Token de acceso actual, o null si no hay sesión. */
+  token(): string | null {
+    return this.accessToken;
   }
 
   // ── Permissions ───────────────────────────────────────────────────────────
@@ -88,12 +96,15 @@ export class AuthService {
     }
 
     try {
-      const publicUser = await firstValueFrom(
-        this.http.post<AuthUser>(`${this.apiUrl}/login`, {
+      const { accessToken, user } = await firstValueFrom(
+        this.http.post<LoginResponse>(`${this.authUrl}/login`, {
           email: trimmedEmail,
           password: trimmedPassword,
         }),
       );
+      const publicUser = this.toPublicUser(user as StoredUser);
+      this.accessToken = accessToken;
+      this.writeStorage(ACCESS_TOKEN_STORAGE_KEY, accessToken);
       this.currentUser.set(publicUser);
       this.saveCurrentUser(publicUser);
       await this.ensureUsers();
@@ -114,8 +125,11 @@ export class AuthService {
   }
 
   logout(): void {
+    this.accessToken = null;
+    this.writeStorage(ACCESS_TOKEN_STORAGE_KEY, null);
     this.currentUser.set(null);
     this.saveCurrentUser(null);
+    this.users.set([]);
   }
 
   /** Actualiza el usuario activo en la sesión y sincroniza la lista en memoria. */
@@ -199,7 +213,7 @@ export class AuthService {
     return { ok: true };
   }
 
-  // ── Password recovery (in-memory tokens) ─────────────────────────────────
+  // ── Password recovery (backend: POST /auth/recuperar y /auth/restablecer) ─
   async requestPasswordRecovery(email: string): Promise<{ ok: boolean; message: string }> {
     const trimmedEmail = email.trim().toLowerCase();
 
@@ -211,25 +225,20 @@ export class AuthService {
       return { ok: false, message: 'El formato del correo no es válido.' };
     }
 
-    await this.ensureUsers();
-    const user = this.findUser(trimmedEmail);
-
-    if (!user) {
-      return { ok: false, message: 'El correo no está registrado.' };
+    try {
+      await firstValueFrom(
+        this.http.post(`${this.authUrl}/recuperar`, { email: trimmedEmail }),
+      );
+      return {
+        ok: true,
+        message: `Se envió un correo de recuperación a ${trimmedEmail}. El enlace es válido por 15 minutos.`,
+      };
+    } catch (error: any) {
+      return {
+        ok: false,
+        message: error?.error?.message || 'No se pudo enviar el correo de recuperación.',
+      };
     }
-
-    const token = crypto.randomUUID();
-    this.recoveryTokens.set(trimmedEmail, {
-      token,
-      expiresAt: Date.now() + 15 * 60 * 1000,
-    });
-
-    this.openRecoveryEmail(user.email, token);
-
-    return {
-      ok: true,
-      message: `Se envió un correo de recuperación a ${user.email}. Revisa tu bandeja o el cliente de correo que se acaba de abrir.`,
-    };
   }
 
   async resetPassword(
@@ -253,52 +262,29 @@ export class AuthService {
       return { ok: false, message: 'La contraseña debe tener al menos 8 caracteres.' };
     }
 
-    // Find the token in memory
-    let foundEmail: string | null = null;
-    let foundEntry: RecoveryEntry | null = null;
-
-    for (const [email, entry] of this.recoveryTokens.entries()) {
-      if (entry.token === token) {
-        foundEmail = email;
-        foundEntry = entry;
-        break;
-      }
-    }
-
-    if (!foundEmail || !foundEntry) {
-      return { ok: false, message: 'El enlace de recuperación no es válido.' };
-    }
-
-    if (foundEntry.expiresAt < Date.now()) {
-      this.recoveryTokens.delete(foundEmail);
+    try {
+      await firstValueFrom(
+        this.http.post(`${this.authUrl}/restablecer`, {
+          token,
+          password: newPassword.trim(),
+        }),
+      );
+      return { ok: true, message: 'La contraseña se actualizó. Ya puedes ingresar.' };
+    } catch (error: any) {
       return {
         ok: false,
-        message: 'El enlace de recuperación expiró. Solicita uno nuevo.',
+        message: error?.error?.message || 'No se pudo actualizar la contraseña. Inténtalo de nuevo.',
       };
     }
-
-    await this.ensureUsers();
-    const user = this.findUser(foundEmail);
-    if (!user) {
-      return { ok: false, message: 'No se encontró la cuenta asociada al enlace.' };
-    }
-
-    try {
-      await this.updateUser(user.id, { password: newPassword.trim() });
-    } catch {
-      return { ok: false, message: 'No se pudo actualizar la contraseña. Inténtalo de nuevo.' };
-    }
-    this.recoveryTokens.delete(foundEmail);
-
-    return { ok: true, message: 'La contraseña se actualizó. Ya puedes ingresar.' };
   }
 
   // ── Private helpers ───────────────────────────────────────────────────────
+  /** La lista de funcionarios solo la puede pedir un administrador con sesión. */
   private async ensureUsers(): Promise<void> {
+    if (!this.accessToken || this.currentUser()?.role !== 'admin') return;
     try {
       const rows = await firstValueFrom(this.http.get<StoredUser[]>(this.apiUrl));
       this.users.set(rows);
-      this.loaded = true;
     } catch (err) {
       console.warn('No se pudieron cargar los funcionarios desde el backend:', err);
     }
@@ -328,24 +314,26 @@ export class AuthService {
     }
   }
 
-  private findUser(email: string): StoredUser | undefined {
-    return this.users().find(
-      (user) => user.email.toLowerCase() === email.toLowerCase(),
-    );
-  }
-
   private toPublicUser(user: StoredUser): AuthUser {
-    const { password: _password, ...publicUser } = user;
-    return publicUser;
+    const { id, name, email, role, sedeId } = user;
+    return { id, name, email, role, sedeId };
   }
 
-  private openRecoveryEmail(email: string, token: string): void {
-    const resetUrl = `${window.location.origin}/restablecer?token=${encodeURIComponent(token)}`;
-    const subject = encodeURIComponent('Recuperación de contraseña - Hospal PMS');
-    const body = encodeURIComponent(
-      `Hola,\n\nRecibimos una solicitud para restablecer tu contraseña de Hospal PMS.\n\nAbre este enlace para crear una nueva (válido 15 minutos):\n${resetUrl}\n\nSi no fuiste tú, ignora este mensaje.`,
-    );
-    window.open(`mailto:${email}?subject=${subject}&body=${body}`, '_blank');
+  private readStorage(key: string): string | null {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  }
+
+  private writeStorage(key: string, value: string | null): void {
+    try {
+      if (value) localStorage.setItem(key, value);
+      else localStorage.removeItem(key);
+    } catch {
+      // Ignorar error de almacenamiento
+    }
   }
 
   private isValidEmail(email: string): boolean {

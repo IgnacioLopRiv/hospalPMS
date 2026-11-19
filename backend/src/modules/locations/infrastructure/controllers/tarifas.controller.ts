@@ -1,3 +1,4 @@
+import { Roles } from '../../../auth/auth.decorators';
 import {
   BadRequestException,
   Body,
@@ -55,6 +56,7 @@ export class TarifasController {
     return rows.map((row) => this.toFrontend(row));
   }
 
+  @Roles('ADMINISTRADOR')
   @Post('sedes/:sedeId/tarifas')
   async create(
     @Param('sedeId', ParseIntPipe) sedeId: number,
@@ -85,6 +87,7 @@ export class TarifasController {
     return this.toFrontend(await this.findOrFail(id));
   }
 
+  @Roles('ADMINISTRADOR')
   @Patch('tarifas/:id')
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -114,6 +117,7 @@ export class TarifasController {
     return this.toFrontend(row);
   }
 
+  @Roles('ADMINISTRADOR')
   @Delete('tarifas/:id')
   async remove(@Param('id', ParseIntPipe) id: number) {
     await this.findOrFail(id);

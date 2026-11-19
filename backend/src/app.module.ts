@@ -15,6 +15,8 @@ import { BillingModule } from './modules/billing/billing.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PaymentsPosModule } from './modules/payments-pos/payments-pos.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { AlertsModule } from './modules/alerts/alerts.module';
 
 @Module({
   imports: [
@@ -32,6 +34,8 @@ import { PaymentsPosModule } from './modules/payments-pos/payments-pos.module';
     ReportsModule,
     NotificationsModule,
     PaymentsPosModule,
+    AuthModule,
+    AlertsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

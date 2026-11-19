@@ -1,5 +1,6 @@
 import { bootstrapApplication } from '@angular/platform-browser';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { authInterceptor } from './app/core/auth/presentation/auth.interceptor';
 import { RouteReuseStrategy, provideRouter, withPreloading, PreloadAllModules } from '@angular/router';
 import { IonicRouteStrategy, provideIonicAngular } from '@ionic/angular/standalone';
 
@@ -43,7 +44,7 @@ bootstrapApplication(AppComponent, {
       alertEnter: alertEnterAnimation,
       alertLeave: alertLeaveAnimation,
     }),
-    provideHttpClient(),
+    provideHttpClient(withInterceptors([authInterceptor])),
     { provide: HuespedRepository, useClass: HuespedHttpRepository },
     { provide: InventarioRepository, useClass: InventarioHttpRepository },
     { provide: TarifasRepository, useClass: TarifasHttpRepository },

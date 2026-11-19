@@ -1,3 +1,4 @@
+import { Roles } from '../../../auth/auth.decorators';
 import {
   Body,
   Controller,
@@ -31,6 +32,7 @@ export class PosController {
     return this.configService.getConfig(sedeId);
   }
 
+  @Roles('ADMINISTRADOR')
   @Put('config/:sedeId')
   saveConfig(
     @Param('sedeId', ParseIntPipe) sedeId: number,
@@ -40,6 +42,7 @@ export class PosController {
   }
 
   /** Prueba la conexión con los valores del formulario (aunque no estén guardados). */
+  @Roles('ADMINISTRADOR')
   @Post('config/:sedeId/test')
   @HttpCode(200)
   testConnection(
@@ -49,6 +52,7 @@ export class PosController {
     return this.configService.testConnection(sedeId, input);
   }
 
+  @Roles('ADMINISTRADOR')
   @Post('config/:sedeId/dispositivos')
   @HttpCode(200)
   listDevices(

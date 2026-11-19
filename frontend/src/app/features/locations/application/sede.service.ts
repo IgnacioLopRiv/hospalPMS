@@ -7,7 +7,6 @@ import {
   EstadoHabitacion,
 } from '../../../shared/domain/hostal.model';
 import { CreateSedeInput, LocationsRepository } from '../domain/locations.repository';
-
 export type { Sede, SedeHabitacion as Habitacion, SedeTipologia, EstadoHabitacion } from '../../../shared/domain/hostal.model';
 
 const SELECTED_SEDE_KEY = 'hospal.selectedSede';
@@ -52,12 +51,24 @@ export class SedeService {
   readonly sedes = signal<Sede[]>([]);
   readonly selectedSede = signal<Sede | null>(null);
   readonly loadError = signal('');
-  readonly ready: Promise<void>;
+  ready: Promise<void>;
   readonly habitaciones = computed(() => this.selectedSede()?.habitaciones ?? []);
   readonly tipologias = computed(() => this.selectedSede()?.tipologias ?? []);
 
   constructor() {
-    this.ready = this.loadSedes().catch((error: unknown) => {
+    // Sin sesión la API responde 401; tras el login se vuelve a cargar con reload().
+    this.ready = this.safeLoad();
+  }
+
+  /** Vuelve a cargar las sedes (por ejemplo, justo después de iniciar sesión). */
+  reload(): Promise<void> {
+    this.ready = this.safeLoad();
+    return this.ready;
+  }
+
+  private safeLoad(): Promise<void> {
+    this.loadError.set('');
+    return this.loadSedes().catch((error: unknown) => {
       this.loadError.set(error instanceof Error ? error.message : 'No se pudieron cargar las sedes.');
     });
   }

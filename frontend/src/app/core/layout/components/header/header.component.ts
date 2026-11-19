@@ -16,6 +16,8 @@ import { AuthService } from '../../../auth/application/auth.service';
 import { ConfigOptionsComponent } from '../../../../features/locations/presentation/config-options/config-options.component';
 import { EditPerfilesComponent } from '../edit-perfiles/edit-perfiles.component';
 import { ClockComponent } from '../../../../shared/presentation/clock/clock.component';
+import { AlertasPanelComponent } from '../../../../features/alerts/presentation/alertas-panel/alertas-panel.component';
+import { AlertasService } from '../../../../features/alerts/application/alertas.service';
 import { PosConfigModalComponent } from '../../../../features/payments-pos/presentation/pos-config-modal/pos-config-modal.component';
 
 @Component({
@@ -30,12 +32,16 @@ import { PosConfigModalComponent } from '../../../../features/payments-pos/prese
     EditPerfilesComponent,
     ClockComponent,
     PosConfigModalComponent,
+    AlertasPanelComponent,
   ],
 })
 export class HeaderComponent {
   private readonly sedeService = inject(SedeService);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
+  /** RF-20: alertas de Recepción (campana). */
+  readonly alertas = inject(AlertasService);
+  readonly alertasOpen = signal(false);
 
   /** El personal de aseo trabaja solo en su sede: ve el nombre pero no puede cambiarla. */
   readonly canChangeSede = this.auth.canChangeSede;
@@ -73,6 +79,18 @@ export class HeaderComponent {
 
   closeSedeOptions(): void {
     this.sedeOptionsOpen.set(false);
+  }
+
+  // ── Alertas (RF-20) ───────────────────────────────────────────────────────
+
+  toggleAlertas(): void {
+    const open = !this.alertasOpen();
+    this.alertasOpen.set(open);
+    if (open) void this.alertas.refresh();
+  }
+
+  closeAlertas(): void {
+    this.alertasOpen.set(false);
   }
 
   // ── Config options ────────────────────────────────────────────────────────

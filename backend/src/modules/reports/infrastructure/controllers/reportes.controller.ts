@@ -1,3 +1,4 @@
+import { Roles } from '../../../auth/auth.decorators';
 import {
   BadRequestException,
   Controller,
@@ -16,6 +17,7 @@ const ACTIVE_STATES: EstadoReserva[] = [
   EstadoReserva.EN_CURSO,
 ];
 
+@Roles('ADMINISTRADOR')
 @Controller('reportes')
 export class ReportesController {
   constructor(

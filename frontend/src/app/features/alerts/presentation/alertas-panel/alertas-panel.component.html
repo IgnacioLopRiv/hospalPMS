@@ -1,0 +1,44 @@
+<div class="alertas-backdrop" (click)="closed.emit()"></div>
+<aside class="alertas-panel" role="dialog" aria-label="Alertas de recepción">
+  <header class="alertas-head">
+    <h3>Alertas <span class="total">{{ service.count() }}</span></h3>
+    <div class="head-actions">
+      <button type="button" aria-label="Actualizar alertas" [disabled]="service.loading()" (click)="service.refresh()">
+        <ion-icon name="refresh-outline" [class.spin]="service.loading()"></ion-icon>
+      </button>
+      <button type="button" aria-label="Cerrar" (click)="closed.emit()">
+        <ion-icon name="close-outline"></ion-icon>
+      </button>
+    </div>
+  </header>
+
+  <div class="alertas-body">
+    @if (service.error()) {
+      <p class="estado error">{{ service.error() }}</p>
+    }
+
+    @for (alerta of service.alertas(); track alerta.id) {
+      <button
+        type="button"
+        class="alerta"
+        [class]="'alerta tipo-' + alerta.tipo"
+        [class.alta]="alerta.severidad === 'alta'"
+        [title]="meta[alerta.tipo].etiqueta"
+        (click)="open(alerta)"
+      >
+        <ion-icon [name]="meta[alerta.tipo].icono"></ion-icon>
+        <div>
+          <strong>{{ alerta.titulo }}</strong>
+          <span>{{ alerta.detalle }}</span>
+        </div>
+      </button>
+    } @empty {
+      @if (!service.error()) {
+        <div class="estado vacio">
+          <ion-icon name="checkmark-circle-outline"></ion-icon>
+          <p>{{ service.loading() ? 'Cargando alertas…' : 'Sin alertas pendientes en esta sede.' }}</p>
+        </div>
+      }
+    }
+  </div>
+</aside>

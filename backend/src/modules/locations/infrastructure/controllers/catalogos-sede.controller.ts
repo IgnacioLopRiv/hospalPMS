@@ -1,3 +1,4 @@
+import { Roles } from '../../../auth/auth.decorators';
 import {
   BadRequestException,
   Body,
@@ -76,6 +77,7 @@ export class CatalogosSedeController {
     }));
   }
 
+  @Roles('ADMINISTRADOR')
   @Post('sedes/:sedeId/habitaciones')
   async createRoom(
     @Param('sedeId', ParseIntPipe) sedeId: number,
@@ -175,6 +177,7 @@ export class CatalogosSedeController {
     }
   }
 
+  @Roles('ADMINISTRADOR')
   @Delete('habitaciones/:id')
   async deleteRoom(@Param('id', ParseIntPipe) id: number) {
     const activeReservations =
@@ -198,6 +201,7 @@ export class CatalogosSedeController {
     return rows.map((row) => this.toTypologyResponse(row));
   }
 
+  @Roles('ADMINISTRADOR')
   @Post('sedes/:sedeId/tipologias')
   async createTypology(
     @Param('sedeId', ParseIntPipe) sedeId: number,
@@ -233,6 +237,7 @@ export class CatalogosSedeController {
     }
   }
 
+  @Roles('ADMINISTRADOR')
   @Patch('tipologias/:id')
   async updateTypology(
     @Param('id', ParseIntPipe) id: number,
@@ -265,6 +270,7 @@ export class CatalogosSedeController {
     }
   }
 
+  @Roles('ADMINISTRADOR')
   @Delete('tipologias/:id')
   async deleteTypology(@Param('id', ParseIntPipe) id: number) {
     try {

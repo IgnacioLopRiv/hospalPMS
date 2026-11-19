@@ -63,6 +63,9 @@ export class HomePage {
       return;
     }
 
+    // Con el token ya emitido, cargar las sedes (antes del login la API responde 401)
+    await this.sedeService.reload();
+
     // Si el usuario trabaja en una sede asignada (staff o aseo), ir directo a ella
     const loggedUser = this.auth.currentUser();
     if (loggedUser && ROLES_WITH_SEDE.includes(loggedUser.role) && loggedUser.sedeId) {

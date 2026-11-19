@@ -1,3 +1,4 @@
+import { Roles } from '../../../auth/auth.decorators';
 import {
   BadRequestException,
   Body,
@@ -47,6 +48,7 @@ interface FuncionarioInput {
  *
  * Nota: passwordHash nunca se devuelve al frontend.
  */
+@Roles('ADMINISTRADOR')
 @Controller('funcionarios')
 export class FuncionariosController {
   constructor(private readonly prisma: PrismaService) {}
@@ -64,23 +66,6 @@ export class FuncionariosController {
   async findOne(@Param('id', ParseIntPipe) id: number) {
     const f = await this.prisma.funcionario.findUnique({ where: { id } });
     if (!f) throw new NotFoundException(`No existe el funcionario ${id}.`);
-    return this.toFrontend(f);
-  }
-
-  @Post('login')
-  async login(@Body() body: { email?: string; password?: string }) {
-    if (!body.email?.trim() || !body.password?.trim()) {
-      throw new BadRequestException('Email y contraseña son obligatorios.');
-    }
-    const email = body.email.trim().toLowerCase();
-    const f = await this.prisma.funcionario.findUnique({ where: { email } });
-    if (!f) {
-      throw new NotFoundException('El correo no está registrado.');
-    }
-    const match = await bcrypt.compare(body.password, f.passwordHash);
-    if (!match) {
-      throw new BadRequestException('La contraseña es incorrecta.');
-    }
     return this.toFrontend(f);
   }
 

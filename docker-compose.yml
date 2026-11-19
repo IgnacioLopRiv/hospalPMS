@@ -37,6 +37,9 @@ services:
       MAIL_USER: ${MAIL_USER:-}
       MAIL_PASS: ${MAIL_PASS:-}
       POS_ENCRYPTION_KEY: ${POS_ENCRYPTION_KEY:-}
+      JWT_SECRET: ${JWT_SECRET:?Define JWT_SECRET en .env}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8100}
     ports:
       - "3000:3000"
 

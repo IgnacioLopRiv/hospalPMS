@@ -27,9 +27,16 @@
 
   <!-- Lado Derecho: Acciones -->
   <div class="header-right">
-    <button type="button" class="notif-btn" aria-label="Notificaciones">
-      <ion-icon name="notifications-outline"></ion-icon>
-    </button>
+    @if (alertas.enabled()) {
+      <button type="button" class="notif-btn" [class.active]="alertasOpen()"
+        [attr.aria-label]="'Alertas (' + alertas.count() + ')'" aria-haspopup="dialog"
+        [attr.aria-expanded]="alertasOpen()" (click)="toggleAlertas()">
+        <ion-icon name="notifications-outline"></ion-icon>
+        @if (alertas.count() > 0) {
+          <span class="notif-badge" [class.alta]="alertas.hasHigh()">{{ alertas.count() > 99 ? '99+' : alertas.count() }}</span>
+        }
+      </button>
+    }
 
     <button type="button" class="config-btn" [class.active]="configOptionsOpen()" aria-label="Opciones"
       (click)="configOptions()">
@@ -48,6 +55,10 @@
       <span>Cambiar sede</span>
     </button>
   </aside>
+}
+
+@if (alertasOpen()) {
+  <app-alertas-panel (closed)="closeAlertas()"></app-alertas-panel>
 }
 
 @if (configOptionsOpen()) {

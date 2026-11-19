@@ -1,3 +1,4 @@
+import { Public } from '../../../auth/auth.decorators';
 import {
   Body,
   Controller,
@@ -58,6 +59,7 @@ export class PosCobrosController {
    * Notificaciones del proveedor (p. ej. Mercado Pago → "Order").
    * Debe ser accesible públicamente y responder 200 rápido.
    */
+  @Public()
   @Post('webhooks/:proveedor')
   @HttpCode(200)
   webhook(

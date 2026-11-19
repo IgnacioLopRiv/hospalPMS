@@ -6,6 +6,34 @@
   },
   "event": [
     {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// RF-07: la API exige JWT. Inicia sesión una vez y reutiliza el token.",
+          "const esAuth = pm.request.url.toString().includes('/auth/');",
+          "const usarToken = (t) => pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + t });",
+          "const guardado = pm.collectionVariables.get('accessToken');",
+          "if (!esAuth && guardado) {",
+          "  usarToken(guardado);",
+          "} else if (!esAuth) {",
+          "  pm.sendRequest({",
+          "    url: pm.variables.replaceIn('{{baseUrl}}/auth/login'),",
+          "    method: 'POST',",
+          "    header: { 'Content-Type': 'application/json' },",
+          "    body: { mode: 'raw', raw: JSON.stringify({ email: pm.variables.replaceIn('{{loginEmail}}'), password: pm.variables.replaceIn('{{loginPassword}}') }) },",
+          "  }, (err, res) => {",
+          "    if (!err && res.code === 200) {",
+          "      const t = res.json().accessToken;",
+          "      pm.collectionVariables.set('accessToken', t);",
+          "      usarToken(t);",
+          "    }",
+          "  });",
+          "}"
+        ]
+      }
+    },
+    {
       "listen": "test",
       "script": {
         "type": "text/javascript",
@@ -33,8 +61,12 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/sedes",
-              "host": ["{{baseUrl}}"],
-              "path": ["sedes"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sedes"
+              ]
             }
           }
         },
@@ -45,8 +77,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/sedes/{{sedeId}}/habitaciones",
-              "host": ["{{baseUrl}}"],
-              "path": ["sedes", "{{sedeId}}", "habitaciones"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sedes",
+                "{{sedeId}}",
+                "habitaciones"
+              ]
             }
           }
         },
@@ -57,9 +95,18 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/reservas?sedeId={{sedeId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["reservas"],
-              "query": [{ "key": "sedeId", "value": "{{sedeId}}" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reservas"
+              ],
+              "query": [
+                {
+                  "key": "sedeId",
+                  "value": "{{sedeId}}"
+                }
+              ]
             }
           }
         },
@@ -70,9 +117,18 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/huespedes?sedeId={{sedeId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["huespedes"],
-              "query": [{ "key": "sedeId", "value": "{{sedeId}}" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "huespedes"
+              ],
+              "query": [
+                {
+                  "key": "sedeId",
+                  "value": "{{sedeId}}"
+                }
+              ]
             }
           }
         },
@@ -83,8 +139,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/sedes/{{sedeId}}/tarifas",
-              "host": ["{{baseUrl}}"],
-              "path": ["sedes", "{{sedeId}}", "tarifas"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sedes",
+                "{{sedeId}}",
+                "tarifas"
+              ]
             }
           }
         },
@@ -95,9 +157,19 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/reportes/resumen?sedeId={{sedeId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["reportes", "resumen"],
-              "query": [{ "key": "sedeId", "value": "{{sedeId}}" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reportes",
+                "resumen"
+              ],
+              "query": [
+                {
+                  "key": "sedeId",
+                  "value": "{{sedeId}}"
+                }
+              ]
             }
           }
         }
@@ -110,15 +182,22 @@
           "name": "Login funcionario",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"{{loginEmail}}\",\n  \"password\": \"{{loginPassword}}\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/funcionarios/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["funcionarios", "login"]
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": ["auth", "login"]
             }
           }
         },
@@ -129,12 +208,26 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/reportes/pdf?sedeId={{sedeId}}&desde={{pdfDesde}}&hasta={{pdfHasta}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["reportes", "pdf"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reportes",
+                "pdf"
+              ],
               "query": [
-                { "key": "sedeId", "value": "{{sedeId}}" },
-                { "key": "desde", "value": "{{pdfDesde}}" },
-                { "key": "hasta", "value": "{{pdfHasta}}" }
+                {
+                  "key": "sedeId",
+                  "value": "{{sedeId}}"
+                },
+                {
+                  "key": "desde",
+                  "value": "{{pdfDesde}}"
+                },
+                {
+                  "key": "hasta",
+                  "value": "{{pdfHasta}}"
+                }
               ]
             }
           }

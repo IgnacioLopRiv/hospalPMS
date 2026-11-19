@@ -1,3 +1,4 @@
+import { Roles } from '../../../auth/auth.decorators';
 import {
   BadRequestException,
   Body,
@@ -40,6 +41,7 @@ export class TarifaAbonoController {
     };
   }
 
+  @Roles('ADMINISTRADOR')
   @Put()
   async save(
     @Param('sedeId', ParseIntPipe) sedeId: number,

@@ -1,6 +1,29 @@
 $kind: collection
 description: Colección para pruebas de rendimiento de la API de HosPal PMS. La carpeta 'Consultas frecuentes' solo usa endpoints GET, por lo que se puede ejecutar con muchos usuarios virtuales sin modificar datos. La carpeta 'Operaciones pesadas' contiene el login (bcrypt) y la generación de PDF, que consumen más CPU y se prueban con menos usuarios.
 scripts:
+  - type: http:beforeRequest
+    code: |-
+      // RF-07: la API exige JWT. Inicia sesión una vez y reutiliza el token.
+      const esAuth = pm.request.url.toString().includes('/auth/');
+      const usarToken = (t) => pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + t });
+      const guardado = pm.collectionVariables.get('accessToken');
+      if (!esAuth && guardado) {
+        usarToken(guardado);
+      } else if (!esAuth) {
+        pm.sendRequest({
+          url: pm.variables.replaceIn('{{baseUrl}}/auth/login'),
+          method: 'POST',
+          header: { 'Content-Type': 'application/json' },
+          body: { mode: 'raw', raw: JSON.stringify({ email: pm.variables.replaceIn('{{loginEmail}}'), password: pm.variables.replaceIn('{{loginPassword}}') }) },
+        }, (err, res) => {
+          if (!err && res.code === 200) {
+            const t = res.json().accessToken;
+            pm.collectionVariables.set('accessToken', t);
+            usarToken(t);
+          }
+        });
+      }
+    language: text/javascript
   - type: http:afterResponse
     code: |-
       pm.test('Responde sin error (2xx)', function () {

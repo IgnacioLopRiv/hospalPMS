@@ -1,3 +1,4 @@
+import { Roles } from '../../../auth/auth.decorators';
 import {
   BadRequestException,
   Body,
@@ -52,6 +53,7 @@ export class CaracteristicasController {
     });
   }
 
+  @Roles('ADMINISTRADOR')
   @Post()
   async create(@Body() input: CaracteristicaInput) {
     const nombre = this.validateNombre(input.nombre);
@@ -66,6 +68,7 @@ export class CaracteristicasController {
     });
   }
 
+  @Roles('ADMINISTRADOR')
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -90,6 +93,7 @@ export class CaracteristicasController {
     });
   }
 
+  @Roles('ADMINISTRADOR')
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number) {
     await this.findCustomOrFail(id);
@@ -99,6 +103,7 @@ export class CaracteristicasController {
   }
 
   /** Asignar una característica a una tipología */
+  @Roles('ADMINISTRADOR')
   @Post('tipologia/:tipologiaId/:caracteristicaId')
   async assign(
     @Param('tipologiaId', ParseIntPipe) tipologiaId: number,
@@ -127,6 +132,7 @@ export class CaracteristicasController {
   }
 
   /** Desasignar una característica de una tipología */
+  @Roles('ADMINISTRADOR')
   @Delete('tipologia/:tipologiaId/:caracteristicaId')
   async unassign(
     @Param('tipologiaId', ParseIntPipe) tipologiaId: number,

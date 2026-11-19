@@ -1,3 +1,4 @@
+import { Roles } from '../../../auth/auth.decorators';
 import {
   BadRequestException,
   Body,
@@ -85,6 +86,7 @@ export class SedesController {
     }));
   }
 
+  @Roles('ADMINISTRADOR')
   @Post()
   async create(@Body() input: SedeInput) {
     const nombreSede = (input.nombreSede ?? input.nombre)?.trim();
@@ -135,6 +137,7 @@ export class SedesController {
     };
   }
 
+  @Roles('ADMINISTRADOR')
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -191,6 +194,7 @@ export class SedesController {
     }
   }
 
+  @Roles('ADMINISTRADOR')
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number) {
     try {
