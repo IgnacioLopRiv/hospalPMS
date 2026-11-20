@@ -309,7 +309,7 @@
 
       <footer class="entry-form-actions">
         @if (canCancelReservation(detail.reservation.estado_reserva)) {
-        <button type="button" class="modal-btn modal-btn--danger" (click)="cancelReservation()">
+        <button type="button" class="modal-btn modal-btn--danger" (click)="askCancelReservation()">
           <ion-icon name="close-circle-outline"></ion-icon>
           Cancelar reserva
         </button>
@@ -389,6 +389,27 @@
         </footer>
       </form>
     </section>
+    }
+    @if (showCancelReservationConfirm()) {
+    <div class="entry-close-confirm-backdrop" animate.leave="hospal-modal-leaving" (click)="showCancelReservationConfirm.set(false)">
+      <section
+        class="entry-close-confirm-dialog app-modal"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="cancel-reservation-confirm-title"
+        aria-describedby="cancel-reservation-confirm-message"
+        (click)="$event.stopPropagation()">
+        <div class="entry-close-confirm-icon" aria-hidden="true">
+          <ion-icon name="information-circle-outline"></ion-icon>
+        </div>
+        <h2 id="cancel-reservation-confirm-title">¿Cancelar la reserva?</h2>
+        <p id="cancel-reservation-confirm-message">La reserva quedará cancelada. El huésped permanecerá registrado.</p>
+        <footer class="entry-close-confirm-actions">
+          <button type="button" class="modal-btn modal-btn--secondary" (click)="showCancelReservationConfirm.set(false)">Volver</button>
+          <button type="button" class="modal-btn modal-btn--danger" (click)="confirmCancelReservation()">Cancelar reserva</button>
+        </footer>
+      </section>
+    </div>
     }
   </dialog>
   }

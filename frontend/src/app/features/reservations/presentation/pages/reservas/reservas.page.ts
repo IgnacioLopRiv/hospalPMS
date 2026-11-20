@@ -27,6 +27,7 @@ import {
   logOutOutline,
   logoWhatsapp,
   closeOutline,
+  informationCircleOutline,
 } from 'ionicons/icons';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HostalService, ReservationCalendarEntry } from '../../../../huespedes/application/hostal.service';
@@ -142,6 +143,7 @@ export class ReservasPage implements OnInit, OnDestroy {
   readonly reservationModalMode = signal<'detail' | 'edit'>('detail');
   readonly reservationError = signal('');
   readonly reservationMessage = signal('');
+  readonly showCancelReservationConfirm = signal(false);
   availableReservationRooms: Habitacion[] = [];
   editReservationForm = {
     fecha_llegada: '',
@@ -277,6 +279,7 @@ export class ReservasPage implements OnInit, OnDestroy {
       chevronDownOutline,
       chevronForwardOutline,
       closeCircleOutline,
+      informationCircleOutline,
       logInOutline,
       logOutOutline,
       logoWhatsapp,
@@ -317,6 +320,10 @@ export class ReservasPage implements OnInit, OnDestroy {
 
   onReservationDialogCancel(event: Event): void {
     event.preventDefault();
+    if (this.showCancelReservationConfirm()) {
+      this.showCancelReservationConfirm.set(false);
+      return;
+    }
     if (this.reservationModalMode() === 'edit') this.backToReservationDetail();
     else this.closeReservationModal();
   }
@@ -380,12 +387,15 @@ export class ReservasPage implements OnInit, OnDestroy {
     }
   }
 
-  async cancelReservation(): Promise<void> {
+  askCancelReservation(): void {
+    if (this.selectedReservationId() === null) return;
+    this.showCancelReservationConfirm.set(true);
+  }
+
+  async confirmCancelReservation(): Promise<void> {
+    this.showCancelReservationConfirm.set(false);
     const id = this.selectedReservationId();
     if (id === null) return;
-    if (!this.document.defaultView?.confirm('¿Confirmas que quieres cancelar esta reserva? El huésped permanecerá registrado.')) {
-      return;
-    }
     try {
       await this.hostalService.cancelReservation(id);
       this.closeReservationModal();
