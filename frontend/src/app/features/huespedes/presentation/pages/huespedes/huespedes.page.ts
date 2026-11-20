@@ -24,6 +24,7 @@ import {
   closeOutline,
   logInOutline,
   logOutOutline,
+  informationCircleOutline,
 } from 'ionicons/icons';
 
 import { HostalService } from '../../../application/hostal.service';
@@ -81,6 +82,7 @@ export class HuespedesPage implements OnInit, OnDestroy {
   reservationAssignmentGuestId: number | null = null;
   guestError = '';
   guestSuccessMessage = '';
+  showCancelReservationConfirm = false;
   documentFieldFocused = false;
   emailFieldFocused = false;
   phoneFieldFocused = false;
@@ -129,6 +131,7 @@ export class HuespedesPage implements OnInit, OnDestroy {
 
   constructor() {
     addIcons({
+      informationCircleOutline,
       closeOutline,
       peopleOutline,
       checkmarkCircleOutline,
@@ -479,11 +482,9 @@ export class HuespedesPage implements OnInit, OnDestroy {
     }
   }
 
-  async cancelReservation(): Promise<void> {
+  async confirmCancelReservation(): Promise<void> {
+    this.showCancelReservationConfirm = false;
     if (this.editingReservationId === null) return;
-    if (!this.document.defaultView?.confirm('¿Confirmas que quieres cancelar esta reserva? El huésped permanecerá registrado.')) {
-      return;
-    }
 
     try {
       await this.hostalService.cancelReservation(this.editingReservationId);
@@ -495,6 +496,7 @@ export class HuespedesPage implements OnInit, OnDestroy {
   }
 
   closeReservationEditor(): void {
+    this.showCancelReservationConfirm = false;
     this.closeReservationEditDialog();
     this.editingReservationId = null;
     this.reservationError = '';
@@ -536,6 +538,10 @@ export class HuespedesPage implements OnInit, OnDestroy {
 
   onReservationEditDialogCancel(event: Event): void {
     event.preventDefault();
+    if (this.showCancelReservationConfirm) {
+      this.showCancelReservationConfirm = false;
+      return;
+    }
     this.closeReservationEditor();
   }
 
