@@ -210,8 +210,10 @@ describe('ReservasPage', () => {
     expect(component.reservationModalMode()).toBe('detail');
     expect(component.reservationDetail()?.reservation.fecha_salida).toBe(dateAfter(4));
 
-    spyOn(window, 'confirm').and.returnValue(true);
-    await component.cancelReservation();
+    component.askCancelReservation();
+    expect(component.showCancelReservationConfirm()).toBeTrue();
+    await component.confirmCancelReservation();
+    expect(component.showCancelReservationConfirm()).toBeFalse();
     expect(component.selectedReservationId()).toBeNull();
     expect(hostalService.getReservations()
       .find((item) => item.id_reserva === reservation.id_reserva)?.estado_reserva).toBe('CANCELADA');
