@@ -518,7 +518,7 @@
   }
 
   @if (roomDetails; as room) {
-  <div class="room-selection-detail-backdrop" animate.leave="hospal-modal-leaving" appEscapeClose (escapeClose)="closeRoomDetails()" (click)="closeRoomDetails()">
+  <div class="room-selection-detail-backdrop" appModalPortal appEscapeClose (escapeClose)="closeRoomDetails()" (click)="closeRoomDetails()">
     <section class="room-selection-detail-modal app-modal" role="dialog" aria-modal="true" aria-labelledby="room-selection-detail-title" (click)="$event.stopPropagation()">
       <header class="room-selection-detail-header">
         <div>
@@ -578,7 +578,7 @@
   }
 
   @if (expandedRoomPhoto; as photo) {
-  <div class="room-selection-lightbox" role="dialog" aria-modal="true" [attr.aria-label]="photo.titulo || 'Foto de habitación'" (click)="expandedRoomPhoto = null">
+  <div class="room-selection-lightbox" appModalPortal role="dialog" aria-modal="true" [attr.aria-label]="photo.titulo || 'Foto de habitación'" (click)="expandedRoomPhoto = null">
     <button type="button" aria-label="Cerrar foto ampliada" (click)="expandedRoomPhoto = null">×</button>
     <img [src]="photo.url" [alt]="photo.titulo || photo.descripcion || 'Foto de habitación'">
     @if (photo.titulo || photo.descripcion) {

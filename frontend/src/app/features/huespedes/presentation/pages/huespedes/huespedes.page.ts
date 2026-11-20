@@ -40,6 +40,7 @@ import {
 import { parsePhoneNumberFromString } from 'libphonenumber-js/max';
 import { CountryPickerComponent } from '../../../../../shared/presentation/country-picker/country-picker.component';
 import { closeDialogAnimated } from '../../../../../shared/presentation/animations/modal-leave';
+import { getApiErrorMessage } from '../../../../../shared/domain/api-error-message';
 
 export interface HuespedModalAction {
   accion: 'detalle' | 'editar-huesped' | 'editar-reserva';
@@ -380,7 +381,7 @@ export class HuespedesPage implements OnInit, OnDestroy {
       this.guestSuccessMessage = `Datos actualizados para ${guest.nombre} ${guest.apellido}.`;
       this.closeGuestEditor();
     } catch (error) {
-      this.guestError = error instanceof Error ? error.message : 'No se pudieron actualizar los datos del huésped.';
+      this.guestError = getApiErrorMessage(error, 'No se pudieron actualizar los datos del huésped.');
     }
   }
 
@@ -412,7 +413,7 @@ export class HuespedesPage implements OnInit, OnDestroy {
       this.guestError = '';
       this.setPageScrollLocked(false);
     } catch (error) {
-      this.guestError = error instanceof Error ? error.message : 'No se pudo eliminar el huésped.';
+      this.guestError = getApiErrorMessage(error, 'No se pudo eliminar el huésped.');
     }
   }
 
@@ -474,7 +475,7 @@ export class HuespedesPage implements OnInit, OnDestroy {
       this.guestSuccessMessage = 'Reserva actualizada correctamente.';
       this.closeReservationEditor();
     } catch (error) {
-      this.reservationError = error instanceof Error ? error.message : 'No se pudo actualizar la reserva.';
+      this.reservationError = getApiErrorMessage(error, 'No se pudo actualizar la reserva.');
     }
   }
 
@@ -489,7 +490,7 @@ export class HuespedesPage implements OnInit, OnDestroy {
       this.guestSuccessMessage = 'Reserva cancelada. El huésped continúa registrado.';
       this.closeReservationEditor();
     } catch (error) {
-      this.reservationError = error instanceof Error ? error.message : 'No se pudo cancelar la reserva.';
+      this.reservationError = getApiErrorMessage(error, 'No se pudo cancelar la reserva.');
     }
   }
 
